@@ -64,17 +64,17 @@ app.MapRazorComponents<App>()
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();
 
-    //test snowflake connection
+    //TODO:test snowflake database connection
     /*using (var conn = new SnowflakeDbConnection())
     {
-        conn.ConnectionString = "scheme=https;ACCOUNT=bea78282;HOST=bea78282.us-east-1.snowflakecomputing.com;port=443; ROLE=sysadmin;WAREHOUSE=compute_wh; USER=nitesh; PASSWORD=XXXXXXX;DB=employeemanagement;SCHEMA=EM"; 
+        conn.ConnectionString = ""; 
         conn.Open();
         System.Diagnostics.Debug.WriteLine("Connection Opened");
         conn.Close();
     }
     */
 
-    app.Run();
+app.Run();
 
        
 
