@@ -6,6 +6,7 @@
 @using _4PL.Data
 
 @inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
 @inject ILogger<Login> Logger
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
@@ -13,7 +14,7 @@
 <PageTitle>Log in</PageTitle>
 
 <h1>Log in</h1>
-<div class="row">
+<div align="center">
     <div class="col-md-4">
         <section>
             <StatusMessage Message="@errorMessage" />
@@ -55,13 +56,6 @@
             </EditForm>
         </section>
     </div>
-    <div class="col-md-6 col-md-offset-2">
-        <section>
-            <h3>Use another service to log in.</h3>
-            <hr />
-            <ExternalLoginPicker />
-        </section>
-    </div>
 </div>
 
 @code {
@@ -87,28 +81,44 @@
 
     public async Task LoginUser()
     {
-        // This doesn't count login failures towards account lockout
-        // To enable password failures to trigger account lockout, set lockoutOnFailure: true
-        var result = await SignInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
-        if (result.Succeeded)
+        var user = UserManager.FindByEmailAsync(Input.Email);
+        if (user is null)
         {
-            Logger.LogInformation("User logged in.");
-            RedirectManager.RedirectTo(ReturnUrl);
-        }
-        else if (result.RequiresTwoFactor)
-        {
-            RedirectManager.RedirectTo(
-                "Account/LoginWith2fa",
-                new() { ["returnUrl"] = ReturnUrl, ["rememberMe"] = Input.RememberMe });
-        }
-        else if (result.IsLockedOut)
-        {
-            Logger.LogWarning("User account locked out.");
-            RedirectManager.RedirectTo("Account/Lockout");
+            HttpContext.Response.StatusCode = StatusCodes.Status404NotFound;
+            errorMessage = "Error: Invalid email provided.";
         }
         else
         {
-            errorMessage = "Error: Invalid login attempt.";
+            ApplicationUser? curr = user.Result;
+            if (curr is null)
+            {
+                HttpContext.Response.StatusCode = StatusCodes.Status404NotFound;
+                errorMessage = "Error: Invalid email provided.";
+                return;
+            }
+            var result = await SignInManager.PasswordSignInAsync(curr, Input.Password, Input.RememberMe, lockoutOnFailure: false);
+
+            if (result.IsLockedOut)
+            {
+                Logger.LogWarning("User account locked out.");
+                RedirectManager.RedirectTo("Account/Lockout");
+            }
+            else if (result.Succeeded)
+            {
+                Logger.LogInformation("User logged in.");
+                RedirectManager.RedirectTo(ReturnUrl);
+            }
+            else
+            {
+                await UserManager.AccessFailedAsync(curr);
+                int attemptsRemaining = 5 - curr.AccessFailedCount;
+                if(attemptsRemaining == 5)
+                {
+                    errorMessage = $"Account Locked";
+                } else{
+                    errorMessage = $"Invalid password. \n Attempts before account is locked out: {attemptsRemaining}";
+                }
+            }
         }
     }
 
