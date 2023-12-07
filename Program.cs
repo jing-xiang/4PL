@@ -35,6 +35,9 @@ builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.Requ
     .AddDefaultTokenProviders();
 
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
+builder.Services.AddSingleton<SnowflakeDbContext>();
+builder.Services.AddControllers();
+builder.Services.AddHttpClient();
 
 builder.Services.Configure<IdentityOptions>(options =>
 {
@@ -58,9 +61,6 @@ else
     app.UseHsts();
 }
 
-
-
-
 app.UseHttpsRedirection();
 
 app.UseStaticFiles();
@@ -71,6 +71,7 @@ app.MapRazorComponents<App>()
 
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();
+app.MapControllers();
 
 app.Run();
 
