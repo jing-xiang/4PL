@@ -112,15 +112,7 @@
                 if ((DateTime.Now - LastPasswordChangedDate).TotalDays >= 90)
                 {
                     curr.LockoutEnabled = true;
-                    RedirectManager.RedirectTo("Account/Lockout");                
-                }
-                //replace with db call
-                bool newuser = false;
-                if (newuser == true)
-                {
-                    curr.LockoutEnabled = true;
-                    RedirectManager.RedirectTo("Account/ResetPassword");
-                }
+                    RedirectManager.RedirectTo("Account/Lockout");                }
             }
             else
             {
