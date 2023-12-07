@@ -96,7 +96,6 @@
             RedirectManager.RedirectTo(
                 "Account/RegisterConfirmation",
                 new() { ["email"] = Input.Email, ["returnUrl"] = ReturnUrl });
-                //TODO: Lockout user if password is not reset in x days
         }
 
         await SignInManager.SignInAsync(user, isPersistent: false);
