@@ -72,16 +72,6 @@ app.MapRazorComponents<App>()
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();
 
-    //TODO:test snowflake database connection
-    /*using (var conn = new SnowflakeDbConnection())
-    {
-        conn.ConnectionString = ""; 
-        conn.Open();
-        System.Diagnostics.Debug.WriteLine("Connection Opened");
-        conn.Close();
-    }
-    */
-
 app.Run();
 
        
