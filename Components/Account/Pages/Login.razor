@@ -108,15 +108,20 @@
                 Logger.LogInformation("User logged in.");
                 RedirectManager.RedirectTo(ReturnUrl);
                 //TODO: If password not reset in x days, lock account
+                DateTime LastPasswordChangedDate = new DateTime(2023, 12, 6, 0, 0, 0); //temp placeholder, fetch from db
+                if ((DateTime.Now - LastPasswordChangedDate).TotalDays >= 90)
+                {
+                    curr.LockoutEnabled = true;
+                    RedirectManager.RedirectTo("Account/Lockout");                }
             }
             else
             {
                 await UserManager.AccessFailedAsync(curr);
                 int attemptsRemaining = 5 - curr.AccessFailedCount;
-                if(attemptsRemaining == 5)
+                if (attemptsRemaining == 5)
                 {
-                    errorMessage = $"Account Locked";
-                }else{
+                    errorMessage = $"Account locked, please contact system administrator.";
+                } else {
                     errorMessage = $"Invalid password. \n Attempts before account is locked out: {attemptsRemaining}";
                 }
             }
