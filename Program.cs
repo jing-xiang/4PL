@@ -35,6 +35,9 @@ builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.Requ
     .AddDefaultTokenProviders();
 
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
+builder.Services.AddSingleton<SnowflakeDbContext>();
+builder.Services.AddControllers();
+builder.Services.AddHttpClient();
 
 builder.Services.Configure<IdentityOptions>(options =>
 {
@@ -64,9 +67,6 @@ else
     app.UseHsts();
 }
 
-
-
-
 app.UseHttpsRedirection();
 
 app.UseStaticFiles();
@@ -77,6 +77,7 @@ app.MapRazorComponents<App>()
 
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();
+app.MapControllers();
 
 //https://stackoverflow.com/questions/76933203/not-able-to-get-to-api-controller-in-blazor-server
 app.MapControllers();
