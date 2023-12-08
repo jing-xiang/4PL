@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 using Snowflake.Data.Client;
 using System.Data;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion.Internal;
 
 namespace _4PL.Data
 {
@@ -35,12 +36,14 @@ namespace _4PL.Data
             }
         }
 
-        [HttpGet("GetUser")]
+        [HttpPost("GetUser")]
         public async Task<IActionResult> GetUser([FromBody] string email)
         {
             try
             {
-                var user = await _dbContext.GetUser(email);
+                Console.WriteLine("request received");
+                ApplicationUser user = _dbContext.GetUser(email).Result;
+                Console.WriteLine("request processed");
                 return Ok(user);
             }
             catch (InvalidOperationException ex)
@@ -54,14 +57,17 @@ namespace _4PL.Data
         {
             try
             {
-                _dbContext.ValidateLogin(user);
-                if (isNew == "TRUE")
+                string storedHash = _dbContext.RetrieveHash(user).Result;
+                byte[] storedSalt = Convert.FromBase64String(_dbContext.RetrieveSalt(user).Result);
+                string inputHash = HashPassword(user.Password, storedSalt);
+
+                if (storedHash == inputHash)
                 {
-                    return Ok(new { Message = "is new user." });
+                    return Ok("Login successful.");
                 }
                 else
                 {
-                    return NotFound();
+                    return Unauthorized("Invalid credentials.");
                 }
             }
             catch (Exception ex)
@@ -70,20 +76,13 @@ namespace _4PL.Data
             }
         }
 
-        [HttpGet("Validate")]
+        [HttpPost("UpdateAttempts")]
         public IActionResult Validate([FromBody] ApplicationUser user)
         {
             try
             {
-                string password = _dbContext.GetFieldByEmail(user, "password");
-                if (password != null && password.Equals(user.Password))
-                {
-                    return Ok(new { Message = "Login successful." });
-                }
-                else
-                {
-                    return Unauthorized(new { Message = "Invalid credentials." });
-                }
+                _dbContext.UpdateAttempts(user);
+                return Ok("Failed attempts updated.");
             }
             catch (Exception ex)
             {

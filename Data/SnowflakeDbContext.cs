@@ -68,13 +68,17 @@ namespace _4PL.Data
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
                 conn.Open();
+                Console.WriteLine("connection started");
                 ApplicationUser currUser = new ApplicationUser();
                 using (IDbCommand command = conn.CreateCommand())
                 {
+                    Console.WriteLine("command created");
                     command.CommandText = "CALL GET_SECURE_USER_INFO (:email)";
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "email", Value = email, DbType = DbType.String });
+                    Console.WriteLine("command ready to run");
                     using (var reader = command.ExecuteReader())
-                    {  
+                    {
+                        Console.WriteLine("command executed");
                         if (reader.Read())
                         {
                             currUser.Name = reader.GetString(0);
@@ -83,34 +87,59 @@ namespace _4PL.Data
                             currUser.FailedAttempts = reader.GetInt32(4);
                             currUser.LastReset = reader.GetDateTime(5);
                             currUser.IsNew = reader.GetBoolean(6);
+                            Console.WriteLine("user updated from database");
                         } else
                         {
                             throw new InvalidOperationException("User does not exist.");
                         }
                     }
                 }
-
+                Console.WriteLine("user ready to be returned");
                 return currUser;
             }
         }
 
-        public async void ValidateLogin(ApplicationUser user)
+        public async Task<string> RetrieveHash(ApplicationUser user)
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
                 conn.Open();
                 using (IDbCommand command = conn.CreateCommand())
                 {
-                    command.CommandText = "SELECT password, salt FROM user_information WHERE email = :email";
-                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "email", Value = user.Email });
-                    
-                    using (var reader = command.ExecuteReader())
+                    command.CommandText = $"SELECT password FROM user_information WHERE email = {user.Email}";
+                    return Convert.ToString(command.ExecuteScalar());
+                }
+            }
+        }
+
+        public async Task<string> RetrieveSalt(ApplicationUser user)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = $"SELECT salt FROM user_information WHERE email = {user.Email}";
+                    return Convert.ToString(command.ExecuteScalar());
+                }
+            }
+        }
+
+        public async void UpdateAttempts(ApplicationUser user)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    if (user.FailedAttempts < 5)
                     {
-                        if (reader.Read())
-                        {
-                            return;
-                        }
-                    } 
+                        command.CommandText = $"UPDATE user_information SET failed_attempts = {user.FailedAttempts} WHERE email = {user.Email}";
+                    } else
+                    {
+                        command.CommandText = $"UPDATE user_information SET is_locked = true WHERE email = {user.Email}";
+                    }
+                    command.ExecuteScalar();
                 }
             }
         }

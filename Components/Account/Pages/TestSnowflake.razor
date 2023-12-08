@@ -19,7 +19,6 @@
 <div align="center">
     <div class="col-md-4">
         <section>
-            <StatusMessage Message="@errorMessage" />
             <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login">
                 <DataAnnotationsValidator />
                 <h2>Use a local account to log in.</h2>
@@ -29,12 +28,10 @@
                 <div class="form-floating mb-3">
                     <InputText @bind-Value="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
                     <label for="email" class="form-label">Email</label>
-                    <ValidationMessage For="() => Input.Email" class="text-danger" />
                 </div>
                 <div class="form-floating mb-3">
                     <InputText type="password" @bind-Value="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="password" />
                     <label for="password" class="form-label">Password</label>
-                    <ValidationMessage For="() => Input.Password" class="text-danger" />
                 </div>
                 <div class="checkbox mb-3">
                     <label class="form-label">
@@ -91,14 +88,16 @@
 
     public async Task LoginUser()
     {
-
-        var response = await HttpClient.GetAsync($"{apiBaseUrl}/api/Snowflake/GetUser?email={Input.Email}");
+        var response = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/Snowflake/GetUser", Input.Email);
+        Logger.LogInformation("http request sent");
         if (!response.IsSuccessStatusCode)
         {
+            Logger.LogInformation($"http request failed with error {response.StatusCode}");
             errorMessage = await response.Content.ReadAsStringAsync();
             return;
         }
 
+        Logger.LogInformation("http request successful");
         ApplicationUser user = await response.Content.ReadFromJsonAsync<ApplicationUser>();
         user.Password = Input.Password;
 
@@ -106,31 +105,32 @@
         {
             Logger.LogWarning("User account locked out.");
             RedirectManager.RedirectTo("Account/Lockout");
-        } else
+        } 
+        else
         {
-            
-        }
-        else if (result.Succeeded)
+            var validate = await HttpClient.GetAsync($"{apiBaseUrl}/api/Snowflake/ValidateLogin?user={user}");
+            if (!validate.IsSuccessStatusCode)
+            {
+                var update = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/Snowflake/UpdateAttempts", user);
+                errorMessage = await validate.Content.ReadAsStringAsync();
+                errorMessage += $"Number of attempts remaining: {5 - user.FailedAttempts}";
+                return;
+            }
+
+            if (user.IsNew)
+            {
+                // take to reset password page
+                return;
+            }
+            /* else if (password unchanged for X days) 
+            {
+                redirect to lockout
+            }*/
+
+            else
             {
                 Logger.LogInformation("User logged in.");
                 RedirectManager.RedirectTo(ReturnUrl);
-                //TODO: If password not reset in x days, lock account
-                DateTime LastPasswordChangedDate = new DateTime(2023, 12, 6, 0, 0, 0); //temp placeholder, fetch from db
-                if ((DateTime.Now - LastPasswordChangedDate).TotalDays >= 90)
-                {
-                    curr.LockoutEnabled = true;
-                    RedirectManager.RedirectTo("Account/Lockout");                }
-            }
-            else
-            {
-                await UserManager.AccessFailedAsync(curr);
-                int attemptsRemaining = 5 - curr.AccessFailedCount;
-                if (attemptsRemaining == 5)
-                {
-                    errorMessage = $"Account locked, please contact system administrator.";
-                } else {
-                    errorMessage = $"Invalid password. \n Attempts before account is locked out: {attemptsRemaining}";
-                }
             }
         }
     }
