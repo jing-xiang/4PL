@@ -112,11 +112,11 @@
 
     private sealed class UserRegisterModel
     {
-        [Required()]
+        [Required]
         public string Name { get; set; } = "";
 
-        [Required()]
-        [EmailAddress()]
+        [Required]
+        [EmailAddress]
         [Display(Name = "Email")]
         public string Email { get; set; } = "";
     }
