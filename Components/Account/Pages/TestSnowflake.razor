@@ -10,6 +10,8 @@
 @inject ILogger<Login> Logger
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
+@inject HttpClient HttpClient
+@inject IConfiguration Configuration
 
 <PageTitle>Test</PageTitle>
 
@@ -23,6 +25,7 @@
                 <h2>Use a local account to log in.</h2>
                 <hr />
                 <ValidationSummary class="text-danger" role="alert" />
+                @if (!string.IsNullOrEmpty(errorMessage)) { <div style="margin-bottom:10px" class="text-danger">@errorMessage</div> }
                 <div class="form-floating mb-3">
                     <InputText @bind-Value="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
                     <label for="email" class="form-label">Email</label>
@@ -70,6 +73,8 @@
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
 
+    private string? apiBaseUrl;
+
     protected override async Task OnInitializedAsync()
     {
         if (HttpMethods.IsGet(HttpContext.Request.Method))
@@ -79,31 +84,33 @@
         }
     }
 
+    protected override void OnInitialized()
+    {
+        apiBaseUrl = Configuration["ApiBaseUrl"];
+    }
+
     public async Task LoginUser()
     {
-        var user = UserManager.FindByEmailAsync(Input.Email);
-        if (user is null)
-        {
-            HttpContext.Response.StatusCode = StatusCodes.Status404NotFound;
-            errorMessage = "Error: Invalid email provided.";
-        }
-        else
-        {
-            ApplicationUser? curr = user.Result;
-            if (curr is null)
-            {
-                HttpContext.Response.StatusCode = StatusCodes.Status404NotFound;
-                errorMessage = "Error: Invalid email provided.";
-                return;
-            }
-            var result = await SignInManager.PasswordSignInAsync(curr, Input.Password, Input.RememberMe, lockoutOnFailure: false);
 
-            if (result.IsLockedOut)
-            {
-                Logger.LogWarning("User account locked out.");
-                RedirectManager.RedirectTo("Account/Lockout");
-            }
-            else if (result.Succeeded)
+        var response = await HttpClient.GetAsync($"{apiBaseUrl}/api/Snowflake/GetUser?email={Input.Email}");
+        if (!response.IsSuccessStatusCode)
+        {
+            errorMessage = await response.Content.ReadAsStringAsync();
+            return;
+        }
+
+        ApplicationUser user = await response.Content.ReadFromJsonAsync<ApplicationUser>();
+        user.Password = Input.Password;
+
+        if (user.IsLocked)
+        {
+            Logger.LogWarning("User account locked out.");
+            RedirectManager.RedirectTo("Account/Lockout");
+        } else
+        {
+            
+        }
+        else if (result.Succeeded)
             {
                 Logger.LogInformation("User logged in.");
                 RedirectManager.RedirectTo(ReturnUrl);
