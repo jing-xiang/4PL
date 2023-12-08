@@ -10,8 +10,8 @@ namespace _4PL.Data
         [Key]
         public int Id { get; set; }
         public string Lane_ID { get; set; }
-        public string Debtor_Matchcode { get; set; }
-        public string Debtot_Name { get; set; }
+        public string Controlling_Customer_Matchcode { get; set; }
+        public string Controlling_Customer_Name { get; set; }
         public string Transport_Mode { get; set; }
         public string Function { get; set; }
         public DateTime Rate_Validity_From { get; set; }
@@ -33,12 +33,12 @@ namespace _4PL.Data
         public string Local_Currency { get; set;}
         public List<Charge> Charges { get; set; }
 
-        public RateCard(string lane_ID, string debtor_Matchcode, string debtot_Name, string transport_Mode, string function, DateTime rate_Validity_From, DateTime rate_Validity_To, string pOL_Name, string pOL_Country, string pOL_Port, string pOD_Name, string pOD_Country, string pOD_Port, string creditor_Matchcode, string creditor_Name, string pickup_Address, string delivery_Address, string dangerous_Goods, string temperature_Controlled, string container_Mode, string container_Type, string local_Currency, List<Charge> charges)
+        public RateCard(string lane_ID, string controlling_Customer_Matchcode, string controlling_Customer_Name, string transport_Mode, string function, DateTime rate_Validity_From, DateTime rate_Validity_To, string pOL_Name, string pOL_Country, string pOL_Port, string pOD_Name, string pOD_Country, string pOD_Port, string creditor_Matchcode, string creditor_Name, string pickup_Address, string delivery_Address, string dangerous_Goods, string temperature_Controlled, string container_Mode, string container_Type, string local_Currency, List<Charge> charges)
         {
             Id = RateCard.LAST_ID++;
             this.Lane_ID = lane_ID;
-            this.Debtor_Matchcode = debtor_Matchcode;
-            this.Debtot_Name = debtot_Name;
+            this.Controlling_Customer_Matchcode = controlling_Customer_Matchcode;
+            this.Controlling_Customer_Name = controlling_Customer_Name;
             this.Transport_Mode = transport_Mode;
             this.Function = function;
             this.Rate_Validity_From = rate_Validity_From;
@@ -65,8 +65,8 @@ namespace _4PL.Data
         {
             Id = RateCard.LAST_ID++;
             this.Lane_ID = "empty";
-            this.Debtor_Matchcode = "empty";
-            this.Debtot_Name = "empty";
+            this.Controlling_Customer_Matchcode = "empty";
+            this.Controlling_Customer_Name = "empty";
             this.Transport_Mode = "empty";
             this.Function = "empty";
             this.Rate_Validity_From = DateTime.Now;
