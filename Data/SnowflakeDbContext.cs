@@ -8,6 +8,7 @@ using System.Data;
 using System.Diagnostics.Contracts;
 using Microsoft.Identity.Client;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.IdentityModel.Tokens;
 
 namespace _4PL.Data
 {
@@ -25,50 +26,91 @@ namespace _4PL.Data
             _connectionString = configuration.GetConnectionString("SnowflakeConnection");
         }
 
-        public void RegisterUser(ApplicationUser user)
+        public void RegisterUser(ApplicationUser user, string hashedPassword, string salt)
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
                 conn.Open();
 
+                bool isDuplicate = false;
                 using (IDbCommand command = conn.CreateCommand())
                 {
-                    command.CommandText = "CALL ADD_NEW_USER (:email, :name, :password, :is_locked, :failed_attempts, :last_password_reset, :is_new_user)";
+                    command.CommandText = $"SELECT COUNT(*) FROM user_information WHERE email='{user.Email}'";
+                    isDuplicate = Convert.ToInt32(command.ExecuteScalar()) > 0;
+                }
 
-                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "email", Value = user.Email, DbType = DbType.String });
-                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "name", Value = user.Name, DbType = DbType.String });
-                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "password", Value = user.Password, DbType = DbType.String });
-                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "is_locked", Value = false, DbType = DbType.Boolean });
-                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "failed_attempts", Value = 0, DbType = DbType.Int32 });
-                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "last_password_reset", Value = DateTime.Now, DbType = DbType.DateTime }) ;
-                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "is_new_user", Value = true, DbType = DbType.Boolean });
-                   
-                    command.ExecuteNonQuery();
+                if (!isDuplicate)
+                {
+                    using (IDbCommand command = conn.CreateCommand())
+                    {
+                        command.CommandText = "CALL ADD_NEW_USER (:email, :name, :password, :is_locked, :failed_attempts, :last_password_reset, :is_new, :salt)";
+
+                        command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "email", Value = user.Email, DbType = DbType.String });
+                        command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "name", Value = user.Name, DbType = DbType.String });
+                        command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "password", Value = hashedPassword, DbType = DbType.String });
+                        command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "is_locked", Value = false, DbType = DbType.Boolean });
+                        command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "failed_attempts", Value = 0, DbType = DbType.Int32 });
+                        command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "last_password_reset", Value = DateTime.Now, DbType = DbType.DateTime });
+                        command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "is_new", Value = true, DbType = DbType.Boolean });
+                        command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "salt", Value = salt, DbType = DbType.String });
+                        
+                        command.ExecuteNonQuery();
+                    }
+                } else
+                {
+                    throw new DuplicateNameException("Email has already been used for an account.");
                 }
             }
         }
 
-        public string GetFieldByEmail(ApplicationUser user, string field)
+        public async Task<ApplicationUser> GetUser(string email)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                ApplicationUser currUser = new ApplicationUser();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = "CALL GET_SECURE_USER_INFO (:email)";
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "email", Value = email, DbType = DbType.String });
+                    using (var reader = command.ExecuteReader())
+                    {  
+                        if (reader.Read())
+                        {
+                            currUser.Name = reader.GetString(0);
+                            currUser.Email = reader.GetString(1);
+                            currUser.IsLocked = reader.GetBoolean(3);
+                            currUser.FailedAttempts = reader.GetInt32(4);
+                            currUser.LastReset = reader.GetDateTime(5);
+                            currUser.IsNew = reader.GetBoolean(6);
+                        } else
+                        {
+                            throw new InvalidOperationException("User does not exist.");
+                        }
+                    }
+                }
+
+                return currUser;
+            }
+        }
+
+        public async void ValidateLogin(ApplicationUser user)
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
                 conn.Open();
                 using (IDbCommand command = conn.CreateCommand())
                 {
-                    command.CommandText = "CALL GetFieldByEmail(:email, :field)";
-
+                    command.CommandText = "SELECT password, salt FROM user_information WHERE email = :email";
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "email", Value = user.Email });
-                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "field", Value = field });
                     
-                    var result = command.ExecuteScalar();
-                    if (result != DBNull.Value)
+                    using (var reader = command.ExecuteReader())
                     {
-                        return result.ToString();
+                        if (reader.Read())
+                        {
+                            return;
+                        }
                     } 
-                    else
-                    {
-                        return null;
-                    }
                 }
             }
         }

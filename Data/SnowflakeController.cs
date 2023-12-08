@@ -2,6 +2,9 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
+using Snowflake.Data.Client;
+using System.Data;
 
 namespace _4PL.Data
 {
@@ -18,23 +21,40 @@ namespace _4PL.Data
         [HttpPost("RegisterUser")]
         public IActionResult RegisterUser([FromBody] ApplicationUser user)
         {
+            byte[] salt = GenerateSalt();
+            string hashedPassword = HashPassword(user.Password, salt);
+
             try
             {
-                _dbContext.RegisterUser(user);
+                _dbContext.RegisterUser(user, hashedPassword, Convert.ToBase64String(salt));
                 return Ok("User registered successfully");
             }
-            catch (Exception ex)
+            catch (DuplicateNameException ex)
             {
-                return BadRequest($"Registration failed: {ex.Message}");
+                return Conflict($"{ex.Message}");
             }
         }
 
-        [HttpGet("CheckIsNewUser")]
-        public IActionResult CheckIsNewUser([FromBody] ApplicationUser user)
+        [HttpGet("GetUser")]
+        public async Task<IActionResult> GetUser([FromBody] string email)
         {
             try
             {
-                string isNew = _dbContext.GetFieldByEmail(user, "is_new_user");
+                var user = await _dbContext.GetUser(email);
+                return Ok(user);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return NotFound($"{ex.Message}");
+            }
+        }
+
+        [HttpGet("ValidateLogin")]
+        public IActionResult ValidateLogin([FromBody] ApplicationUser user)
+        {
+            try
+            {
+                _dbContext.ValidateLogin(user);
                 if (isNew == "TRUE")
                 {
                     return Ok(new { Message = "is new user." });
@@ -50,50 +70,8 @@ namespace _4PL.Data
             }
         }
 
-        [HttpGet("GetFailedAttempts")]
-        public IActionResult GetFailedAttempts([FromBody] ApplicationUser user)
-        {
-            try
-            {
-                string attempts = _dbContext.GetFieldByEmail(user, "failed_attempts");
-                if (attempts != null)
-                {
-                    return Ok(new { failed_attempts = attempts });
-                }
-                else
-                {
-                    return NotFound();
-                }
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal Server Error: {ex.Message}");
-            }
-        }
-
-        [HttpGet("CheckIsLocked")]
-        public IActionResult CheckIsLocked([FromBody] ApplicationUser user)
-        {
-            try
-            {
-                string isLocked = _dbContext.GetFieldByEmail(user, "is_locked");
-                if (isLocked == "TRUE")
-                {
-                    return Ok(new { Message = "Account is locked." });
-                }
-                else
-                {
-                    return NotFound();
-                }
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal Server Error: {ex.Message}");
-            }
-        }
-
-        [HttpGet("ValidateLogin")]
-        public IActionResult ValidateLogin([FromBody] ApplicationUser user)
+        [HttpGet("Validate")]
+        public IActionResult Validate([FromBody] ApplicationUser user)
         {
             try
             {
@@ -110,6 +88,25 @@ namespace _4PL.Data
             catch (Exception ex)
             {
                 return StatusCode(500, $"Internal Server Error: {ex.Message}");
+            }
+        }
+
+        private byte[] GenerateSalt()
+        {
+            byte[] salt = new byte[16];
+            using (var rng = RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(salt);
+            }
+            return salt;
+        }
+
+        private string HashPassword(string password, byte[] salt)
+        {
+            using (var pbkdf2 = new Rfc2898DeriveBytes(password, salt, 10000))
+            {
+                byte[] hash = pbkdf2.GetBytes(32);
+                return Convert.ToBase64String(hash);
             }
         }
     }
