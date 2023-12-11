@@ -1,4 +1,4 @@
-﻿@page "/Account/Register"
+﻿    @page "/Account/Register"
 
 @using System.ComponentModel.DataAnnotations
 @using System.Text
@@ -23,22 +23,20 @@
 
 <div align="center">
     <div class="col-md-4">
-        <StatusMessage Message="@Message" />
         <EditForm Model="Input" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="RegisterUser" FormName="register">
             <DataAnnotationsValidator />
             <h1>Register a new account.</h1>
             <hr />
-            <ValidationSummary class="text-danger" role="alert" />
+            <ValidationSummary class="text-danger" />
+            @if (!string.IsNullOrEmpty(errorMessage)) { <div style="margin-bottom:10px" class="text-danger">@errorMessage</div> }
             <div class="form-floating mb-3">
                 <InputText @bind-Value="Input.Name" class="form-control" autocomplete="username" aria-required="true" placeholder="name" />
                 <label for="name">Name</label>
-                <ValidationMessage For="() => Input.Name" class="text-danger" />
             </div>
 
             <div class="form-floating mb-3">
                 <InputText @bind-Value="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
                 <label for="email">Email</label>
-                <ValidationMessage For="() => Input.Email" class="text-danger" />
             </div>
             <button type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
         </EditForm>
@@ -49,17 +47,15 @@
 </div>
 
 @code {
-    private IEnumerable<IdentityError>? identityErrors;
-
     [SupplyParameterFromForm]
     private UserRegisterModel Input { get; set; } = new();
 
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
 
-    private string? Message => identityErrors is null ? null : $"Error: {string.Join(", ", identityErrors.Select(error => error.Description))}";
+    private string? errorMessage;
 
-    private string apiBaseUrl;
+    private string? apiBaseUrl;
 
     protected override void OnInitialized()
     {
@@ -68,29 +64,14 @@
 
     public async Task RegisterUser(EditContext editContext)
     {
-        var user = CreateUser();
+        ApplicationUser user = CreateUser();
         user.Name = Input.Name;
         user.Email = Input.Email;
 
         var response = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/Snowflake/RegisterUser", user);
-        if (response.IsSuccessStatusCode)
+        if (!response.IsSuccessStatusCode)
         {
-            Logger.LogInformation("http request successful");
-        }
-        else
-        {
-            Logger.LogInformation("no http request created");
-            return;
-        }
-
-        await UserStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
-        var emailStore = GetEmailStore();
-        await emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
-        var result = await UserManager.CreateAsync(user, "Password123!");
-
-        if (!result.Succeeded)
-        {
-            identityErrors = result.Errors;
+            errorMessage = await response.Content.ReadAsStringAsync();
             return;
         }
 
@@ -129,22 +110,13 @@
         }
     }
 
-    private IUserEmailStore<ApplicationUser> GetEmailStore()
-    {
-        if (!UserManager.SupportsUserEmail)
-        {
-            throw new NotSupportedException("The default UI requires a user store with email support.");
-        }
-        return (IUserEmailStore<ApplicationUser>)UserStore;
-    }
-
     private sealed class UserRegisterModel
     {
-        [Required(ErrorMessage = "Name is required.")]
+        [Required]
         public string Name { get; set; } = "";
 
-        [Required(ErrorMessage = "Email is required.")]
-        [EmailAddress(ErrorMessage = "Invalid email address.")]
+        [Required]
+        [EmailAddress]
         [Display(Name = "Email")]
         public string Email { get; set; } = "";
     }

@@ -5,12 +5,11 @@ namespace _4PL.Data
     // Add profile data for application users by adding properties to the ApplicationUser class
     public class ApplicationUser : IdentityUser
     {
-        public string Name { get; set; } = "default name";
-        public string Email { get; set; } = "default@example.com";
+        public string Name { get; set; }
+        public string Email { get; set; }
 
         // Default values upon registration
         public string Password { get; set; } = "Password123!";
-
         public bool IsLocked { get; set; } = false;
         public int FailedAttempts { get; set; } = 0;
         public DateTime LastReset { get; set; } = DateTime.Now;
@@ -29,6 +28,11 @@ namespace _4PL.Data
         public bool getLockedStatus()
         {
             return IsLocked;
+        }
+
+        public override string ToString()
+        {
+            return $"name: {Name}, email: {Email}";
         }
     }
 }

@@ -31,8 +31,8 @@
             <tr>
                 <th>LaneID</th>
                 <th>Transport_Mode</th>
-                <th>Debtor_Matchcode</th>
-                <th>Debtot_Name</th>
+                <th>Controlling_Customer_Matchcode</th>
+                <th>Controlling_Customer_Name</th>
                 <th>Transport_Mode</th>
                 <th>Function</th>
                 <th>Rate_Validity_From</th>
@@ -72,12 +72,12 @@
                 <tr>
                     <td>@rc.Lane_ID</td>
                     <td>@rc.Transport_Mode</td>
-                    <td>@rc.Debtor_Matchcode</td>
-                    <td>@rc.Debtot_Name</td>
+                    <td>@rc.Controlling_Customer_Matchcode</td>
+                    <td>@rc.Controlling_Customer_Name</td>
                     <td>@rc.Transport_Mode</td>
                     <td>@rc.Function</td>
-                    <td>@rc.Rate_Validity_From</td>
-                    <td>@rc.Rate_Validity_To</td>
+                    <td>@rc.Rate_Validity_From.ToString("MM/dd/yyyy")</td>
+                    <td>@rc.Rate_Validity_To.ToString("MM/dd/yyyy")</td>
                     <td>@rc.POL_Name</td>
                     <td>@rc.POL_Country</td>
                     <td>@rc.POL_Port</td>

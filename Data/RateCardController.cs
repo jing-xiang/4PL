@@ -80,10 +80,10 @@ namespace _4PL.Data
                 rc.Lane_ID = cellIsEmpty(cell) ? "-" : cell.Value2;
 
                 cell = nextCell(xlWorkSheet, cell);
-                rc.Debtor_Matchcode = cellIsEmpty(cell) ? "-" : cell.Value2;
+                rc.Controlling_Customer_Matchcode = cellIsEmpty(cell) ? "-" : cell.Value2;
 
                 cell = nextCell(xlWorkSheet, cell);
-                rc.Debtot_Name = cellIsEmpty(cell) ? "-" : cell.Value2;
+                rc.Controlling_Customer_Name = cellIsEmpty(cell) ? "-" : cell.Value2;
 
                 cell = nextCell(xlWorkSheet, cell);
                 rc.Transport_Mode = cellIsEmpty(cell) ? "-" : cell.Value2;
@@ -202,7 +202,7 @@ namespace _4PL.Data
 
         private static bool cellIsEmpty(Excel.Range cell)
         {
-            return (cell == null || cell.Value2 == null || cell.Text == "-" || cell.Text == "");
+            return (cell == null || cell.Value2 == null || cell.Text == "");
         }
 
         private static Excel.Range nextCell(Excel.Worksheet xlWorkSheet, Excel.Range cell)

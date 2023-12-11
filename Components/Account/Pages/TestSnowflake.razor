@@ -10,6 +10,8 @@
 @inject ILogger<Login> Logger
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
+@inject HttpClient HttpClient
+@inject IConfiguration Configuration
 
 <PageTitle>Test</PageTitle>
 
@@ -17,21 +19,19 @@
 <div align="center">
     <div class="col-md-4">
         <section>
-            <StatusMessage Message="@errorMessage" />
             <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login">
                 <DataAnnotationsValidator />
                 <h2>Use a local account to log in.</h2>
                 <hr />
                 <ValidationSummary class="text-danger" role="alert" />
+                @if (!string.IsNullOrEmpty(errorMessage)) { <div style="margin-bottom:10px" class="text-danger">@errorMessage</div> }
                 <div class="form-floating mb-3">
                     <InputText @bind-Value="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
                     <label for="email" class="form-label">Email</label>
-                    <ValidationMessage For="() => Input.Email" class="text-danger" />
                 </div>
                 <div class="form-floating mb-3">
                     <InputText type="password" @bind-Value="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="password" />
                     <label for="password" class="form-label">Password</label>
-                    <ValidationMessage For="() => Input.Password" class="text-danger" />
                 </div>
                 <div class="checkbox mb-3">
                     <label class="form-label">
@@ -70,6 +70,8 @@
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
 
+    private string? apiBaseUrl;
+
     protected override async Task OnInitializedAsync()
     {
         if (HttpMethods.IsGet(HttpContext.Request.Method))
@@ -79,51 +81,56 @@
         }
     }
 
+    protected override void OnInitialized()
+    {
+        apiBaseUrl = Configuration["ApiBaseUrl"];
+    }
+
     public async Task LoginUser()
     {
-        var user = UserManager.FindByEmailAsync(Input.Email);
-        if (user is null)
+        var response = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/Snowflake/GetUser", Input.Email);
+        Logger.LogInformation("http request sent");
+        if (!response.IsSuccessStatusCode)
         {
-            HttpContext.Response.StatusCode = StatusCodes.Status404NotFound;
-            errorMessage = "Error: Invalid email provided.";
+            Logger.LogInformation($"http request failed with error {response.StatusCode}");
+            errorMessage = await response.Content.ReadAsStringAsync();
+            return;
         }
+
+        Logger.LogInformation("http request successful");
+        ApplicationUser user = await response.Content.ReadFromJsonAsync<ApplicationUser>();
+        user.Password = Input.Password;
+
+        if (user.IsLocked)
+        {
+            Logger.LogWarning("User account locked out.");
+            RedirectManager.RedirectTo("Account/Lockout");
+        } 
         else
         {
-            ApplicationUser? curr = user.Result;
-            if (curr is null)
+            var validate = await HttpClient.GetAsync($"{apiBaseUrl}/api/Snowflake/ValidateLogin?user={user}");
+            if (!validate.IsSuccessStatusCode)
             {
-                HttpContext.Response.StatusCode = StatusCodes.Status404NotFound;
-                errorMessage = "Error: Invalid email provided.";
+                var update = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/Snowflake/UpdateAttempts", user);
+                errorMessage = await validate.Content.ReadAsStringAsync();
+                errorMessage += $"Number of attempts remaining: {5 - user.FailedAttempts}";
                 return;
             }
-            var result = await SignInManager.PasswordSignInAsync(curr, Input.Password, Input.RememberMe, lockoutOnFailure: false);
 
-            if (result.IsLockedOut)
+            if (user.IsNew)
             {
-                Logger.LogWarning("User account locked out.");
-                RedirectManager.RedirectTo("Account/Lockout");
+                // take to reset password page
+                return;
             }
-            else if (result.Succeeded)
+            /* else if (password unchanged for X days) 
+            {
+                redirect to lockout
+            }*/
+
+            else
             {
                 Logger.LogInformation("User logged in.");
                 RedirectManager.RedirectTo(ReturnUrl);
-                //TODO: If password not reset in x days, lock account
-                DateTime LastPasswordChangedDate = new DateTime(2023, 12, 6, 0, 0, 0); //temp placeholder, fetch from db
-                if ((DateTime.Now - LastPasswordChangedDate).TotalDays >= 90)
-                {
-                    curr.LockoutEnabled = true;
-                    RedirectManager.RedirectTo("Account/Lockout");                }
-            }
-            else
-            {
-                await UserManager.AccessFailedAsync(curr);
-                int attemptsRemaining = 5 - curr.AccessFailedCount;
-                if (attemptsRemaining == 5)
-                {
-                    errorMessage = $"Account locked, please contact system administrator.";
-                } else {
-                    errorMessage = $"Invalid password. \n Attempts before account is locked out: {attemptsRemaining}";
-                }
             }
         }
     }
