@@ -143,5 +143,47 @@ namespace _4PL.Data
                 }
             }
         }
+
+        public async void ResetAttempts(ApplicationUser user)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = $"UPDATE user_information SET failed_attempts = 0 WHERE email = {user.Email}";
+                    command.ExecuteScalar();
+                }
+            }
+        }
+
+        public async Task<bool[]> FetchAccessRights(string email)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                ApplicationUser currUser = new ApplicationUser();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = $"SELECT * FROM access_control WHERE email = '{email}'";
+                    using (var reader = command.ExecuteReader())
+                    {
+                        //new array
+                        bool[] accessRights = new bool[16];
+                        while (reader.Read())
+                        {
+                            //fetch access rights
+                            var RateCardRead = reader.GetBoolean(2);
+                            Console.WriteLine(RateCardRead);
+                            Console.WriteLine("access rights fetched");
+                            //append to array
+                            accessRights.Append(RateCardRead);
+                        }
+                            
+                            return accessRights;
+                    }
+                }
+            }
+        }
     }
 }
