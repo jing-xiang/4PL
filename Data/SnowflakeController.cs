@@ -1,11 +1,8 @@
-﻿using _4PL.Components.Account.Pages;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc;
 using System.Security.Cryptography;
-using Snowflake.Data.Client;
 using System.Data;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion.Internal;
+using Components.Account;
+using Microsoft.AspNetCore.Identity;
 
 namespace _4PL.Data
 {
@@ -20,7 +17,7 @@ namespace _4PL.Data
         }
 
         [HttpPost("RegisterUser")]
-        public IActionResult RegisterUser([FromBody] ApplicationUser user)
+        public async Task<IActionResult> RegisterUser([FromBody] ApplicationUser user)
         {
             byte[] salt = GenerateSalt();
             string hashedPassword = HashPassword(user.Password, salt);
@@ -28,9 +25,18 @@ namespace _4PL.Data
             try
             {
                 _dbContext.RegisterUser(user, hashedPassword, Convert.ToBase64String(salt));
-                return Ok("User registered successfully");
+                var ResetToken = Guid.NewGuid().ToString();
+                var emailSettings = _dbContext.GetEmailSettings().Result;
+                IEmailService emailService = new EmailService(emailSettings);
+                emailService.SendPasswordResetLinkAsync(user.Email, ResetToken);
+
+                return Ok("User registered successfully. Check email for confirmation.");
             }
             catch (DuplicateNameException ex)
+            {
+                return Conflict($"{ex.Message}");
+            }
+            catch (Exception ex)
             {
                 return Conflict($"{ex.Message}");
             }
@@ -41,9 +47,7 @@ namespace _4PL.Data
         {
             try
             {
-                Console.WriteLine("request received");
                 ApplicationUser user = _dbContext.GetUser(email).Result;
-                Console.WriteLine("request processed");
                 return Ok(user);
             }
             catch (InvalidOperationException ex)
@@ -52,14 +56,16 @@ namespace _4PL.Data
             }
         }
 
-        [HttpGet("ValidateLogin")]
-        public IActionResult ValidateLogin([FromBody] ApplicationUser user)
+        [HttpPost("ValidateLogin")]
+        public async Task<IActionResult> ValidateLogin([FromBody] ApplicationUser user)
         {
             try
             {
-                string storedHash = _dbContext.RetrieveHash(user).Result;
-                byte[] storedSalt = Convert.FromBase64String(_dbContext.RetrieveSalt(user).Result);
+                string storedHash = _dbContext.GetStringField(user, "password").Result;
+                byte[] storedSalt = Convert.FromBase64String(_dbContext.GetStringField(user, "salt").Result);
                 string inputHash = HashPassword(user.Password, storedSalt);
+                Console.WriteLine(storedHash);
+                Console.WriteLine(storedSalt);
 
                 if (storedHash == inputHash)
                 {
@@ -67,7 +73,7 @@ namespace _4PL.Data
                 }
                 else
                 {
-                    return Unauthorized("Invalid credentials.");
+                    return Unauthorized("Login unsuccessful.");
                 }
             }
             catch (Exception ex)
@@ -76,13 +82,28 @@ namespace _4PL.Data
             }
         }
 
-        [HttpPost("UpdateAttempts")]
-        public IActionResult Validate([FromBody] ApplicationUser user)
+        [HttpPost("ResetPassword")]
+        public async Task<IActionResult> ResetPassword([FromBody] ApplicationUser user)
         {
             try
             {
-                _dbContext.UpdateAttempts(user);
-                return Ok("Failed attempts updated.");
+                _dbContext.ResetPassword(user);
+                return Ok("Password successfully updated.");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"{ex.Message}");
+            }
+        }
+
+        [HttpPost("UpdateAttempts")]
+        public async Task<IActionResult> UpdateAttempts([FromBody] ApplicationUser user)
+        {
+            try
+            {
+                Console.WriteLine("updating user attempts");
+                string result = await _dbContext.UpdateAttempts(user);
+                return Ok($"Invalid credentials. Number of attempts remaining: {result}");
             }
             catch (Exception ex)
             {

@@ -1,6 +1,7 @@
 using _4PL.Components;
 using _4PL.Components.Account;
 using _4PL.Data;
+using Components.Account;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
