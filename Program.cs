@@ -48,6 +48,12 @@ builder.Services.Configure<IdentityOptions>(options =>
     options.Lockout.AllowedForNewUsers = true;
 });
 
+//https://stackoverflow.com/questions/73527777/there-is-no-registered-service-of-type-system-net-http-ihttpclientfactory
+builder.Services.AddHttpClient();
+
+builder.Services.AddControllers();
+
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -72,6 +78,9 @@ app.MapRazorComponents<App>()
 
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();
+app.MapControllers();
+
+//https://stackoverflow.com/questions/76933203/not-able-to-get-to-api-controller-in-blazor-server
 app.MapControllers();
 
 app.Run();
