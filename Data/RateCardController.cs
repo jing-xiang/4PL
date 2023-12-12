@@ -13,6 +13,13 @@ namespace _4PL.Data
     [ApiController]
     public class RateCardController : Controller
     {
+        private readonly SnowflakeDbContext _dbContext;
+
+        public RateCardController(SnowflakeDbContext dbContext)
+        {
+            _dbContext = dbContext;
+        }
+
         [HttpGet("")]
         public ActionResult Get()
         {
@@ -33,11 +40,8 @@ namespace _4PL.Data
             return List("ratecard_excel.xlsx");
         }
 
-        // Read
-        [HttpGet("List/{fileNameWithoutExtension}")]
-        public ActionResult List(string fileNameWithoutExtension)
+        private List<RateCard> ReadRatecardExcel(string fileNameWithoutExtension)
         {
-
             /*
              * https://net-informations.com/csharp/excel/csharp-open-excel.htm
              */
@@ -64,11 +68,11 @@ namespace _4PL.Data
                 Excel.Range cell = xlWorkSheet.Cells[r, 1];
 
                 //Check if first cell of line is empty
-                if (cellIsEmpty(cell)) 
+                if (cellIsEmpty(cell))
                 {
                     break;
                 }
-                
+
 
                 //Manually iterate through rows
                 RateCard rc = new RateCard();
@@ -152,21 +156,22 @@ namespace _4PL.Data
                     charge.Calculation_Base = cellIsEmpty(cell) ? "-" : cell.Value2;
 
                     cell = nextCell(xlWorkSheet, cell);
-                    charge.Min = cellIsEmpty(cell) ? 0M : (decimal) cell.Value2;
+                    charge.Min = cellIsEmpty(cell) ? 0M : (decimal)cell.Value2;
 
                     cell = nextCell(xlWorkSheet, cell);
-                    charge.Unit_Price = cellIsEmpty(cell) ? 0M : (decimal) cell.Value2;
+                    charge.Unit_Price = cellIsEmpty(cell) ? 0M : (decimal)cell.Value2;
 
                     cell = nextCell(xlWorkSheet, cell);
                     charge.Currency = cellIsEmpty(cell) ? "-" : cell.Value2;
 
                     cell = nextCell(xlWorkSheet, cell);
-                    charge.Per_Percent = cellIsEmpty(cell) ? 0M : (decimal) cell.Value2;
+                    charge.Per_Percent = cellIsEmpty(cell) ? 0M : (decimal)cell.Value2;
 
                     cell = nextCell(xlWorkSheet, cell);
                     charge.Charge_Code = cellIsEmpty(cell) ? "-" : cell.Value2;
 
                     rc.Charges.Add(charge);
+                    cell = nextCell(xlWorkSheet, cell);
                 }
 
                 //Add rc to list
@@ -182,6 +187,15 @@ namespace _4PL.Data
             /*
              * 
              */
+            return ratecards;
+        }
+
+        // Read
+        [HttpGet("List/{fileNameWithoutExtension}")]
+        public ActionResult List(string fileNameWithoutExtension)
+        {
+
+            List<RateCard> ratecards = ReadRatecardExcel(fileNameWithoutExtension);
 
             return Ok(ratecards);
         }
@@ -222,7 +236,7 @@ namespace _4PL.Data
 
 
         // Create
-        [HttpPost]
+        [HttpPost("UploadExcel")]
         public async Task<ActionResult<IList<UploadResult>>> PostFile(
         [FromForm] IEnumerable<IFormFile> files)
         {
@@ -302,5 +316,50 @@ namespace _4PL.Data
             return new CreatedResult(resourcePath, uploadResults);
         }
 
+        /*
+         * Ratecard
+         */
+        [HttpPost("CreateRcTransaction")]
+        //[HttpGet("CreateRcTransaction/{fileNameWithoutExtension}")]
+        public ActionResult CreateRcTransaction([FromBody] string fileNameWithoutExtension)
+        {
+            List<string> transactionIds = new List<string>();
+            List<RateCard> ratecards = ReadRatecardExcel(fileNameWithoutExtension);
+
+            //1.Create transaction
+            string transactionId = _dbContext.CreateRcTransaction(null);
+
+            //For each rate card, ...
+            foreach(RateCard rc in ratecards)
+            {
+
+                //2. Create charges (reference transactionId)
+                List<string> chargeIds = _dbContext.CreateCharges(rc.Charges, transactionId);
+
+                //3. Create ratecard (reference transactionId and chargeIds)
+                string ratecardId = _dbContext.CreateRatecard(rc, transactionId);
+
+                //4. Update chargeIds
+                _dbContext.UpdateChargeIds(chargeIds, ratecardId);
+                
+                //5. Update transaction
+                _dbContext.UpdateTransaction(ratecardId, transactionId);
+
+                transactionIds.Add(transactionId);
+
+            }
+
+            return Ok(transactionIds);
+            //return Ok(chargeIds);
+        }
+
+        [HttpGet("GetTransaction/{transactionId}")]
+        public ActionResult getTransaction(string transactionId)
+        {
+            return Ok();
+        }
+
     }
+
+
 }

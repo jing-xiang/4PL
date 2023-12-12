@@ -8,6 +8,7 @@
 
 @inject NavigationManager NavManager
 @inject IHttpClientFactory ClientFactory
+@inject HttpClient HttpClient
 
 <h1>Upload Files</h1>
 
@@ -125,7 +126,7 @@
             var client = ClientFactory.CreateClient();
 
             var response =
-                await client.PostAsync($"{NavManager.BaseUri}api/RateCard", content);
+                await client.PostAsync($"{NavManager.BaseUri}api/RateCard/UploadExcel", content);
 
             if (response.IsSuccessStatusCode)
             {
@@ -145,7 +146,11 @@
                 {
                     uploadResults = uploadResults.Concat(newUploadResults).ToList();
 
+                    // await client.PostAsync($"/api/ratecard/CreateRcTransaction/" + uploadResults[0].StoredFileName, null);
+                    HttpResponseMessage result = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/ratecard/CreateRcTransaction/", uploadResults[0].StoredFileName);
                     NavManager.NavigateTo("/ratecard/" + uploadResults[0].StoredFileName);
+                    // NavManager.NavigateTo("/api/ratecard/CreateRcTransaction/" + uploadResults[0].StoredFileName);
+
                 }
 
             }
