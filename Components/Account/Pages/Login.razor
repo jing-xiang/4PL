@@ -15,9 +15,8 @@
 @inject IdentityRedirectManager RedirectManager
 @inject HttpClient HttpClient
 @inject IConfiguration Configuration
-@inject AuthenticationStateProvider Authentication
 
-<PageTitle>Test</PageTitle>
+<PageTitle>Login</PageTitle>
 
 <div align="center" style="margin:50px">
     <div class="col-md-4">
@@ -90,17 +89,18 @@
 
     public async Task LoginUser()
     {
-        var response = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/Snowflake/GetUser", Input.Email);
-        Logger.LogInformation(response.StatusCode.ToString());
-        Logger.LogInformation(response.Content.ToString());
-        if (!response.IsSuccessStatusCode)
+        ApplicationUser? user;
+
+        try {
+            user = await HttpClient.GetFromJsonAsync<ApplicationUser>($"{apiBaseUrl}/api/Snowflake/e={Input.Email}");
+        } 
+        catch (HttpRequestException ex)
         {
-            Logger.LogInformation($"http request failed with error {response.StatusCode}");
-            errorMessage = await response.Content.ReadAsStringAsync();
+            Logger.LogInformation("User not found.");
+            errorMessage = "User does not exist.";
             return;
         }
 
-        ApplicationUser? user = await response.Content.ReadFromJsonAsync<ApplicationUser>();
         user.Password = Input.Password;
 
         if (user.IsLocked)
@@ -110,7 +110,7 @@
         }
         else
         {
-            var validate = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/Snowflake/ValidateLogin", user);
+            var validate = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/Snowflake/ValidatePassword", user);
             if (!validate.IsSuccessStatusCode)
             {
                 var update = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/Snowflake/UpdateAttempts", user);
@@ -121,8 +121,7 @@
             else
             {
                 Logger.LogWarning("User logged in.");
-                await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/Snowflake/UpdateAttempts", user);
-                // reset attempts to zero.
+                await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/Snowflake/ResetAttempts", user);
                 RedirectManager.RedirectTo(ReturnUrl);
             }
         }

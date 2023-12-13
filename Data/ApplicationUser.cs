@@ -14,21 +14,9 @@ namespace _4PL.Data
         public int FailedAttempts { get; set; } = 0;
         public DateTime LastReset { get; set; } = DateTime.Now;
         public bool IsNew { get; set; } = true;
-
-        public void lockOut()
-        {
-            IsLocked = true;
-        }
-
-        public void unlockOut()
-        {
-            IsLocked = false;
-        }
-
-        public bool getLockedStatus()
-        {
-            return IsLocked;
-        }
+        public string Hash { get; set; } = "";
+        public byte[] Salt { get; set; } = new byte[10];
+        public string Token { get; set; } = "";
 
         public override string ToString()
         {

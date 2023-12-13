@@ -1,6 +1,8 @@
-﻿@implements IDisposable
+﻿@using _4PL.Data.Authenthication
+@implements IDisposable
 
 @inject NavigationManager NavigationManager
+@inject IAuthenticationService authenticationService
 
 <div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
@@ -39,6 +41,8 @@
                         </button>
                     </form>
                 </div>
+                <div class="nav-item px-3">
+                </div>
             </Authorized>
             <NotAuthorized>
                 <div class="nav-item px-3">
@@ -74,6 +78,19 @@
     public void Dispose()
     {
         NavigationManager.LocationChanged -= OnLocationChanged;
+    }
+
+    private void SimulateLogin()
+    {
+        Console.WriteLine("login simulated");
+        authenticationService.SetAuthenticated(true);
+        StateHasChanged();
+    }
+
+    private void SimulateLogout()
+    {
+        authenticationService.SetAuthenticated(false);
+        StateHasChanged();
     }
 }
 

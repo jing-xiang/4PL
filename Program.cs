@@ -1,6 +1,8 @@
 using _4PL.Components;
 using _4PL.Components.Account;
 using _4PL.Data;
+using _4PL.Data.Authenthication;
+using Amazon.S3.Model.Internal.MarshallTransformations;
 using Components.Account;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -17,6 +19,7 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityUserAccessor>();
 builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
+builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 
 builder.Services.AddAuthentication(options =>
     {
