@@ -10,6 +10,23 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="FileUploads\4emfd3sm.xlsx" />
+    <None Remove="FileUploads\bq4gm2i4.xlsx" />
+    <None Remove="FileUploads\cqawrub3.xlsx" />
+    <None Remove="FileUploads\edgnsbdy.xlsx" />
+    <None Remove="FileUploads\fv1n1he3.xlsx" />
+    <None Remove="FileUploads\gnm5t5ey.xlsx" />
+    <None Remove="FileUploads\ib54mr5j.xlsx" />
+    <None Remove="FileUploads\joodhqyj.xlsx" />
+    <None Remove="FileUploads\lvzeunsi.xlsx" />
+    <None Remove="FileUploads\nrs1ccqb.xlsx" />
+    <None Remove="FileUploads\pemzjdjj.xlsx" />
+    <None Remove="FileUploads\pgpzh5mp.xlsx" />
+    <None Remove="FileUploads\shipment_excel.xlsx" />
+    <None Remove="FileUploads\z1jji4ho.xlsx" />
+  </ItemGroup>
+
+  <ItemGroup>
     <COMReference Include="Microsoft.Office.Interop.Excel">
       <WrapperTool>tlbimp</WrapperTool>
       <VersionMinor>9</VersionMinor>
