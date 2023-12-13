@@ -49,9 +49,6 @@
                     <p>
                         <a href="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))">Register as a new user</a>
                     </p>
-                    <p>
-                        <a href="Account/ResendEmailConfirmation">Resend email confirmation</a>
-                    </p>
                 </div>
             </EditForm>
         </section>
@@ -89,7 +86,6 @@
     public async Task LoginUser()
     {
         var response = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/Snowflake/GetUser", Input.Email);
-        Logger.LogInformation("http request sent");
         if (!response.IsSuccessStatusCode)
         {
             Logger.LogInformation($"http request failed with error {response.StatusCode}");
@@ -97,36 +93,29 @@
             return;
         }
 
-        Logger.LogInformation("http request successful");
-        ApplicationUser user = await response.Content.ReadFromJsonAsync<ApplicationUser>();
+        ApplicationUser? user = await response.Content.ReadFromJsonAsync<ApplicationUser>();
         user.Password = Input.Password;
+        Logger.LogInformation(user.Email);
+        Logger.LogInformation(user.Name);
+        Logger.LogInformation(user.Password);
+        Logger.LogInformation(Convert.ToString(user.FailedAttempts));
+        Logger.LogInformation(Convert.ToString(user.IsLocked));
+        Logger.LogInformation(Convert.ToString((DateTime.Now - user.LastReset).Days));
 
         if (user.IsLocked)
         {
             Logger.LogWarning("User account locked out.");
             RedirectManager.RedirectTo("Account/Lockout");
-        } 
+        }
         else
         {
-            var validate = await HttpClient.GetAsync($"{apiBaseUrl}/api/Snowflake/ValidateLogin?user={user}");
+            var validate = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/Snowflake/ValidateLogin", user);
             if (!validate.IsSuccessStatusCode)
             {
                 var update = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/Snowflake/UpdateAttempts", user);
-                errorMessage = await validate.Content.ReadAsStringAsync();
-                errorMessage += $"Number of attempts remaining: {5 - user.FailedAttempts}";
+                errorMessage = await update.Content.ReadAsStringAsync();
                 return;
             }
-
-            if (user.IsNew)
-            {
-                // take to reset password page
-                return;
-            }
-            /* else if (password unchanged for X days) 
-            {
-                redirect to lockout
-            }*/
-
             else
             {
                 Logger.LogInformation("User logged in.");
