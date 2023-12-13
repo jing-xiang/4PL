@@ -9,6 +9,8 @@ using System.Diagnostics.Contracts;
 using Microsoft.Identity.Client;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.IdentityModel.Tokens;
+using Humanizer;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion.Internal;
 
 namespace _4PL.Data
 {
@@ -168,19 +170,43 @@ namespace _4PL.Data
                     command.CommandText = $"SELECT * FROM access_control WHERE email = '{email}'";
                     using (var reader = command.ExecuteReader())
                     {
-                        //new array
-                        bool[] accessRights = new bool[16];
+                        //new list
+                        List<bool> accessRights = new List<bool>(); 
                         while (reader.Read())
                         {
                             //fetch access rights
-                            var RateCardRead = reader.GetBoolean(2);
-                            Console.WriteLine(RateCardRead);
+                            var right = reader.GetBoolean(2);
                             Console.WriteLine("access rights fetched");
                             //append to array
-                            accessRights.Append(RateCardRead);
+                            accessRights.Add(right);
                         }
-                            
-                            return accessRights;
+                            return accessRights.ToArray();
+                    }
+                }
+            }
+        }
+
+        public async Task<string[]> FetchAccessRightsHeadings(string email)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                ApplicationUser currUser = new ApplicationUser();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = $"SELECT * FROM access_control WHERE email = '{email}'";
+                    using (var reader = command.ExecuteReader())
+                    {
+                        List<string> headings = new List<string>();
+                        while (reader.Read())
+                        {
+                            //fetch access rights
+                            var heading = reader.GetString(1);
+                            Console.WriteLine("headings fetched");
+                            //append to array
+                            headings.Add(heading);
+                        }
+                        return headings.ToArray();
                     }
                 }
             }

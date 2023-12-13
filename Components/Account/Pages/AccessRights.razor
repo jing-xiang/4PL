@@ -1,12 +1,13 @@
 ﻿@page "/Account/AccessRights"
 
-@using System.ComponentModel.DataAnnotations
-@using System.Text
-@using System.Text.Encodings.Web
-@using Microsoft.AspNetCore.Identity
-@using Microsoft.AspNetCore.WebUtilities
-@using _4PL.Data
-@using Snowflake.Data
+@using System.ComponentModel.DataAnnotations;
+@using System.Text;
+@using System.Text.Encodings.Web;
+@using Microsoft.AspNetCore.Identity;
+@using Microsoft.AspNetCore.WebUtilities;
+@using _4PL.Data;
+@using Snowflake.Data;
+@using Newtonsoft.Json;
 
 @inject UserManager<ApplicationUser> UserManager
 @inject IUserStore<ApplicationUser> UserStore
@@ -21,52 +22,7 @@
 
 <PageTitle>Access Rights</PageTitle>
 
-<h3>AccessRights</h3>
-
-<div>
-<table border="1">
-        <thead>
-        <tr>
-            <th colspan="4">Rate Card</th>
-            <th colspan="4">Shipment</th>
-            <th colspan="4">Shipment Auto Rating</th>
-        </tr>
-        </thead>
-        <thead>
-        <tr>
-            <td>Read</td>
-            <td>Modify</td>
-            <td>Import</td>
-            <td>Delete</td>
-            <td>Read</td>
-            <td>Modify</td>
-            <td>Import</td>
-            <td>Delete</td>
-            <td>Read</td>
-            <td>Modify</td>
-            <td>Import</td>
-            <td>Delete</td>
-        </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>&#9989;</td>
-                <td>&#9989;</td>
-                <td>&#9989;</td>
-                <td>&#9989;</td>
-                <td>&#9989;</td>
-                <td>&#9989;</td>
-                <td>&#9989;</td>
-                <td>&#9989;</td>
-                <td>&#9989;</td>
-                <td>&#9989;</td>
-                <td>&#9989;</td>
-                <td>&#9989;</td>
-            </tr>
-        </tbody>
-    </table>
-</div>
-
+<h3>Access Rights</h3>
 
 <div align="center">
     <div class="col-md-4">
@@ -92,10 +48,82 @@
     </div>
 </div>
 
+@if (!string.IsNullOrEmpty(accessRightsString))
+{
+
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Access Right</th>
+                <th>Permission</th>
+                <th>Select</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (int i = 0; i < accessRights.Length; i++)
+            {
+                <tr>
+                    <td>
+                        @accessRightsHeadings[i].Replace("[", "") 
+                    </td>
+                    <td>
+                        @if (accessRights[i].ToString().ToLower().Contains("false"))
+                        {
+                            <span class="text-danger">No</span>
+                        }
+                        else if (accessRights[i].ToString().ToLower().Contains("true"))
+                        {
+                            <span class="text-success">Yes</span>
+                        }
+                        else
+                        {
+                            <span class="text-danger">Not Found.</span>
+                        }
+                    </td>
+                    <td>
+                        <input type="checkbox" name="accessRights[@i]" value="@accessRights[i]">
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <div>
+    <h2>Copy Access Rights to another user?</h2>
+    </div>
+    <div align="center">
+        <div class="col-md-4">
+            <EditForm Model="InputTarget" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="CopyAccessRights" FormName="copyaccessrightsform">
+                <DataAnnotationsValidator />
+                <hr />
+                <ValidationSummary class="text-danger" />
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div style="margin-bottom:10px" class="text-danger">@errorMessage</div>
+                }
+                <div class="form-floating mb-3">
+                    <InputText @bind-Value="InputTarget.Name" class="form-control" autocomplete="username" aria-required="true" placeholder="name" />
+                    <label for="name">Name</label>
+                </div>
+
+                <div class="form-floating mb-3">
+                    <InputText @bind-Value="InputTarget.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+                    <label for="email">Email</label>
+                </div>
+                <button type="submit" class="w-100 btn btn-lg btn-primary">Copy Access Rights</button>
+            </EditForm>
+        </div>
+    </div>
+}
+else
+{
+    <p align="center">No access rights found for the provided email.</p>
+}
 
 @code {
     [SupplyParameterFromForm]
     private UserRegisterModel Input { get; set; } = new();
+
+    private UserRegisterModel InputTarget { get; set; } = new();
 
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
@@ -103,35 +131,77 @@
     private string? errorMessage;
 
     private string? apiBaseUrl;
+    private string? accessRightsString;
+    private string? accessRightsHeadingsString;
+    private string[]? accessRights;
+    private string[]? accessRightsHeadings;
 
     protected override void OnInitialized()
     {
         apiBaseUrl = Configuration["ApiBaseUrl"];
     }
 
-    public async Task FetchAccessRights(EditContext editContext)
-    {
 
+    public async Task<string[]> FetchAccessRights(EditContext editContext)
+    {
         var response = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/AccessRights/FetchAccessRights", Input.Email);
+        var response1 = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/AccessRights/FetchAccessRightsHeadings", Input.Email);
         if (!response.IsSuccessStatusCode)
         {
             errorMessage = await response.Content.ReadAsStringAsync();
-            return;
+            return [""];
         }
-
-        Logger.LogInformation("User access rights found.");
-        Logger.LogInformation(response.Content.ReadAsStringAsync().Result);
-        //TODO: Display access rights
+        else
+        {
+            accessRightsString = response.Content.ReadAsStringAsync().Result;
+            Logger.LogInformation("User access rights found.");
+            accessRightsHeadingsString = response1.Content.ReadAsStringAsync().Result;
+            accessRightsHeadings = accessRightsHeadingsString.Split(',');
+            return accessRights = accessRightsString.Split(',');
+        }
+    }
+    public async Task CopyAccessRights(EditContext editContext)
+    {
+        RedirectManager.RedirectTo("/");
+        var response = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/AccessRights/CopyAccessRights", Input.Email);
+        if (!response.IsSuccessStatusCode)
+        {
+            errorMessage = await response.Content.ReadAsStringAsync();
+            RedirectManager.RedirectTo(ReturnUrl/*, forceLoad: true*/);
+        }
+        else
+        {
+            Logger.LogInformation("Successfully copied.");
+        }
     }
 
     private sealed class UserRegisterModel
     {
         [Required]
         public string Name { get; set; } = "";
+         
+        public string Name1 { get; set; } = "";
 
         [Required]
         [EmailAddress]
         [Display(Name = "Email")]
         public string Email { get; set; } = "";
+        
+        [EmailAddress]
+        [Display(Name = "Email")]
+        public string Email1 { get; set; } = "";
+    }
+
+    private sealed class TargetUserRegisterModel
+    {
+        [Required]
+        public string Name { get; set; } = "";
+        public string Name1 { get; set; } = "";
+
+        [Required]
+        [EmailAddress]
+        [Display(Name = "Email")]
+        public string Email { get; set; } = "";
+        public string Email1 { get; set; } = "";
     }
 }
