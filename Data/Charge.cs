@@ -1,10 +1,13 @@
 ﻿using Microsoft.CodeAnalysis;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 
 namespace _4PL.Data
 {
     public class Charge
     {
+        [Key] 
+        public Guid Id { get; set; }
         public string Charge_Description { get; set; }
         public string Calculation_Base { get; set; }
         public decimal Min {  get; set; }
@@ -15,6 +18,7 @@ namespace _4PL.Data
 
         public Charge()
         {
+            this.Id = Guid.NewGuid();
             this.Charge_Description = "empty";
             this.Calculation_Base = "empty";
             this.Min = 0;
@@ -24,8 +28,9 @@ namespace _4PL.Data
             this.Charge_Code = "empty";
         }
 
-        public Charge(string charge_Description, string calculation_Base, decimal min, decimal unit_Price, string currency, decimal per_Percent, string charge_Code)
+        public Charge(string Id, string charge_Description, string calculation_Base, decimal min, decimal unit_Price, string currency, decimal per_Percent, string charge_Code)
         {
+            this.Id = Guid.Parse(Id);
             this.Charge_Description = charge_Description;
             this.Calculation_Base = calculation_Base;
             this.Min = min;

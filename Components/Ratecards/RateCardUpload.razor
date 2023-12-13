@@ -10,6 +10,8 @@
 @inject IHttpClientFactory ClientFactory
 @inject HttpClient HttpClient
 
+<PageTitle>Ratecard</PageTitle>
+
 <h1>Upload Files</h1>
 
 <p>
@@ -148,8 +150,9 @@
 
                     // await client.PostAsync($"/api/ratecard/CreateRcTransaction/" + uploadResults[0].StoredFileName, null);
                     HttpResponseMessage result = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/ratecard/CreateRcTransaction/", uploadResults[0].StoredFileName);
-                    NavManager.NavigateTo("/ratecard/" + uploadResults[0].StoredFileName);
-                    // NavManager.NavigateTo("/api/ratecard/CreateRcTransaction/" + uploadResults[0].StoredFileName);
+                    string transactionId = result.Content.ReadAsStringAsync().Result;
+
+                    NavManager.NavigateTo("/ratecard/" + transactionId + "/0");
 
                 }
 

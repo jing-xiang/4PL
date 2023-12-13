@@ -1,0 +1,70 @@
+﻿@page "/ratecard/search"
+
+@using _4PL.Data
+@using Microsoft.AspNetCore.Components.Forms
+@inject IJSRuntime JS
+
+<PageTitle>Ratecard</PageTitle>
+
+<h3>Search Ratecard</h3>
+
+<EditForm Model="FormModel" OnSubmit="HandleFormSubmit">
+    <ValidationSummary />
+
+    <InputText @bind-Value="FormModel.Lane_ID" />
+    <ValidationMessage For="() => FormModel.Lane_ID" />
+
+    <InputText @bind-Value="FormModel.Transport_Mode" />
+    <ValidationMessage For="() => FormModel.Transport_Mode" />
+
+    <InputText @bind-Value="FormModel.Function" />
+    <ValidationMessage For="() => FormModel.Function" />
+
+
+    <InputText @bind-Value="FormModel.Controlling_Customer_Matchcode" />
+    <ValidationMessage For="() => FormModel.Controlling_Customer_Matchcode" />
+
+    <InputText @bind-Value="FormModel.Controlling_Customer_Name" />
+    <ValidationMessage For="() => FormModel.Controlling_Customer_Name" />
+
+
+
+    <InputDate @bind-Value=FormModel.Rate_Validity_From ParsingErrorMessage="Must be a date" />
+    <ValidationMessage For="() => FormModel.Rate_Validity_From" />
+
+    <InputDate @bind-Value=FormModel.Rate_Validity_To ParsingErrorMessage="Must be a date" />
+    <ValidationMessage For="() => FormModel.Rate_Validity_To" />
+
+    <InputText @bind-Value="FormModel.POL_Name" />
+    <ValidationMessage For="() => FormModel.POL_Name" />
+
+    <InputText @bind-Value="FormModel.POL_Country" />
+    <ValidationMessage For="() => FormModel.POL_Country" />
+
+    <InputText @bind-Value="FormModel.POL_Port" />
+    <ValidationMessage For="() => FormModel.POL_Port" />
+
+    <InputText @bind-Value="FormModel.POD_Name" />
+    <ValidationMessage For="() => FormModel.POD_Name" />
+
+    <InputText @bind-Value="FormModel.POD_Country" />
+    <ValidationMessage For="() => FormModel.POD_Country" />
+
+    <InputText @bind-Value="FormModel.POD_Port" />
+    <ValidationMessage For="() => FormModel.POD_Port" />
+
+
+
+    <button>Submit</button>
+
+    <RateCardDetails></RateCardDetails>
+</EditForm>
+
+@code {
+    public RateCard FormModel { get; set; } = new();
+
+    public void HandleFormSubmit()
+    {
+        JS.InvokeVoidAsync("alert", "Form submitted!");
+    }
+}
