@@ -53,10 +53,11 @@ namespace _4PL.Data
                         command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "last_password_reset", Value = DateTime.Now, DbType = DbType.DateTime });
                         command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "is_new", Value = true, DbType = DbType.Boolean });
                         command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "salt", Value = salt, DbType = DbType.String });
-                        
+
                         command.ExecuteNonQuery();
                     }
-                } else
+                }
+                else
                 {
                     throw new DuplicateNameException("Email has already been used for an account.");
                 }
@@ -88,7 +89,8 @@ namespace _4PL.Data
                             currUser.LastReset = reader.GetDateTime(5);
                             currUser.IsNew = reader.GetBoolean(6);
                             Console.WriteLine("user updated from database");
-                        } else
+                        }
+                        else
                         {
                             throw new InvalidOperationException("User does not exist.");
                         }
@@ -135,7 +137,8 @@ namespace _4PL.Data
                     if (user.FailedAttempts < 5)
                     {
                         command.CommandText = $"UPDATE user_information SET failed_attempts = {user.FailedAttempts} WHERE email = {user.Email}";
-                    } else
+                    }
+                    else
                     {
                         command.CommandText = $"UPDATE user_information SET is_locked = true WHERE email = {user.Email}";
                     }
@@ -179,8 +182,8 @@ namespace _4PL.Data
                             //append to array
                             accessRights.Append(RateCardRead);
                         }
-                            
-                            return accessRights;
+
+                        return accessRights;
                     }
                 }
             }
@@ -249,5 +252,85 @@ namespace _4PL.Data
                 }
             }
         }
+
+        public List<Shipment> fetchShipment()
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                List<Shipment> result = new List<Shipment>();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = @$"SELECT * FROM DEV_RL_DB.HWL_4PL.SHIPMENT";
+                    IDataReader reader = command.ExecuteReader();
+
+                    //Read result
+                    while (reader.Read())
+                    {
+                        //Split column of array
+                        //Array is represented as string literal. Requires manual parsing
+                        Shipment s = new Shipment();
+                        s.Job_No = reader.GetString(reader.GetOrdinal("JOB_NO"));
+                        s.Master_BL_No = reader.GetString(reader.GetOrdinal("MASTER_BL_NO"));
+                        s.Container_Mode = reader.GetString(reader.GetOrdinal("CONTAINER_MODE"));
+                        s.Place_Of_Loading_ID = reader.GetString(reader.GetOrdinal("PLACE_OF_LOADING_ID"));
+                        s.Place_Of_Loading_Name = reader.GetString(reader.GetOrdinal("PLACE_OF_LOADING_ID"));
+                        s.Place_Of_Discharge_ID = reader.GetString(reader.GetOrdinal("PLACE_OF_DISCHARGE_ID"));
+                        s.Place_Of_Discharge_Name = reader.GetString(reader.GetOrdinal("PLACE_OF_DISCHARGE_NAME"));
+                        s.Vessel_Name = reader.GetString(reader.GetOrdinal("VESSEL_NAME"));
+                        s.Voyage_No = reader.GetString(reader.GetOrdinal("VOYAGE_NO"));
+                        s.ETD_Date = reader.GetDateTime(reader.GetOrdinal("ETD_DATE"));
+                        s.ETA_Date = reader.GetDateTime(reader.GetOrdinal("ETA_DATE"));
+                        s.Carrier_Matchcode = reader.GetString(reader.GetOrdinal("CARRIER_MATCHCODE"));
+                        s.Carrier_Name = reader.GetString(reader.GetOrdinal("CARRIER_NAME"));
+                        s.Carrier_Contract_No = reader.GetString(reader.GetOrdinal("CARRIER_CONTRACT_NO"));
+                        s.Carrier_Booking_Reference_No = reader.GetString(reader.GetOrdinal("CARRIER_BOOKING_REFERENCE_NO"));
+                        s.Inco_Terms = reader.GetString(reader.GetOrdinal("INCO_TERMS"));
+                        s.Controlling_Customer_Name = reader.GetString(reader.GetOrdinal("CONTROLLING_CUSTOMER_NAME"));
+                        s.Shipper_Name = reader.GetString(reader.GetOrdinal("SHIPPER_NAME"));
+                        s.Consignee_Name = reader.GetString(reader.GetOrdinal("CONSIGNEE_NAME"));
+                        s.Total_No_Of_Pieces = reader.GetInt16(reader.GetOrdinal("TOTAL_NO_OF_PIECES"));
+                        s.Package_Type = reader.GetString(reader.GetOrdinal("PACKAGE_TYPE"));
+                        s.Total_No_Of_Volume_Weight_MTQ = reader.GetDouble(reader.GetOrdinal("TOTAL_NO_OF_VOLUME_WEIGHT_MTQ"));
+                        s.Total_No_Of_Gross_Weight_KGM = reader.GetDouble(reader.GetOrdinal("TOTAL_NO_OF_GROSS_WEIGHT_KGM"));
+                        s.Description = reader.GetString(reader.GetOrdinal("DESCRIPTION"));
+                        s.Shipment_Note = reader.GetString(reader.GetOrdinal("SHIPMENT_NOTE"));
+
+                        result.Add(s);
+                    }
+                }
+                return result;
+            }
+        }
+
+        public List<Container> fetchContainer()
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                List<Container> result = new List<Container>();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = @$"SELECT * FROM DEV_RL_DB.HWL_4PL.SHIPMENT_CONTAINER";
+                    IDataReader reader = command.ExecuteReader();
+
+                    //Read result
+                    while (reader.Read())
+                    {
+                        Container c = new Container();
+                        c.Id = reader.GetString(reader.GetOrdinal("ID"));
+                        c.Shipment_Job_No = reader.GetString(reader.GetOrdinal("SHIPMENT_JOB_NO"));
+                        c.Container_No = reader.GetString(reader.GetOrdinal("CONTAINER_NO"));
+                        c.Container_Type = reader.GetString(reader.GetOrdinal("CONTAINER_TYPE"));
+                        c.Seal_No_1 = reader.GetString(reader.GetOrdinal("SEAL_NO_1"));
+                        c.Seal_No_2 = reader.GetString(reader.GetOrdinal("SEAL_NO_2"));
+
+                        result.Add(c);
+                    }
+                }
+                return result;
+            }
+        }
+
     }
 }

@@ -50,6 +50,21 @@ namespace _4PL.Data
             return Ok(dict);
         }
 
+        // Read
+        [HttpGet("ShipmentData")]
+        public IActionResult fetchShipmentData()
+        {
+            List<Shipment> shipments = _dbcontext.fetchShipment();
+            return Ok(shipments);
+        }
+
+        [HttpGet("ContainerData")]
+        public IActionResult fetchContainerData()
+        {
+            List<Container> containers = _dbcontext.fetchContainer();
+            return Ok(containers);
+        }
+
         private Dictionary<string, Tuple<Shipment , List<Container>>> ReadExcelFile(string fileNameWithoutExtension)
         {
             Dictionary<string, Tuple<Shipment, List<Container>>> shipmentData = new Dictionary<string, Tuple<Shipment, List<Container>>>();
@@ -109,7 +124,10 @@ namespace _4PL.Data
                 s.ETD_Date = DateTime.Now;
 
                 cell = nextCell(xlWorkSheet, cell);
-                //s.ETA_Date = cellIsEmpty(cell) ? DateTime.Now : DateTime.ParseExact(cell.Text, "MM/dd/yyyy", null);
+                //16-Jan-2023
+                //01/16/2023 --> MM/dd/yyyy
+                //find the cell.Text
+                //s.ETA_Date = cellIsEmpty(cell) ? DateTime.Now : DateTime.ParseExact(cell.Text, "d-mmm-yy", null);
                 s.ETA_Date = DateTime.Now;
 
                 cell = nextCell(xlWorkSheet, cell);
@@ -178,6 +196,7 @@ namespace _4PL.Data
 
             xlWorkBook.Close(true, misValue, misValue);
             xlApp.Quit();
+            //System.IO.File.Delete(fpath + ".xlsx");
             return shipmentData;
         }
         private static bool cellIsEmpty(Excel.Range cell)

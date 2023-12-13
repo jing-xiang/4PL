@@ -2,7 +2,6 @@
 {
     public class Shipment
     {
-        public string Id { get; set; }
         public string Job_No { get; set; }  
         public string Master_BL_No { get; set; } = string.Empty;
         public string Container_Mode { get; set; }
@@ -30,7 +29,7 @@
         public string Shipment_Note { get; set; }
         public List<Container> Container_List {  get; set; }
 
-        public Shipment(string Id,
+        public Shipment(
             string Job_No,
             string Master_Bl_No,
             string Container_Mode,
@@ -59,7 +58,6 @@
             List<Container> Container_List
         )
         {
-            this.Id = Id;
             this.Job_No = Job_No;
             this.Master_BL_No = Master_Bl_No;
             this.Container_Mode = Container_Mode;
@@ -90,7 +88,6 @@
 
         public Shipment()
         {
-            this.Id = "";
             this.Job_No = "";
             this.Master_BL_No = "";
             this.Container_Mode = "";
