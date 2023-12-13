@@ -1,0 +1,72 @@
+﻿@page "/ratecard/{transactionId}"
+@page "/ratecard/{transactionId}/{ratecardsOffset}"
+
+@inject HttpClient HttpClient
+@using _4PL.Data
+@using Microsoft.AspNetCore.Components.Forms
+@using System.ComponentModel.DataAnnotations
+@inject IJSRuntime JS
+@inject NavigationManager NavManager
+
+<PageTitle>Ratecard</PageTitle>
+
+<style>
+    table {
+        font-family: arial, sans-serif;
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    td, th {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+    }
+
+    tr:nth-child(even) {
+        background-color: #dddddd;
+    }
+
+    .card {
+        border: 1px solid #dddddd;
+        padding: 10px;
+        margin: 5px;
+    }
+
+
+</style>
+
+<h3>RateCard</h3>
+
+<div>
+    @foreach (RateCard rc in ratecards)
+    {
+        <div class="card">
+
+            <RateCardComponent rc="@rc"></RateCardComponent>
+
+        </div>
+
+
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string transactionId { get; set; }
+    [Parameter]
+    public string ratecardsOffset { get; set; } = "0";
+
+    private List<RateCard> ratecards = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        ratecards = await GetRateCards();
+    }
+
+    async Task<List<RateCard>> GetRateCards()
+    {
+        return await HttpClient.GetFromJsonAsync<List<RateCard>>($"{NavManager.BaseUri}api/RateCard/GetTransactionDetails/{transactionId}/{ratecardsOffset}");
+    }
+
+}
