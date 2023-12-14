@@ -250,7 +250,23 @@ namespace _4PL.Data
                 }
             }
         }
-
+        /*
+        public async Task CopyAccessRights(string email, string[] access_type, bool[] is_accessible)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    for (int i = 0; i < access_type.Length; i++)
+                    {
+                        command.CommandText = $"UPDATE access_control SET is_accessible = {is_accessible[i]} WHERE email = '{email}' AND access_type = '{access_type[i]}'";
+                        command.ExecuteScalar();
+                    }
+                }
+            }
+        }
+        /**
 
         /*
          * Ratecard

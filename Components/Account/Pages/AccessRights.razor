@@ -20,6 +20,7 @@
 @inject HttpClient HttpClient
 @inject SnowflakeDbContext DbContext
 @inject ILogger<AccessRights> Logger
+@rendermode InteractiveServer
 
 
 <PageTitle>Access Rights</PageTitle>
@@ -120,7 +121,7 @@
     </div>
     <div align="center">
         <div class="col-md-4">
-            <EditForm Model="InputTarget" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="CopyAccessRights" FormName="copyaccessrights">
+            <EditForm Model="InputTarget" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="FetchAccessRights" FormName="copyaccessrights">
                 <DataAnnotationsValidator />
                 <hr />
                 <ValidationSummary class="text-danger" />
@@ -146,9 +147,7 @@ else
 @code {
     [SupplyParameterFromForm]
     private UserRegisterModel Input { get; set; } = new();
-
-
-    private UserRegisterModel InputTarget { get; set; } = new();
+    private TargetUserRegisterModel InputTarget { get; set; } = new();
 
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
@@ -191,7 +190,6 @@ else
     }
     public async Task CopyAccessRights(EditContext editContext)
     {
-        RedirectManager.RedirectTo("/");
         var response = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/AccessRights/CopyAccessRights", Input.Email);
         if (!response.IsSuccessStatusCode)
         {
@@ -231,28 +229,22 @@ else
     private sealed class UserRegisterModel
     {
         public string Name { get; set; } = "";
-         
-        public string Name1 { get; set; } = "";
 
         [Required]
         [EmailAddress]
         [Display(Name = "Email")]
         public string Email { get; set; } = "";
-        
-        [EmailAddress]
-        [Display(Name = "Email")]
-        public string Email1 { get; set; } = "";
+
     }
 
     private sealed class TargetUserRegisterModel
     {
         public string Name { get; set; } = "";
-        public string Name1 { get; set; } = "";
 
         [Required]
         [EmailAddress]
         [Display(Name = "Email")]
         public string Email { get; set; } = "";
-        public string Email1 { get; set; } = "";
+
     }
 }
