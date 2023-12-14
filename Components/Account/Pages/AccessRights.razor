@@ -19,10 +19,41 @@
 @inject IConfiguration Configuration
 @inject HttpClient HttpClient
 @inject SnowflakeDbContext DbContext
+@inject ILogger<AccessRights> Logger
+
 
 <PageTitle>Access Rights</PageTitle>
 
 <h3>Access Rights</h3>
+
+<div align="center">
+    <div class="col-md-4">
+        <!-- display all avaiable accounts-->
+<h2>Available Accounts</h2>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Accounts</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (availableAccounts != null)
+                {
+                <tbody>
+                        @foreach (var account in availableAccounts)
+                        {
+                        <tr>
+                            <td>
+                                <a onclick="navigator.clipboard.writeText('@account')" href="javascript:void(0);">@account</a>
+                            </td>
+                        </tr>
+                        }
+                </tbody>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
 
 <div align="center">
     <div class="col-md-4">
@@ -34,10 +65,6 @@
             {
                 <div style="margin-bottom:10px" class="text-danger">@errorMessage</div>
             }
-            <div class="form-floating mb-3">
-                <InputText @bind-Value="Input.Name" class="form-control" autocomplete="username" aria-required="true" placeholder="name" />
-                <label for="name">Name</label>
-            </div>
 
             <div class="form-floating mb-3">
                 <InputText @bind-Value="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
@@ -47,6 +74,7 @@
         </EditForm>
     </div>
 </div>
+
 
 @if (!string.IsNullOrEmpty(accessRightsString))
 {
@@ -88,11 +116,11 @@
         </tbody>
     </table>
     <div>
-    <h2>Copy Access Rights to another user?</h2>
+        <h2>Copy Access Rights to another user?</h2>
     </div>
     <div align="center">
         <div class="col-md-4">
-            <EditForm Model="InputTarget" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="CopyAccessRights" FormName="copyaccessrightsform">
+            <EditForm Model="InputTarget" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="CopyAccessRights" FormName="copyaccessrights">
                 <DataAnnotationsValidator />
                 <hr />
                 <ValidationSummary class="text-danger" />
@@ -100,11 +128,6 @@
                 {
                     <div style="margin-bottom:10px" class="text-danger">@errorMessage</div>
                 }
-                <div class="form-floating mb-3">
-                    <InputText @bind-Value="InputTarget.Name" class="form-control" autocomplete="username" aria-required="true" placeholder="name" />
-                    <label for="name">Name</label>
-                </div>
-
                 <div class="form-floating mb-3">
                     <InputText @bind-Value="InputTarget.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
                     <label for="email">Email</label>
@@ -119,9 +142,11 @@ else
     <p align="center">No access rights found for the provided email.</p>
 }
 
+
 @code {
     [SupplyParameterFromForm]
     private UserRegisterModel Input { get; set; } = new();
+
 
     private UserRegisterModel InputTarget { get; set; } = new();
 
@@ -135,10 +160,12 @@ else
     private string? accessRightsHeadingsString;
     private string[]? accessRights;
     private string[]? accessRightsHeadings;
+    private string? accountString;
+    private string[]? availableAccounts;
 
-    protected override void OnInitialized()
+    protected async override void OnInitialized()
     {
-        apiBaseUrl = Configuration["ApiBaseUrl"];
+        apiBaseUrl = Configuration["ApiBaseUrl"];  
     }
 
 
@@ -146,6 +173,8 @@ else
     {
         var response = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/AccessRights/FetchAccessRights", Input.Email);
         var response1 = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/AccessRights/FetchAccessRightsHeadings", Input.Email);
+        await FetchAvailableAccounts();
+
         if (!response.IsSuccessStatusCode)
         {
             errorMessage = await response.Content.ReadAsStringAsync();
@@ -175,9 +204,32 @@ else
         }
     }
 
+    public async Task FetchAvailableAccounts()
+    {
+        var response = await HttpClient.GetAsync($"{apiBaseUrl}/api/AccessRights/FetchAvailableAccounts");
+        Logger.LogInformation(response.Content.ReadAsStringAsync().Result);
+        if (!response.IsSuccessStatusCode)
+        {
+            errorMessage = await response.Content.ReadAsStringAsync();
+        }
+        else
+        {
+            Logger.LogInformation("Successfully fetched.");
+            Logger.LogInformation(response.Content.ReadAsStringAsync().Result);
+            accountString = response.Content.ReadAsStringAsync().Result;
+            availableAccounts = accountString.Split(',');
+            for (int i = 0; i < availableAccounts.Length; i++)
+            {
+                availableAccounts[i] = availableAccounts[i].Replace("[", "");
+                availableAccounts[i] = availableAccounts[i].Replace("]", "");
+                availableAccounts[i] = availableAccounts[i].Replace("\"", "");
+            }
+            StateHasChanged();
+        }
+    }
+
     private sealed class UserRegisterModel
     {
-        [Required]
         public string Name { get; set; } = "";
          
         public string Name1 { get; set; } = "";
@@ -194,7 +246,6 @@ else
 
     private sealed class TargetUserRegisterModel
     {
-        [Required]
         public string Name { get; set; } = "";
         public string Name1 { get; set; } = "";
 

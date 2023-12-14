@@ -58,5 +58,24 @@ namespace _4PL.Data
                 return NotFound($"{ex.Message}");
             }
         }
+
+        [HttpGet("FetchAvailableAccounts")]
+        public async Task<ActionResult<string[]>> FetchAvailableAccounts()
+        {
+            try
+            {
+                //Access right array
+                Console.WriteLine("request received");
+                //TODO: get user from database and return access rights associated with user
+                string[] result = _dbContext.FetchAvailableAccounts().Result;
+                Console.WriteLine("request processed");
+                Console.WriteLine(result);
+                return result;
+            }
+            catch (InvalidOperationException ex)
+            {
+                return NotFound($"{ex.Message}");
+            }
+        }
     }
 }

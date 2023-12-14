@@ -224,6 +224,33 @@ namespace _4PL.Data
             }
         }
 
+        public async Task<string[]> FetchAvailableAccounts()
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                ApplicationUser currUser = new ApplicationUser();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = $"SELECT * FROM user_information";
+                    using (var reader = command.ExecuteReader())
+                    {
+                        List<string> availableAccounts = new List<string>();
+                        while (reader.Read())
+                        {
+                            //fetch access rights
+                            var email = reader.GetString(0);
+                            Console.WriteLine("available accounts fetched");
+                            //append to array
+                            availableAccounts.Add(email);
+                            Console.WriteLine(email);
+                        }
+                        return availableAccounts.ToArray();
+                    }
+                }
+            }
+        }
+
 
         /*
          * Ratecard
