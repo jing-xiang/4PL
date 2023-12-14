@@ -7,6 +7,7 @@ using System.IO;
 using System.Net;
 using Excel = Microsoft.Office.Interop.Excel;
 using Microsoft.Office.Interop.Excel;
+using Org.BouncyCastle.Utilities;
 namespace _4PL.Data
 {
     [Route("api/[controller]")]
@@ -31,23 +32,108 @@ namespace _4PL.Data
         }
 
         // Read
-        [HttpGet("List/{fileNameWithoutExtension}")]
-        public IActionResult insertExceltoSnowflake (string fileNameWithoutExtension)
+        [HttpPost("CreateShipments")]
+        public IActionResult insertExceltoSnowflake ([FromBody] string fileNameWithoutExtension)
         {
-            Dictionary<string, Tuple<Shipment, List<Container>>> dict = ReadExcelFile(fileNameWithoutExtension);
-         
+            Dictionary<string, Tuple<Shipment,  List<Container>>> dict = ReadExcelFile(fileNameWithoutExtension);
+            //List<int> list = new List<int>() { 0, 0 };
+            int output = 0;
             foreach(var kvp in dict)
             {
                 Shipment shipment = kvp.Value.Item1;
-                _dbcontext.CallStoredProcedureForShipment(shipment);
-
+                string uploadMessage = _dbcontext.CallStoredProcedureForShipment(shipment);
+                if (!uploadMessage.Equals("Error"))
+                {
+                    output++;
+                }
                 List<Container> containers = kvp.Value.Item2;
                 foreach (var container in containers)
                 {
                     _dbcontext.CallStoredProcedureForContainer(container);
                 }
             }
-            return Ok(dict);
+            return Ok(output.ToString());
+        }
+
+        // Create
+        [HttpPost("UploadExcel")]
+        public async Task<ActionResult<IList<UploadResult>>> PostFile(
+        [FromForm] IEnumerable<IFormFile> files)
+        {
+            var maxAllowedFiles = 1;
+            long maxFileSize = 1024 * 1000;
+            var filesProcessed = 0;
+            var resourcePath = new Uri($"{Request.Scheme}://{Request.Host}/");
+            List<UploadResult> uploadResults = new();
+
+            foreach (var file in files)
+            {
+                var uploadResult = new UploadResult();
+                string trustedFileNameForFileStorage;
+                var untrustedFileName = file.FileName;
+                uploadResult.FileName = untrustedFileName;
+                var trustedFileNameForDisplay =
+                    WebUtility.HtmlEncode(untrustedFileName);
+
+                if (filesProcessed < maxAllowedFiles)
+                {
+                    if (file.Length == 0)
+                    {
+                        //logger.LogInformation("{FileName} length is 0 (Err: 1)",
+                        //    trustedFileNameForDisplay);
+                        //uploadResult.ErrorCode = 1;
+                    }
+                    else if (file.Length > maxFileSize)
+                    {
+                        //logger.LogInformation("{FileName} of {Length} bytes is " +
+                        //    "larger than the limit of {Limit} bytes (Err: 2)",
+                        //    trustedFileNameForDisplay, file.Length, maxFileSize);
+                        //uploadResult.ErrorCode = 2;
+                    }
+                    else
+                    {
+                        try
+                        {
+                            trustedFileNameForFileStorage = Path.GetFileNameWithoutExtension(Path.GetRandomFileName());
+                            //trustedFileNameForFileStorage = "shipment_excel";
+
+                            //var path = Path.Combine(env.ContentRootPath,
+                            //    env.EnvironmentName, "unsafe_uploads",
+                            //    trustedFileNameForFileStorage);
+                            var path = Path.Combine(Directory.GetCurrentDirectory(),
+                                "FileUploads",
+                                trustedFileNameForFileStorage + ".xlsx");
+
+                            await using FileStream fs = new(path, FileMode.Create);
+                            await file.CopyToAsync(fs);
+
+                            //logger.LogInformation("{FileName} saved at {Path}",
+                            //    trustedFileNameForDisplay, path);
+                            uploadResult.Uploaded = true;
+                            uploadResult.StoredFileName = trustedFileNameForFileStorage;
+                        }
+                        catch (IOException ex)
+                        {
+                            //logger.LogError("{FileName} error on upload (Err: 3): {Message}",
+                            //    trustedFileNameForDisplay, ex.Message);
+                            uploadResult.ErrorCode = 3;
+                        }
+                    }
+
+                    filesProcessed++;
+                }
+                else
+                {
+                    //logger.LogInformation("{FileName} not uploaded because the " +
+                    //    "request exceeded the allowed {Count} of files (Err: 4)",
+                    //    trustedFileNameForDisplay, maxAllowedFiles);
+                    uploadResult.ErrorCode = 4;
+                }
+
+                uploadResults.Add(uploadResult);
+            }
+
+            return new CreatedResult(resourcePath, uploadResults);
         }
 
         // Read
@@ -196,7 +282,7 @@ namespace _4PL.Data
 
             xlWorkBook.Close(true, misValue, misValue);
             xlApp.Quit();
-            //System.IO.File.Delete(fpath + ".xlsx");
+            System.IO.File.Delete(fpath + ".xlsx");
             return shipmentData;
         }
         private static bool cellIsEmpty(Excel.Range cell)
@@ -209,86 +295,7 @@ namespace _4PL.Data
             return xlWorkSheet.Cells[cell.Row, cell.Column + 1];
         }
 
-        // Create
-        [HttpPost]
-        public async Task<ActionResult<IList<UploadResult>>> PostFile(
-        [FromForm] IEnumerable<IFormFile> files)
-        {
-            var maxAllowedFiles = 1;
-            long maxFileSize = 1024 * 1000;
-            var filesProcessed = 0;
-            var resourcePath = new Uri($"{Request.Scheme}://{Request.Host}/");
-            List<UploadResult> uploadResults = new();
-
-            foreach (var file in files)
-            {
-                var uploadResult = new UploadResult();
-                string trustedFileNameForFileStorage;
-                var untrustedFileName = file.FileName;
-                uploadResult.FileName = untrustedFileName;
-                var trustedFileNameForDisplay =
-                    WebUtility.HtmlEncode(untrustedFileName);
-
-                if (filesProcessed < maxAllowedFiles)
-                {
-                    if (file.Length == 0)
-                    {
-                        //logger.LogInformation("{FileName} length is 0 (Err: 1)",
-                        //    trustedFileNameForDisplay);
-                        //uploadResult.ErrorCode = 1;
-                    }
-                    else if (file.Length > maxFileSize)
-                    {
-                        //logger.LogInformation("{FileName} of {Length} bytes is " +
-                        //    "larger than the limit of {Limit} bytes (Err: 2)",
-                        //    trustedFileNameForDisplay, file.Length, maxFileSize);
-                        //uploadResult.ErrorCode = 2;
-                    }
-                    else
-                    {
-                        try
-                        {
-                            trustedFileNameForFileStorage = Path.GetFileNameWithoutExtension(Path.GetRandomFileName());
-                            //trustedFileNameForFileStorage = "shipment_excel";
-
-                            //var path = Path.Combine(env.ContentRootPath,
-                            //    env.EnvironmentName, "unsafe_uploads",
-                            //    trustedFileNameForFileStorage);
-                            var path = Path.Combine(Directory.GetCurrentDirectory(),
-                                "FileUploads",
-                                trustedFileNameForFileStorage + ".xlsx");
-
-                            await using FileStream fs = new(path, FileMode.Create);
-                            await file.CopyToAsync(fs);
-
-                            //logger.LogInformation("{FileName} saved at {Path}",
-                            //    trustedFileNameForDisplay, path);
-                            uploadResult.Uploaded = true;
-                            uploadResult.StoredFileName = trustedFileNameForFileStorage;
-                        }
-                        catch (IOException ex)
-                        {
-                            //logger.LogError("{FileName} error on upload (Err: 3): {Message}",
-                            //    trustedFileNameForDisplay, ex.Message);
-                            uploadResult.ErrorCode = 3;
-                        }
-                    }
-
-                    filesProcessed++;
-                }
-                else
-                {
-                    //logger.LogInformation("{FileName} not uploaded because the " +
-                    //    "request exceeded the allowed {Count} of files (Err: 4)",
-                    //    trustedFileNameForDisplay, maxAllowedFiles);
-                    uploadResult.ErrorCode = 4;
-                }
-
-                uploadResults.Add(uploadResult);
-            }
-
-            return new CreatedResult(resourcePath, uploadResults);
-        }
+        
 
     }
 }

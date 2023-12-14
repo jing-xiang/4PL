@@ -7,6 +7,7 @@
 
 @inject NavigationManager NavManager
 @inject IHttpClientFactory ClientFactory
+@inject HttpClient HttpClient
 
 <h1>Upload Files</h1>
 
@@ -27,11 +28,16 @@
                     <li>
                         File: @file.Name
 
-                        @if (FileUpload(uploadResults, file.Name, out var result))
+                        @if (@numShipments == "0")
                         {
-                            <span>
-                                Stored File Name: @result.StoredFileName
-                            </span>
+                            <span> All shipments already exist!</span>
+                        }
+
+                        else if (FileUpload(uploadResults, file.Name, out var result))
+                        {
+                            <div>
+                                @numShipments New Shipments Uploaded
+                            </div>
                         }
                         else
                         {
@@ -50,6 +56,7 @@
 <p>
     @message
 </p>
+<ShipmentCard></ShipmentCard>
 
 @code {
     private List<File> files = new();
@@ -57,6 +64,7 @@
     private int maxAllowedFiles = 1;
     private bool shouldRender;
     private string? message;
+    public string numShipments = "";
 
     protected override bool ShouldRender() => shouldRender;
 
@@ -124,7 +132,7 @@
             var client = ClientFactory.CreateClient();
 
             var response =
-                await client.PostAsync($"{NavManager.BaseUri}api/Shipment", content);
+                await client.PostAsync($"{NavManager.BaseUri}api/Shipment/UploadExcel", content);
 
             if (response.IsSuccessStatusCode)
             {
@@ -143,6 +151,9 @@
                 if (newUploadResults is not null)
                 {
                     uploadResults = uploadResults.Concat(newUploadResults).ToList();
+                    HttpResponseMessage result = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/Shipment/CreateShipments/", uploadResults[0].StoredFileName);
+                    numShipments = result.Content.ReadAsStringAsync().Result;
+   
                     //NavManager.NavigateTo("/shipment/" + uploadResults[0].StoredFileName);
                 }
 
@@ -165,8 +176,4 @@
     {
         public string? Name { get; set; }
     }
-}
-
-@code {
-
 }

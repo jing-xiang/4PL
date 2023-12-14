@@ -189,12 +189,13 @@ namespace _4PL.Data
             }
         }
 
-        public void CallStoredProcedureForShipment(Shipment shipment)
+        public string CallStoredProcedureForShipment(Shipment shipment)
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
                 conn.Open();
-
+                string uploadMessage = "Error";
+                
                 using (IDbCommand command = conn.CreateCommand())
                 {
                     command.CommandText = "CALL CREATE_SHIPMENT (:Job_No, :Master_BL_No, :Container_Mode, :Place_Of_Loading_ID, :Place_Of_Loading_Name, :Place_Of_Discharge_ID, " +
@@ -227,8 +228,9 @@ namespace _4PL.Data
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Description", Value = shipment.Description, DbType = DbType.String });
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Shipment_Note", Value = shipment.Shipment_Note, DbType = DbType.String });
 
-                    command.ExecuteNonQuery();
+                    uploadMessage = command.ExecuteScalar().ToString();
                 }
+                return uploadMessage;
             }
         }
 
@@ -237,7 +239,7 @@ namespace _4PL.Data
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
                 conn.Open();
-
+                
                 using (IDbCommand command = conn.CreateCommand())
                 {
                     command.CommandText = "CALL CREATE_CONTAINER (:Shipment_Job_No, :Container_No, :Container_Type, :Seal_No_1, :Seal_No_2)";
@@ -249,6 +251,7 @@ namespace _4PL.Data
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Seal_No_2", Value = container.Seal_No_2, DbType = DbType.String });
 
                     command.ExecuteNonQuery();
+
                 }
             }
         }
