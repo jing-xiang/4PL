@@ -20,7 +20,7 @@ namespace _4PL.Data
             _connectionString = configuration.GetConnectionString("SnowflakeConnection");
         }
 
-        public async void RegisterUser(ApplicationUser user)
+        public async Task RegisterUser(ApplicationUser user)
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
@@ -41,9 +41,12 @@ namespace _4PL.Data
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "salt", Value = Convert.ToBase64String(user.Salt), DbType = DbType.String });
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "token", Value = user.Token, DbType = DbType.String });
 
-                    if (Convert.ToBoolean(command.ExecuteScalar())) {
-                        throw new DuplicateNameException("Account already exists.");
-                    }
+                    isDuplicate = Convert.ToBoolean(command.ExecuteScalar());
+                }
+
+                if (isDuplicate)
+                {
+                    throw new DuplicateNameException("Account already exists.");
                 }
             }
         }
@@ -214,6 +217,31 @@ namespace _4PL.Data
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "email", Value = user.Email, DbType = DbType.String });
                     command.ExecuteScalar();
                 }
+            }
+        }
+        public void LockUser(ApplicationUser user)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                IDbCommand command = conn.CreateCommand();
+                command.CommandText = $"CALL LOCK_USER(:email)";
+                command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "email", Value = user.Email, DbType = DbType.String });
+                
+                command.ExecuteScalar();
+            }
+        }
+
+        public void UnlockUser(ApplicationUser user)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                IDbCommand command = conn.CreateCommand();
+                command.CommandText = $"CALL UNLOCK_USER(:email)";
+                command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "email", Value = user.Email, DbType = DbType.String });
+
+                command.ExecuteScalar();
             }
         }
 

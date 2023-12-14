@@ -59,7 +59,7 @@ namespace _4PL.Data
             //String val = xlWorkSheet.get_Range("A1", "A1").Value2.ToString();
             //String val = xlWorkSheet.Cells[6, 1].Value2;
 
-            List<RateCard> ratecards = new List<RateCard>();
+            List<RateCard> ratecards = [];
 
             //Iterate row (max 1000 rows)
             //First row is for headers

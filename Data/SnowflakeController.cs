@@ -2,8 +2,6 @@
 using System.Security.Cryptography;
 using System.Data;
 using Components.Account;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
 
 namespace _4PL.Data
 {
@@ -29,7 +27,7 @@ namespace _4PL.Data
 
             try
             {
-                _dbContext.RegisterUser(user);
+                await _dbContext.RegisterUser(user);
                 var emailSettings = _dbContext.GetEmailSettings().Result;
                 EmailService emailService = new EmailService(emailSettings);
                 emailService.SendPasswordResetLinkAsync(user.Email, token);
@@ -121,6 +119,34 @@ namespace _4PL.Data
                 await _dbContext.ResetPassword(user);
                 await _dbContext.UpdateToken(user);
                 return Ok("Password successfully updated.");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"{ex.Message}");
+            }
+        }
+
+        [HttpPut("{userEmail}/Lock")]
+        public IActionResult LockUser([FromBody] ApplicationUser user)
+        {
+            try
+            {
+                _dbContext.LockUser(user);
+                return Ok("User locked.");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"{ex.Message}");
+            }
+        }
+
+        [HttpPut("{userEmail}/Unlock")]
+        public IActionResult UnlockUser([FromBody] ApplicationUser user)
+        {
+            try
+            {
+                _dbContext.UnlockUser(user);
+                return Ok("User unlocked.");
             }
             catch (Exception ex)
             {

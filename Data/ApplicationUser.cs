@@ -9,7 +9,7 @@ namespace _4PL.Data
         public string Email { get; set; }
 
         // Default values upon registration
-        public string Password { get; set; } = "Password123!";
+        public string Password { get; set; } = "123123";
         public bool IsLocked { get; set; } = false;
         public int FailedAttempts { get; set; } = 0;
         public DateTime LastReset { get; set; } = DateTime.Now;
