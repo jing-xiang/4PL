@@ -1,0 +1,40 @@
+﻿@inject HttpClient HttpClient
+@inject IJSRuntime JS
+@inject NavigationManager NavManager
+@inject IConfiguration Configuration
+@rendermode InteractiveServer
+@using _4PL.Data
+@using Microsoft.AspNetCore.Components.Forms
+@using System.ComponentModel.DataAnnotations
+@using System.Diagnostics
+
+<tr>
+    <td>@charge.Id</td>
+    <td>@charge.Charge_Description</td>
+    <td>@charge.Calculation_Base</td>
+    <td>@charge.Min</td>
+    <td>@charge.Unit_Price</td>
+    <td>@charge.Currency</td>
+    <td>@charge.Per_Percent</td>
+    <td>@charge.Charge_Code</td>
+    <td>
+        <button class="w-100 btn btn-lg btn-primary" @onclick="() => DeleteCharge(charge.Id.ToString())">Delete</button>
+    </td>
+</tr>
+
+@code {
+    [Parameter]
+    public Charge charge { get; set; }
+
+    async Task DeleteCharge(string chargeId)
+    {
+
+        Debug.WriteLine($">>> Logging: {chargeId}");
+
+        HttpResponseMessage result = await HttpClient.DeleteAsync($"{Configuration["ApiBaseUrl"]}/api/RateCard/DeleteCharge/{chargeId}");
+
+        Debug.WriteLine($"Logging: {result.StatusCode}");
+
+        NavManager.Refresh(true);
+    }
+}
