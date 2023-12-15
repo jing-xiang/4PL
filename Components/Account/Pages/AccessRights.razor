@@ -25,7 +25,7 @@
 
 <PageTitle>Access Rights</PageTitle>
 
-<h3>Access Rights</h3>
+<h3>Manage Access Rights</h3>
 
 <div align="center">
     <div class="col-md-4">
@@ -37,7 +37,6 @@
                     <th>Accounts</th>
                 </tr>
             </thead>
-            <tbody>
                 @if (availableAccounts != null)
                 {
                 <tbody>
@@ -51,7 +50,6 @@
                         }
                 </tbody>
                 }
-            </tbody>
         </table>
     </div>
 </div>
@@ -79,11 +77,13 @@
 
 @if (!string.IsNullOrEmpty(accessRightsString))
 {
-
+    <div>
+        <h2>@Input.Email</h2>
+    </div>
     <table class="table table-bordered">
         <thead>
             <tr>
-                <th>Access Right</th>
+                <th>Access Type</th>
                 <th>Permission</th>
                 <th>Select</th>
             </tr>
@@ -93,7 +93,7 @@
             {
                 <tr>
                     <td>
-                        @accessRightsHeadings[i].Replace("[", "") 
+                        @accessRightsHeadings[i].Replace("[", "").ToUpper() 
                     </td>
                     <td>
                         @if (accessRights[i].ToString().ToLower().Contains("false"))
@@ -121,7 +121,13 @@
     </div>
     <div align="center">
         <div class="col-md-4">
-            <EditForm Model="InputTarget" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="FetchAccessRights" FormName="copyaccessrights">
+            @if (isCopySuccessful)
+            {
+                <div class="alert alert-success">
+                    @copySuccessMessage
+                </div>
+            }
+            <EditForm Model="InputTarget" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="CopyAccessRights" FormName="copyaccessrights">
                 <DataAnnotationsValidator />
                 <hr />
                 <ValidationSummary class="text-danger" />
@@ -133,6 +139,10 @@
                     <InputText @bind-Value="InputTarget.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
                     <label for="email">Email</label>
                 </div>
+                @if (InputTarget.Email == Input.Email)
+                {
+                    <div style="margin-bottom:10px" class="text-danger">Cannot copy access rights to the same user.</div>
+                }
                 <button type="submit" class="w-100 btn btn-lg btn-primary">Copy Access Rights</button>
             </EditForm>
         </div>
@@ -161,6 +171,8 @@ else
     private string[]? accessRightsHeadings;
     private string? accountString;
     private string[]? availableAccounts;
+    private bool isCopySuccessful = false;
+    private string? copySuccessMessage;
 
     protected async override void OnInitialized()
     {
@@ -185,20 +197,34 @@ else
             Logger.LogInformation("User access rights found.");
             accessRightsHeadingsString = response1.Content.ReadAsStringAsync().Result;
             accessRightsHeadings = accessRightsHeadingsString.Split(',');
+            for (int i = 0; i < accessRightsHeadings.Length; i++)
+            {
+                accessRightsHeadings[i] = accessRightsHeadings[i].Replace("[", "");
+                accessRightsHeadings[i] = accessRightsHeadings[i].Replace("]", "");
+                accessRightsHeadings[i] = accessRightsHeadings[i].Replace("\"", "");
+                accessRightsHeadings[i] = accessRightsHeadings[i].Replace("_", ", ");
+            }
             return accessRights = accessRightsString.Split(',');
         }
     }
     public async Task CopyAccessRights(EditContext editContext)
     {
-        var response = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/AccessRights/CopyAccessRights", Input.Email);
+        if (InputTarget.Email == Input.Email){
+            return;
+        }
+        List<string> emailList= new List<string>();
+        emailList.Add(Input.Email);
+        emailList.Add(InputTarget.Email);
+        var response = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/AccessRights/CopyAccessRights", emailList);
         if (!response.IsSuccessStatusCode)
         {
             errorMessage = await response.Content.ReadAsStringAsync();
-            RedirectManager.RedirectTo(ReturnUrl/*, forceLoad: true*/);
         }
         else
         {
             Logger.LogInformation("Successfully copied.");
+            isCopySuccessful = true; // Set flag for successful copy
+            copySuccessMessage = "Access rights copied successfully!"; // Set success message
         }
     }
 

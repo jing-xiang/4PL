@@ -250,7 +250,7 @@ namespace _4PL.Data
                 }
             }
         }
-        /*
+        
         public async Task CopyAccessRights(string email, string[] access_type, bool[] is_accessible)
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
@@ -266,7 +266,7 @@ namespace _4PL.Data
                 }
             }
         }
-        /**
+        
 
         /*
          * Ratecard

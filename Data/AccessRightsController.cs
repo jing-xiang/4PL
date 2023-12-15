@@ -58,19 +58,20 @@ namespace _4PL.Data
                 return NotFound($"{ex.Message}");
             }
         }
-        /*
+        
         [HttpPost("CopyAccessRights")]
-        public async Task<ActionResult<string[]>> CopyAccessRights([FromBody] string email, string targetemail)
+        public async Task<ActionResult<string[]>> CopyAccessRights([FromBody] List<string>emailList)
         {
             try
             {
                 //Access right array
                 Console.WriteLine("request received");
-                string[] access_type = await _dbContext.FetchAccessRightsHeadings(email);
-                bool[] is_accessible = await _dbContext.FetchAccessRights(email);
+                string[] access_type = await _dbContext.FetchAccessRightsHeadings(emailList[1]);
+                bool[] is_accessible = await _dbContext.FetchAccessRights(emailList[0]);
                 //TODO: get user from database and return access rights associated with user
-                var result = _dbContext.CopyAccessRights(email, access_type, is_accessible);
+                var result = _dbContext.CopyAccessRights(emailList[1], access_type, is_accessible);
                 Console.WriteLine("request processed");
+                Console.WriteLine(emailList);
                 Console.WriteLine(result);
                 return Ok(result);
             }
@@ -79,7 +80,7 @@ namespace _4PL.Data
                 return NotFound($"{ex.Message}");
             }
         }
-        */
+        
 
         [HttpGet("FetchAvailableAccounts")]
         public async Task<ActionResult<string[]>> FetchAvailableAccounts()
