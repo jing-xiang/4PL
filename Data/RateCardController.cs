@@ -48,14 +48,14 @@ namespace _4PL.Data
                     {
                         //logger.LogInformation("{FileName} length is 0 (Err: 1)",
                         //    trustedFileNameForDisplay);
-                        //uploadResult.ErrorCode = 1;
+                        uploadResult.ErrorCode = 1;
                     }
                     else if (file.Length > maxFileSize)
                     {
                         //logger.LogInformation("{FileName} of {Length} bytes is " +
                         //    "larger than the limit of {Limit} bytes (Err: 2)",
                         //    trustedFileNameForDisplay, file.Length, maxFileSize);
-                        //uploadResult.ErrorCode = 2;
+                        uploadResult.ErrorCode = 2;
                     }
                     else
                     {
@@ -74,17 +74,27 @@ namespace _4PL.Data
                             await using FileStream fs = new(path, FileMode.Create);
                             await file.CopyToAsync(fs);
 
+
                             //logger.LogInformation("{FileName} saved at {Path}",
                             //    trustedFileNameForDisplay, path);
                             uploadResult.Uploaded = true;
                             uploadResult.StoredFileName = trustedFileNameForFileStorage;
+                            if (!CheckExcelVersion(trustedFileNameForFileStorage))
+                            {
+                                uploadResult.ErrorCode = 3;
+                                uploadResult.ErrorMessage = $"Excel version not supported. Please use the latest version.";
+                                System.IO.File.Delete(path);
+                            }
                         }
+
                         catch (IOException ex)
                         {
                             //logger.LogError("{FileName} error on upload (Err: 3): {Message}",
                             //    trustedFileNameForDisplay, ex.Message);
                             uploadResult.ErrorCode = 3;
+                            uploadResult.ErrorMessage = ex.Message;
                         }
+
                     }
 
                     filesProcessed++;
@@ -104,46 +114,49 @@ namespace _4PL.Data
         }
 
 
+        [HttpPost("CreateRcTransaction")]
+        public async Task<ActionResult<string>> CreateRcTransaction([FromBody] string fileNameWithoutExtension)
+        {
+
+            List<RateCard> ratecards = ReadRatecardExcel(fileNameWithoutExtension);
+            
+            //1.Create transaction
+            string transactionId = await _dbContext.CreateRcTransaction(null, ratecards);
+
+            //For each rate card, ...
+            //foreach (RateCard rc in ratecards)
+            //{
+            //    //2. Create ratecard (reference transactionId)
+            //    string ratecardId = await _dbContext.CreateRatecard(rc, transactionId);
+
+            //    //3. Create charges (reference transactionId and ratecardID)
+            //    List<string> chargeIds = _dbContext.CreateCharges(rc.Charges, transactionId, ratecardId);
+            //    Console.WriteLine(ratecards.Count);
+            //}
+
+            return Ok(transactionId);
+        }
+
+
         //Delete
         [HttpDelete("DeleteRatecard/{ratecardId}")]
         public ActionResult DeleteRatecard(string ratecardId)
         {
             int numDeleted = _dbContext.DeleteRatecard(ratecardId);
 
-            return Ok(numDeleted);
+            return Ok(numDeleted > 0 ? true : false);
         }
 
         [HttpDelete("DeleteCharge/{chargeId}")]
         public ActionResult DeleteCharge(string chargeId)
         {
+            System.Console.WriteLine($"Deleting charge: {chargeId}");
             int numDeleted = _dbContext.DeleteCharge(chargeId);
 
-            return Ok(numDeleted);
+            return Ok(numDeleted > 0 ? true : false);
         }
 
-        //Create
-        [HttpPost("CreateRcTransaction")]
-        public async Task<ActionResult<string>> CreateRcTransaction([FromBody] string fileNameWithoutExtension)
-        {
-
-            List<RateCard> ratecards = ReadRatecardExcel(fileNameWithoutExtension);
-
-            //1.Create transaction
-            string transactionId = await _dbContext.CreateRcTransaction(null);
-
-            //For each rate card, ...
-            foreach(RateCard rc in ratecards)
-            {
-                //2. Create ratecard (reference transactionId)
-                string ratecardId = await _dbContext.CreateRatecard(rc, transactionId);
-
-                //3. Create charges (reference transactionId and ratecardID)
-                List<string> chargeIds = _dbContext.CreateCharges(rc.Charges, transactionId, ratecardId);
-
-            }
-
-            return Ok(transactionId);
-        }
+        
 
         //Read
         [HttpGet("GetTransactionDetails/{transactionId}")]
@@ -160,17 +173,74 @@ namespace _4PL.Data
             return Ok(ratecards);
         }
 
-        //Read
         [HttpGet("GetRateCard/{ratecardId}")]
         public ActionResult getRatecard(string ratecardId)
         {
-            return Ok(_dbContext.GetRatecard(ratecardId));
+            RateCard rc = _dbContext.GetRatecard(ratecardId);
+
+            return rc == null ? NotFound() : Ok(rc);
+        }
+
+        [HttpGet("GetChargeIds/{chargeId}")]
+        public ActionResult getChargeIds(string chargeId)
+        {
+            return Ok(_dbContext.GetChargeIds(chargeId));
+        }
+
+        [HttpGet("GetCharge/{chargeId}")]
+        public ActionResult getCharge(string chargeId)
+        {
+            Charge charge = _dbContext.GetCharge(chargeId);
+            
+            return charge == null ? NotFound() : Ok(charge);
+        }
+
+        [HttpGet("Search")]
+        public ActionResult search(long limit=10, long offset=0)
+        {
+            System.Console.WriteLine(offset);
+            return Ok(_dbContext.Search(limit, offset));
         }
 
         /*
          * Helper methods
          * 
          */
+
+        private bool CheckExcelVersion(string fileNameWithoutExtension)
+        {
+            /*
+             * https://net-informations.com/csharp/excel/csharp-open-excel.htm
+             */
+            Excel.Application xlApp;
+            Excel.Workbook xlWorkBook;
+            Excel.Worksheet xlWorkSheet;
+            object misValue = System.Reflection.Missing.Value;
+            xlApp = new Excel.Application();
+
+            //Requires full path
+            //string fpath = Directory.GetCurrentDirectory() + "\\FileUploads\\" + fileNameWithoutExtension;
+            string fpath = Path.Combine(Directory.GetCurrentDirectory(), "FileUploads", fileNameWithoutExtension);
+
+            xlWorkBook = xlApp.Workbooks.Open(fpath, 0, true, 5, "", "", true, Microsoft.Office.Interop.Excel.XlPlatform.xlWindows, "\t", false, false, 0, true, 1, 0);
+            xlWorkSheet = (Excel.Worksheet)xlWorkBook.Worksheets.get_Item(4);
+
+            //Check excel version
+            string excelVersion = xlWorkSheet.Cells[2, 2].Value2;
+
+            string latestExcelVersion = _dbContext.GetRatecardExcelVersion();
+
+            xlWorkBook.Close(true, misValue, misValue);
+            xlApp.Quit();
+
+            if (latestExcelVersion != excelVersion)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
         private List<RateCard> ReadRatecardExcel(string fileNameWithoutExtension)
         {
             /*
@@ -271,8 +341,8 @@ namespace _4PL.Data
                 cell = nextCell(xlWorkSheet, cell);
                 rc.Container_Type = cellIsEmpty(cell) ? "-" : cell.Value2;
 
-                cell = nextCell(xlWorkSheet, cell);
-                rc.Local_Currency = cellIsEmpty(cell) ? "-" : cell.Value2;
+                //cell = nextCell(xlWorkSheet, cell);
+                //rc.Local_Currency = cellIsEmpty(cell) ? "-" : cell.Value2;
 
                 //Add charges
                 cell = nextCell(xlWorkSheet, cell);
@@ -286,6 +356,12 @@ namespace _4PL.Data
 
                     cell = nextCell(xlWorkSheet, cell);
                     charge.Min = cellIsEmpty(cell) ? 0M : (decimal)cell.Value2;
+
+                    cell = nextCell(xlWorkSheet, cell);
+                    charge.OS_Unit_Price = cellIsEmpty(cell) ? 0M : (decimal)cell.Value2;
+
+                    cell = nextCell(xlWorkSheet, cell);
+                    charge.OS_Currency = cellIsEmpty(cell) ? "-" : cell.Value2;
 
                     cell = nextCell(xlWorkSheet, cell);
                     charge.Unit_Price = cellIsEmpty(cell) ? 0M : (decimal)cell.Value2;

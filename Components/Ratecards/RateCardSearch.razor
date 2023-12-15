@@ -1,8 +1,16 @@
 ﻿@page "/ratecard/search"
+@page "/ratecard"
 
+@inject HttpClient HttpClient
+@inject IJSRuntime JS
+@inject NavigationManager NavManager
+@inject IConfiguration Configuration
+@rendermode InteractiveServer
 @using _4PL.Data
 @using Microsoft.AspNetCore.Components.Forms
-@inject IJSRuntime JS
+@using System.ComponentModel.DataAnnotations
+@using System.Diagnostics
+
 
 <PageTitle>Ratecard</PageTitle>
 
@@ -55,16 +63,84 @@
 
 
 
-    <button>Submit</button>
+    <button class="w-100 btn btn-lg btn-primary">Submit</button>
 
-    <RateCardDetails></RateCardDetails>
 </EditForm>
 
+<div>
+    <nav aria-label="Page navigation">
+        <ul class="pagination">
+            <li class="page-item"><button class="w-100 btn btn-secondary" @onclick="Prev">Prev</button></li>
+            <li class="page-item"><button class="w-100 btn btn-secondary" @onclick="Next">Next</button></li>
+        </ul>
+    </nav>
+</div>
+
+<p>@offset</p>
+
+@if (isLoading)
+{
+    <p>Fetching data</p>
+}
+
+else if (ratecardIds.Count == 0)
+{
+    <p>No ratecards available</p>
+}
+else 
+{
+
+    <RateCardDetails ratecardIds="@ratecardIds"></RateCardDetails>
+}
+
 @code {
+
     public RateCard FormModel { get; set; } = new();
+
+    public List<RateCard> ratecards = new();
+    [Parameter]
+    public List<string> ratecardIds { get; set; } = new();
+    [Parameter]
+    public int offset { get; set; } = 0;
+    public bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // ratecards = await HttpClient.GetFromJsonAsync<List<RateCard>>($"{NavManager.BaseUri}api/RateCard/GetTransactionDetails/{"%"}/{0}");
+        ratecardIds = await FetchRatecardIds();
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    // protected override 
 
     public void HandleFormSubmit()
     {
         JS.InvokeVoidAsync("alert", "Form submitted!");
+    }
+
+    public async void Next()
+    {
+        isLoading = true;
+        offset += 10;
+        ratecardIds.Clear();
+        ratecardIds = await FetchRatecardIds();
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    public async void Prev()
+    {
+        isLoading = true;
+        offset = (offset >= 10) ? offset - 10 : 0;
+        ratecardIds.Clear();
+        ratecardIds = await FetchRatecardIds();
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    public async Task<List<string>> FetchRatecardIds()
+    {
+        return await HttpClient.GetFromJsonAsync<List<string>>($"{Configuration["ApiBaseUrl"]}/api/RateCard/Search?limit=10&offset={offset}");
     }
 }

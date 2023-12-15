@@ -22,11 +22,17 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="BootstrapBlazor" Version="8.0.6-beta04" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.QuickGrid" Version="8.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="8.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.0" />
     <PackageReference Include="Snowflake.Data" Version="2.1.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="FileUploads\" />
   </ItemGroup>
 
 </Project>

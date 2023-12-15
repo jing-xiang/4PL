@@ -1,6 +1,7 @@
 using Snowflake.Data.Client;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
+using System.Text;
 
 namespace _4PL.Data
 {
@@ -203,13 +204,17 @@ namespace _4PL.Data
 
         /**
          * 1. Creates an empty RC transaction.
-         * 
+         * 2. Creates ratecard (references transactionId)
+         * 3. Creates individual charges (references transactionId and ratecardId)
          */
-        public async Task<string> CreateRcTransaction(ApplicationUser user)
+        public async Task<string> CreateRcTransaction(ApplicationUser user, List<RateCard> ratecards)
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
                 conn.Open();
+
+                //1. Creates an empty RC transaction.
+                string transactionId;
                 using (IDbCommand command = conn.CreateCommand())
                 {
                     command.CommandText = "CALL DEV_RL_DB.HWL_4PL.CREATE_RC_TRANSACTION(:email)";
@@ -219,13 +224,182 @@ namespace _4PL.Data
                     var result = command.ExecuteScalar();
                     if (result != DBNull.Value)
                     {
-                        return result.ToString();
+                        transactionId = result.ToString();
+                        //return result.ToString();
                     }
                     else
                     {
                         throw new Exception("Failed to create rc transaction!");
                     }
                 }
+
+                //2. Creates ratecard (references transactionId)
+                foreach (RateCard ratecard in ratecards)
+                {
+                    string ratecardId;
+                    using (IDbCommand command = conn.CreateCommand())
+                    {
+
+                        command.CommandText = @"CALL DEV_RL_DB.HWL_4PL.CREATE_RATECARD(
+                        :transaction_id,
+	                    :LANE_ID,
+	                    :CONTROLLING_CUSTOMER_MATCHCODE,
+	                    :CONTROLLING_CUSTOMER_NAME,
+	                    :TRANSPORT_MODE,
+	                    :FUNC,
+	                    :RATE_VALIDITY_FROM,
+	                    :RATE_VALIDITY_TO,
+	                    :POL_NAME,
+	                    :POL_COUNTRY,
+	                    :POL_PORT,
+	                    :POD_NAME,
+	                    :POD_COUNTRY,
+	                    :POD_PORT,
+	                    :CREDITOR_MATCHCODE,
+	                    :CREDITOR_NAME,
+	                    :PICKUP_ADDRESS_NAME,
+	                    :DELIVERY_ADDRESS_NAME,
+	                    :DANGEROUS_GOODS,
+	                    :TEMPERATURE_CONTROLLED,
+	                    :CONTAINER_MODE,
+	                    :CONTAINER_TYPE
+                    )";
+
+                        command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "transaction_id", Value = transactionId, DbType = DbType.Guid });
+                        command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "LANE_ID", Value = ratecard.Lane_ID, DbType = DbType.String });
+                        command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "CONTROLLING_CUSTOMER_MATCHCODE", Value = ratecard.Controlling_Customer_Matchcode, DbType = DbType.String });
+                        command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "CONTROLLING_CUSTOMER_NAME", Value = ratecard.Controlling_Customer_Name, DbType = DbType.String });
+                        command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "TRANSPORT_MODE", Value = ratecard.Transport_Mode, DbType = DbType.String });
+                        command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "FUNC", Value = ratecard.Function, DbType = DbType.String });
+                        command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "RATE_VALIDITY_FROM", Value = ratecard.Rate_Validity_From, DbType = DbType.DateTime });
+                        command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "RATE_VALIDITY_TO", Value = ratecard.Rate_Validity_To, DbType = DbType.DateTime });
+                        command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "POL_NAME", Value = ratecard.POL_Name, DbType = DbType.String });
+                        command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "POL_COUNTRY", Value = ratecard.POL_Country, DbType = DbType.String });
+                        command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "POL_PORT", Value = ratecard.POL_Port, DbType = DbType.String });
+                        command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "POD_NAME", Value = ratecard.POD_Name, DbType = DbType.String });
+                        command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "POD_COUNTRY", Value = ratecard.POD_Country, DbType = DbType.String });
+                        command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "POD_PORT", Value = ratecard.POD_Port, DbType = DbType.String });
+                        command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "CREDITOR_MATCHCODE", Value = ratecard.Creditor_Matchcode, DbType = DbType.String });
+                        command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "CREDITOR_NAME", Value = ratecard.Creditor_Name, DbType = DbType.String });
+                        command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "PICKUP_ADDRESS_NAME", Value = ratecard.Pickup_Address, DbType = DbType.String });
+                        command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "DELIVERY_ADDRESS_NAME", Value = ratecard.Delivery_Address, DbType = DbType.String });
+                        command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "DANGEROUS_GOODS", Value = ratecard.Dangerous_Goods, DbType = DbType.String });
+                        command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "TEMPERATURE_CONTROLLED", Value = ratecard.Temperature_Controlled, DbType = DbType.String });
+                        command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "CONTAINER_MODE", Value = ratecard.Container_Mode, DbType = DbType.String });
+                        command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "CONTAINER_TYPE", Value = ratecard.Container_Type, DbType = DbType.String });
+
+                        var result = command.ExecuteScalar();
+                        if (result != DBNull.Value)
+                        {
+                            ratecardId = result.ToString();
+                            //return result.ToString();
+                        }
+                        else
+                        {
+                            throw new Exception("Failed to create ratecard!");
+                        }
+
+
+                    }
+
+                    //3. Creates individual charges (references transactionId and ratecardId)
+                    using (IDbCommand command = conn.CreateCommand())
+                    {
+                        //command.CommandText = @"
+                        //    INSERT INTO DEV_RL_DB.HWL_4PL.RATECARD_CHARGES
+                        //        VALUES (
+                        //            :id,
+                        //            :transaction_id,
+                        //            :ratecard_id,
+                        //            :created_at,
+                        //            :charge_description,
+                        //            :calculation_base,
+                        //            :minimum,
+                        //            :os_unit_price,
+                        //            :os_currency,
+                        //            :unit_price,
+                        //            :currency,
+                        //            :per_percent,
+                        //            :charge_code
+                        //    );";
+
+                        StringBuilder sb = new StringBuilder("INSERT INTO DEV_RL_DB.HWL_4PL.RATECARD_CHARGES VALUES");
+
+                        //foreach (Charge charge in ratecard.Charges)
+                        for (int i = 0; i < ratecard.Charges.Count; i++)
+                        {
+                            Charge charge = ratecard.Charges[i];
+
+                            sb.Append(@$"(
+                                :id{i},
+                                :transaction_id{i},
+                                :ratecard_id{i},
+                                :created_at{i},
+                                :charge_description{i},
+                                :calculation_base{i},
+                                :minimum{i},
+                                :os_unit_price{i},
+                                :os_currency{i},
+                                :unit_price{i},
+                                :currency{i},
+                                :per_percent{i},
+                                :charge_code{i}
+                            )");
+
+                            if (i < ratecard.Charges.Count - 1)
+                            {
+                                sb.Append(",");
+                            }
+
+                            //command.CommandText = @$"CALL DEV_RL_DB.HWL_4PL.CREATE_CHARGE(
+                            //    :transaction_id,
+                            //    :ratecard_id,
+                            //    :charge_description,
+                            //    :calculation_base,
+                            //    :minimum,
+                            //    :os_unit_price,
+                            //    :os_currency,
+                            //    :unit_price,
+                            //    :currency,
+                            //    :per_percent,
+                            //    :charge_code
+                            //)";
+                            //command.Parameters.Clear();
+                            command.Parameters.Add(new SnowflakeDbParameter { ParameterName = $"id{i}", Value = charge.Id, DbType = DbType.Guid });
+                                                                                               
+                            command.Parameters.Add(new SnowflakeDbParameter { ParameterName = $"transaction_id{i}", Value = transactionId, DbType = DbType.Guid });
+                            command.Parameters.Add(new SnowflakeDbParameter { ParameterName = $"ratecard_id{i}", Value = ratecardId, DbType = DbType.Guid });
+                                                                                               
+                            command.Parameters.Add(new SnowflakeDbParameter { ParameterName = $"created_at{i}", Value = DateTime.Now, DbType = DbType.DateTime });
+                                                                                               
+                            command.Parameters.Add(new SnowflakeDbParameter { ParameterName = $"charge_description{i}", Value = charge.Charge_Description, DbType = DbType.String });
+                            command.Parameters.Add(new SnowflakeDbParameter { ParameterName = $"calculation_base{i}", Value = charge.Calculation_Base, DbType = DbType.String });
+                            command.Parameters.Add(new SnowflakeDbParameter { ParameterName = $"minimum{i}", Value = charge.Min, DbType = DbType.Double });
+                            command.Parameters.Add(new SnowflakeDbParameter { ParameterName = $"os_unit_price{i}", Value = charge.OS_Unit_Price, DbType = DbType.Double });
+                            command.Parameters.Add(new SnowflakeDbParameter { ParameterName = $"os_currency{i}", Value = charge.OS_Currency, DbType = DbType.String });
+                            command.Parameters.Add(new SnowflakeDbParameter { ParameterName = $"unit_price{i}", Value = charge.Unit_Price, DbType = DbType.Double });
+                            command.Parameters.Add(new SnowflakeDbParameter { ParameterName = $"currency{i}", Value = charge.Currency, DbType = DbType.String });
+                            command.Parameters.Add(new SnowflakeDbParameter { ParameterName = $"per_percent{i}", Value = charge.Per_Percent, DbType = DbType.Double });
+                            command.Parameters.Add(new SnowflakeDbParameter { ParameterName = $"charge_code{i}", Value = charge.Charge_Code, DbType = DbType.String });
+
+
+                        }
+                        command.CommandText = sb.ToString();
+                        var result = command.ExecuteScalar();
+                        if (result != DBNull.Value)
+                        {
+                            //chargeIds.Add(result.ToString());
+                        }
+                        else
+                        {
+                            throw new Exception("Failed to create charge!");
+                        }
+                    }
+                    Console.WriteLine(ratecards.Count);
+                }
+
+                return transactionId;
+
             }
         }
 
@@ -263,8 +437,7 @@ namespace _4PL.Data
 	                    :DANGEROUS_GOODS,
 	                    :TEMPERATURE_CONTROLLED,
 	                    :CONTAINER_MODE,
-	                    :CONTAINER_TYPE,
-	                    :LOCAL_CURRENCY
+	                    :CONTAINER_TYPE
                     )";
 
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "transaction_id", Value = transactionId, DbType = DbType.Guid });
@@ -289,7 +462,6 @@ namespace _4PL.Data
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "TEMPERATURE_CONTROLLED", Value = ratecard.Temperature_Controlled, DbType = DbType.String });
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "CONTAINER_MODE", Value = ratecard.Container_Mode, DbType = DbType.String });
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "CONTAINER_TYPE", Value = ratecard.Container_Type, DbType = DbType.String });
-                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "LOCAL_CURRENCY", Value = ratecard.Local_Currency, DbType = DbType.String });
 
                     var result = command.ExecuteScalar();
                     if (result != DBNull.Value)
@@ -307,7 +479,7 @@ namespace _4PL.Data
         }
 
         /**
-         * Creates individual charges (references transactionId and ratecardId)
+         * 3. Creates individual charges (references transactionId and ratecardId)
          * 
          */
         public List<string> CreateCharges(List<Charge> charges, string transactionId, string ratecardId)
@@ -328,6 +500,8 @@ namespace _4PL.Data
                             :charge_description,
                             :calculation_base,
                             :minimum,
+                            :os_unit_price,
+                            :os_currency,
                             :unit_price,
                             :currency,
                             :per_percent,
@@ -339,6 +513,8 @@ namespace _4PL.Data
                         command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "charge_description", Value = charge.Charge_Description, DbType = DbType.String });
                         command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "calculation_base", Value = charge.Calculation_Base, DbType = DbType.String });
                         command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "minimum", Value = charge.Min, DbType = DbType.Double });
+                        command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "os_unit_price", Value = charge.OS_Unit_Price, DbType = DbType.Double });
+                        command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "os_currency", Value = charge.OS_Currency, DbType = DbType.String });
                         command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "unit_price", Value = charge.Unit_Price, DbType = DbType.Double });
                         command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "currency", Value = charge.Currency, DbType = DbType.String });
                         command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "per_percent", Value = charge.Per_Percent, DbType = DbType.Double });
@@ -438,7 +614,6 @@ namespace _4PL.Data
                         rc.Temperature_Controlled = reader.GetString(reader.GetOrdinal("TEMPERATURE_CONTROLLED"));
                         rc.Container_Mode = reader.GetString(reader.GetOrdinal("CONTAINER_MODE"));
                         rc.Container_Type = reader.GetString(reader.GetOrdinal("CONTAINER_TYPE"));
-                        rc.Local_Currency = reader.GetString(reader.GetOrdinal("LOCAL_CURRENCY"));
 
                         ratecards.Add(rc);
 
@@ -507,6 +682,8 @@ namespace _4PL.Data
                         charge.Charge_Description = reader.GetString(reader.GetOrdinal("CHARGE_DESCRIPTION"));
                         charge.Calculation_Base = reader.GetString(reader.GetOrdinal("CALCULATION_BASE"));
                         charge.Min = reader.GetDecimal(reader.GetOrdinal("MINIMUM"));
+                        charge.OS_Unit_Price = reader.GetDecimal(reader.GetOrdinal("OS_UNIT_PRICE"));
+                        charge.OS_Currency = reader.GetString(reader.GetOrdinal("OS_CURRENCY"));
                         charge.Unit_Price = reader.GetDecimal(reader.GetOrdinal("UNIT_PRICE"));
                         charge.Currency = reader.GetString(reader.GetOrdinal("CURRENCY"));
                         charge.Per_Percent = reader.GetDecimal(reader.GetOrdinal("PER_PERCENT"));
@@ -538,7 +715,7 @@ namespace _4PL.Data
                         :ratecard_id
                     )";
 
-                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "ratecard_id", Value = ratecardId, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "ratecard_id", Value = ratecardId, DbType = DbType.Guid });
 
                     var result = command.ExecuteScalar();
                     if (result != DBNull.Value)
@@ -564,7 +741,7 @@ namespace _4PL.Data
                         :charge_id
                     )";
 
-                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "charge_id", Value = chargeId, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "charge_id", Value = chargeId, DbType = DbType.Guid });
 
                     var result = command.ExecuteScalar();
                     if (result != DBNull.Value)
@@ -684,7 +861,7 @@ namespace _4PL.Data
             {
                 conn.Open();
 
-                RateCard rc = new RateCard();
+                RateCard rc = null;
 
                 using (IDbCommand command = conn.CreateCommand())
                 {
@@ -700,6 +877,7 @@ namespace _4PL.Data
                     //Read result
                     while (reader.Read())
                     {
+                        rc = new RateCard();
                         //Split column of array
                         //Array is represented as string literal. Requires manual parsing
                         //ratecards = parseArrayOfUUIDs(reader.GetString(reader.GetOrdinal("RATECARD_IDS")));
@@ -725,7 +903,6 @@ namespace _4PL.Data
                         rc.Temperature_Controlled = reader.GetString(reader.GetOrdinal("TEMPERATURE_CONTROLLED"));
                         rc.Container_Mode = reader.GetString(reader.GetOrdinal("CONTAINER_MODE"));
                         rc.Container_Type = reader.GetString(reader.GetOrdinal("CONTAINER_TYPE"));
-                        rc.Local_Currency = reader.GetString(reader.GetOrdinal("LOCAL_CURRENCY"));
 
                     }
 
@@ -746,7 +923,7 @@ namespace _4PL.Data
             {
                 conn.Open();
 
-                Charge charge = new Charge();
+                Charge charge = null;
 
                 using (IDbCommand command = conn.CreateCommand())
                 {
@@ -762,6 +939,7 @@ namespace _4PL.Data
                     //Read result
                     while (reader.Read())
                     {
+                        charge = new Charge();
                         //Split column of array
                         //Array is represented as string literal. Requires manual parsing
                         //ratecards = parseArrayOfUUIDs(reader.GetString(reader.GetOrdinal("RATECARD_IDS")));
@@ -769,6 +947,8 @@ namespace _4PL.Data
                         charge.Charge_Description = reader.GetString(reader.GetOrdinal("CHARGE_DESCRIPTION"));
                         charge.Calculation_Base = reader.GetString(reader.GetOrdinal("CALCULATION_BASE"));
                         charge.Min = reader.GetDecimal(reader.GetOrdinal("MINIMUM"));
+                        charge.OS_Unit_Price = reader.GetDecimal(reader.GetOrdinal("OS_UNIT_PRICE"));
+                        charge.OS_Currency = reader.GetString(reader.GetOrdinal("OS_CURRENCY"));
                         charge.Unit_Price = reader.GetDecimal(reader.GetOrdinal("UNIT_PRICE"));
                         charge.Currency = reader.GetString(reader.GetOrdinal("CURRENCY"));
                         charge.Per_Percent = reader.GetDecimal(reader.GetOrdinal("PER_PERCENT"));
@@ -780,6 +960,134 @@ namespace _4PL.Data
 
 
                 return charge;
+            }
+        }
+
+
+        public List<string> GetChargeIds(string ratecardId)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+
+                List<string> chargeIds = new();
+
+                using (IDbCommand command = conn.CreateCommand())
+                {
+
+                    command.CommandText = @$"SELECT * FROM DEV_RL_DB.HWL_4PL.RATECARD_CHARGES
+                        WHERE ratecard_id ILIKE :ratecard_id;
+                    ";
+
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "ratecard_id", Value = ratecardId, DbType = DbType.Guid });
+
+                    IDataReader reader = command.ExecuteReader();
+
+                    //Read result
+                    while (reader.Read())
+                    {
+                        //Split column of array
+                        //Array is represented as string literal. Requires manual parsing
+                        //ratecards = parseArrayOfUUIDs(reader.GetString(reader.GetOrdinal("RATECARD_IDS")));
+                        chargeIds.Add(reader.GetString(reader.GetOrdinal("ID")));
+
+                    }
+
+                }
+
+                return chargeIds;
+            }
+        }
+
+        public List<string> Search(long limit=10, long offset=0)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+
+                List<string> ratecardIds = new();
+
+                //1. Find total number of rows
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = @$"SELECT COUNT(*) FROM DEV_RL_DB.HWL_4PL.RATECARDS;";
+
+                    IDataReader reader = command.ExecuteReader();
+                    //Read result
+                    while (reader.Read())
+                    {
+                        //Check if there are any more rows to be read.
+                        if (offset >= reader.GetInt64(0))
+                        {
+                            return ratecardIds;
+                        }
+                    }
+                }
+
+                //2. Search
+                using (IDbCommand command = conn.CreateCommand())
+                {
+
+                    command.CommandText = @$"SELECT * FROM DEV_RL_DB.HWL_4PL.RATECARDS
+                        LIMIT :limit
+                        OFFSET :offset
+                        
+                    ";
+
+                    //command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "ratecard_id", Value = ratecardId, DbType = DbType.Guid });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "limit", Value = limit, DbType = DbType.Int64 });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "offset", Value = offset, DbType = DbType.Int64 });
+
+
+                    IDataReader reader = command.ExecuteReader();
+
+                    //Read result
+                    while (reader.Read())
+                    {
+                        //Split column of array
+                        //Array is represented as string literal. Requires manual parsing
+                        //ratecards = parseArrayOfUUIDs(reader.GetString(reader.GetOrdinal("RATECARD_IDS")));
+                        ratecardIds.Add(reader.GetString(reader.GetOrdinal("ID")));
+
+                    }
+
+                }
+
+                return ratecardIds;
+            }
+        }
+
+        public string GetRatecardExcelVersion()
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+
+                string ver = "";
+
+                using (IDbCommand command = conn.CreateCommand())
+                {
+
+                    command.CommandText = @$"SELECT * FROM DEV_RL_DB.HWL_4PL.RATECARD_CONFIG
+                    ";
+
+                    //command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "ratecard_id", Value = ratecardId, DbType = DbType.Guid });
+
+                    IDataReader reader = command.ExecuteReader();
+
+                    //Read result
+                    while (reader.Read())
+                    {
+                        //Split column of array
+                        //Array is represented as string literal. Requires manual parsing
+                        //ratecards = parseArrayOfUUIDs(reader.GetString(reader.GetOrdinal("RATECARD_IDS")));
+                        ver = reader.GetString(reader.GetOrdinal("EXCEL_VERSION"));
+
+                    }
+
+                }
+
+                return ver;
             }
         }
 

@@ -9,104 +9,132 @@
 @using System.Diagnostics
 
 
-<div>
+@if (rc == null) {}
+else
+{
+    
+    <div class="card">
+        <div class="card-body">
+            <table class="table table-bordered">
+                <thead class="thead-light">
+                    <tr>
+                        <th>RatecardID</th>
+                        <th>LaneID</th>
+                        <th>Transport_Mode</th>
+                        <th>Controlling_Customer_Matchcode</th>
+                        <th>Controlling_Customer_Name</th>
+                        <th>Transport_Mode</th>
+                        <th>Function</th>
+                        <th>Rate_Validity_From</th>
+                        <th>Rate_Validity_To</th>
+                        <th>POL_Name</th>
+                        <th>POL_Country</th>
+                        <th>POL_Port</th>
+                        <th>POD_Name</th>
+                        <th>POD_Country</th>
+                        <th>POD_Port</th>
+                        <th>Creditor_Matchcode</th>
+                        <th>Pickup_Address</th>
+                        <th>Delivery_Address</th>
+                        <th>Dangerous_Goods</th>
+                        <th>Temperature_Controlled</th>
+                        <th>Container_Mode</th>
+                        <th>Container_Type</th>
+                        <th></th>
+                    </tr>
+                </thead>
 
-    <table class="table">
-        <thead>
-            <tr
-                <th>RatecardID</th>
-                <th>LaneID</th>
-                <th>Transport_Mode</th>
-                <th>Controlling_Customer_Matchcode</th>
-                <th>Controlling_Customer_Name</th>
-                <th>Transport_Mode</th>
-                <th>Function</th>
-                <th>Rate_Validity_From</th>
-                <th>Rate_Validity_To</th>
-                <th>POL_Name</th>
-                <th>POL_Country</th>
-                <th>POL_Port</th>
-                <th>POD_Name</th>
-                <th>POD_Country</th>
-                <th>POD_Port</th>
-                <th>Creditor_Matchcode</th>
-                <th>Pickup_Address</th>
-                <th>Delivery_Address</th>
-                <th>Dangerous_Goods</th>
-                <th>Temperature_Controlled</th>
-                <th>Container_Mode</th>
-                <th>Container_Type</th>
-                <th>Local_Currency</th>
-                <th></th>
-            </tr>
-        </thead>
+                <tbody>
+                    <tr>
+                        <td>@rc.Id</td>
+                        <td>@rc.Lane_ID</td>
+                        <td>@rc.Transport_Mode</td>
+                        <td>@rc.Controlling_Customer_Matchcode</td>
+                        <td>@rc.Controlling_Customer_Name</td>
+                        <td>@rc.Transport_Mode</td>
+                        <td>@rc.Function</td>
+                        <td>@rc.Rate_Validity_From.ToString("MM/dd/yyyy")</td>
+                        <td>@rc.Rate_Validity_To.ToString("MM/dd/yyyy")</td>
+                        <td>@rc.POL_Name</td>
+                        <td>@rc.POL_Country</td>
+                        <td>@rc.POL_Port</td>
+                        <td>@rc.POD_Name</td>
+                        <td>@rc.POD_Country</td>
+                        <td>@rc.POD_Port</td>
+                        <td>@rc.Creditor_Matchcode</td>
+                        <td>@rc.Pickup_Address</td>
+                        <td>@rc.Delivery_Address</td>
+                        <td>@rc.Dangerous_Goods</td>
+                        <td>@rc.Temperature_Controlled</td>
+                        <td>@rc.Container_Mode</td>
+                        <td>@rc.Container_Type</td>
+                        <td>
+                            <button class="w-100 btn btn-lg btn-danger" @onclick="() => DeleteRatecard(rc.Id.ToString())">Delete</button>
+                        </td>
+                    </tr>
+                </tbody>
 
-        <tbody>
-            <tr>
-                <td>@rc.Id</td>
-                <td>@rc.Lane_ID</td>
-                <td>@rc.Transport_Mode</td>
-                <td>@rc.Controlling_Customer_Matchcode</td>
-                <td>@rc.Controlling_Customer_Name</td>
-                <td>@rc.Transport_Mode</td>
-                <td>@rc.Function</td>
-                <td>@rc.Rate_Validity_From.ToString("MM/dd/yyyy")</td>
-                <td>@rc.Rate_Validity_To.ToString("MM/dd/yyyy")</td>
-                <td>@rc.POL_Name</td>
-                <td>@rc.POL_Country</td>
-                <td>@rc.POL_Port</td>
-                <td>@rc.POD_Name</td>
-                <td>@rc.POD_Country</td>
-                <td>@rc.POD_Port</td>
-                <td>@rc.Creditor_Matchcode</td>
-                <td>@rc.Pickup_Address</td>
-                <td>@rc.Delivery_Address</td>
-                <td>@rc.Dangerous_Goods</td>
-                <td>@rc.Temperature_Controlled</td>
-                <td>@rc.Container_Mode</td>
-                <td>@rc.Container_Type</td>
-                <td>@rc.Local_Currency</td>
-                <td>
-                    <button class="w-100 btn btn-lg btn-primary" @onclick="() => DeleteRatecard(rc.Id.ToString())">Delete</button>
-                </td>
-            </tr>
-        </tbody>
+            </table>
 
-    </table>
+            <span>
+                <button class="w-100 btn btn-toolbar btn-primary" @onclick="toggleShowCharges">Show charges</button>
+            </span>
 
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Charge Id</th>
-                <th>Charge Charge_Description</th>
-                <th>Charge Calculation_Base</th>
-                <th>Charge Min</th>
-                <th>Charge Unit_Price</th>
-                <th>Charge Currency</th>
-                <th>Charge Per_Percent</th>
-                <th>Charge Charge_Code</th>
-                <th></th>
-            </tr>
-        </thead>
+            @if (!showCharges) {}
 
-        <tbody>
-            @foreach (Charge charge in rc.Charges)
+            else
             {
-                <ChargeComponent charge="@charge"></ChargeComponent>
+                <table class="table table-bordered table-bordered">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Charge Id</th>
+                            <th>Charge Charge_Description</th>
+                            <th>Charge Calculation_Base</th>
+                            <th>Charge Min</th>
+                            <th>Charge OS_Unit_Price</th>
+                            <th>Charge OS_Currency</th>
+                            <th>Charge Unit_Price</th>
+                            <th>Charge Currency</th>
+                            <th>Charge Per_Percent</th>
+                            <th>Charge Charge_Code</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (string chargeId in chargeIds)
+                        {
+                            <ChargeComponent chargeId="@chargeId"></ChargeComponent>
+                        }
+                    </tbody>
+
+                </table>
             }
-        </tbody>
 
-    </table>
+        </div>
+    </div>
 
-
-</div>
-
+}
 
 
 @code {
 
     [Parameter]
-    public RateCard rc { get; set; } = new();
+    public RateCard rc { get; set; } = null;
+    [Parameter]
+    public string ratecardId { get; set; } = "";
+    public List<string> chargeIds { get; set; } = new();
+
+    public bool showCharges = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (ratecardId != "")
+        {
+            rc = await HttpClient.GetFromJsonAsync<RateCard>($"{Configuration["ApiBaseUrl"]}/api/RateCard/GetRateCard/{ratecardId}");
+            chargeIds = await HttpClient.GetFromJsonAsync<List<string>>($"{Configuration["ApiBaseUrl"]}/api/RateCard/GetChargeIds/{ratecardId}");
+        }
+    }
 
     async Task DeleteRatecard(string ratecardId)
     {
@@ -115,16 +143,27 @@
 
         HttpResponseMessage result;
 
-        foreach(Charge charge in rc.Charges)
+        // foreach(Charge charge in rc.Charges)
+        foreach (string chargeId in chargeIds)
         {
-            result = await HttpClient.DeleteAsync($"{Configuration["ApiBaseUrl"]}/api/RateCard/DeleteCharge/{charge.Id.ToString()}");
+            result = await HttpClient.DeleteAsync($"{Configuration["ApiBaseUrl"]}/api/RateCard/DeleteCharge/{chargeId}");
         }
 
         result = await HttpClient.DeleteAsync($"{Configuration["ApiBaseUrl"]}/api/RateCard/DeleteRatecard/{ratecardId}");
 
         Debug.WriteLine($"Logging: {result.StatusCode}");
 
-        NavManager.Refresh(true);
+        if (result.Content.ReadAsStringAsync().Result == "true")
+        {
+            rc = null;
+        }
+
+        // NavManager.Refresh(true);
+    }
+
+    void toggleShowCharges()
+    {
+        showCharges = !showCharges;
     }
 
 }

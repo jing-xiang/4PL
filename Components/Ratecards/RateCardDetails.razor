@@ -10,63 +10,38 @@
 
 <PageTitle>Ratecard</PageTitle>
 
-<style>
-    table {
-        font-family: arial, sans-serif;
-        border-collapse: collapse;
-        width: 100%;
-    }
-
-    td, th {
-        border: 1px solid #dddddd;
-        text-align: left;
-        padding: 8px;
-    }
-
-    tr:nth-child(even) {
-        background-color: #dddddd;
-    }
-
-    .card {
-        border: 1px solid #dddddd;
-        padding: 10px;
-        margin: 5px;
-    }
-
-
-</style>
-
 <h3>RateCard</h3>
 
 <div>
-    @foreach (RateCard rc in ratecards)
+    @foreach (string ratecardId in ratecardIds)
     {
-        <div class="card">
-
-            <RateCardComponent rc="@rc"></RateCardComponent>
-
+        <div class="card-columns">
+            <RateCardComponent ratecardId="@ratecardId"></RateCardComponent>
         </div>
-
-
     }
 </div>
 
 @code {
     [Parameter]
-    public string transactionId { get; set; }
+    public string transactionId { get; set; } = "";
     [Parameter]
     public string ratecardsOffset { get; set; } = "0";
+    [Parameter]
+    public List<RateCard> ratecards { get; set; } = new();
+    [Parameter]
+    public List<string> ratecardIds { get; set; } = new();
 
-    private List<RateCard> ratecards = new();
+    // protected override async Task OnInitializedAsync()
+    // {
+    //     if (transactionId != "")
+    //     {
+    //         ratecards = await GetRateCards();
+    //     }
+    // }
 
-    protected override async Task OnInitializedAsync()
-    {
-        ratecards = await GetRateCards();
-    }
-
-    async Task<List<RateCard>> GetRateCards()
-    {
-        return await HttpClient.GetFromJsonAsync<List<RateCard>>($"{NavManager.BaseUri}api/RateCard/GetTransactionDetails/{transactionId}/{ratecardsOffset}");
-    }
+    // async Task<List<RateCard>> GetRateCards()
+    // {
+    //     return await HttpClient.GetFromJsonAsync<List<RateCard>>($"{Configuration["ApiBaseUrl"]}/api/RateCard/GetTransactionDetails/{transactionId}/{ratecardsOffset}");
+    // }
 
 }
