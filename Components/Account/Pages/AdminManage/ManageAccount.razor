@@ -6,11 +6,12 @@
 @inject ILogger<AddAccount> Logger
 @inject IConfiguration Configuration
 @inject HttpClient HttpClient
+@rendermode InteractiveServer
 
 <PageTitle>Manage Account</PageTitle>
 
 <div class="row">
-    <div class="col-md-6">
+    <div class="col-md-8">
         <EditForm Model="Input" FormName="searchUser" OnValidSubmit="SearchUser" method="post">
             <DataAnnotationsValidator />
             <h2>Manage an Account</h2>
@@ -62,28 +63,32 @@
                 <div class="col-md-6">
                     @if (!string.IsNullOrEmpty(updateMessage))
                     {
-                        <div align="center" style="margin-bottom:10px" class="text-danger">@updateMessage</div>
+                        <div align="center" style="margin-bottom:10px" class="alert alert-success">@updateMessage</div>
                     }
                     <div class="form-floating mb-3">
-                        <InputText @bind-Value="newPassword" class="form-control" typ aria-required="true" placeholder="newPassword" />
+                        <input @bind="PasswordInput.Password" type="password" class="form-control" typ aria-required="true" placeholder="newPassword" />
                         <label for="newPassword">New Password</label>
                     </div>
                     <div class="form-floating mb-3">
-                        <InputText @bind-Value="confirmPassword" class="form-control" aria-required="true" placeholder="confirmPassword" />
+                        <input @bind="PasswordInput.Password" type="password" class="form-control" aria-required="true" placeholder="confirmPassword" />
                         <label for="confirmPassword">Confirm New Password</label>
                     </div>
-                    <button type="submit" class="w-100 btn btn-lg btn-primary">Update Password</button>
+                    <button @onclick="UpdatePassword" class="w-100 btn btn-lg btn-primary">Update Password</button>
                 </div>
                 <div class="col-md-6">
-                    @if (!string.IsNullOrEmpty(secondaryMessage))
+                    @if (!string.IsNullOrEmpty(unlockedMessage))
                     {
-                        <div align="center" style="margin-bottom:10px" class="text-danger">@secondaryMessage</div>
+                        <div align="center" style="margin-bottom:10px" class="text-success">@unlockedMessage</div>
+                    }
+                    @if (!string.IsNullOrEmpty(lockedMessage))
+                    {
+                        <div align="center" style="margin-bottom:10px" class="text-danger">@lockedMessage</div>
                     }
                     @if (user.IsLocked) {
-                        <button onclick="UnlockUser" class="w-100 btn btn-lg btn-success">Unlock Account</button>
+                        <button @onclick="UnlockUser" class="w-100 btn btn-lg btn-success">Unlock Account</button>
                     } else
                     {
-                        <button onclick="LockUser" class="w-100 btn btn-lg btn-danger">Lock Account</button>
+                        <button @onclick="LockUser" class="w-100 btn btn-lg btn-danger">Lock Account</button>
                     }
                 </div>
             </div>
@@ -98,8 +103,11 @@
     [SupplyParameterFromForm]
     private SearchModel Input { get; set; } = new();
 
+    private PasswordModel PasswordInput { get; set; } = new();
+
     private string? updateMessage;
-    private string? secondaryMessage;
+    private string? lockedMessage;
+    private string? unlockedMessage;
 
     private string? apiBaseUrl;
 
@@ -107,9 +115,6 @@
     private string? lockedStatus;
 
     private bool searchFailed;
-
-    private string? newPassword;
-    private string? confirmPassword;
 
     protected override void OnInitialized()
     {
@@ -123,6 +128,9 @@
 
     private async Task SearchUser()
     {
+        updateMessage = "";
+        lockedMessage = "";
+        unlockedMessage = "";
         try
         {
             user = await HttpClient.GetFromJsonAsync<ApplicationUser>($"{apiBaseUrl}/api/Snowflake/e={Input.Email}");
@@ -156,11 +164,11 @@
         var result = await HttpClient.PutAsJsonAsync($"{apiBaseUrl}/api/Snowflake/{user.Email}/Unlock", user);
         if (result.IsSuccessStatusCode)
         {
-            secondaryMessage = "Account successfully unlocked.";
+            unlockedMessage = "Account successfully unlocked.";
         }
         else
         {
-            secondaryMessage = $"Something went wrong. {result.Content.ReadAsStringAsync()}";
+            unlockedMessage = $"Something went wrong. {result.Content.ReadAsStringAsync()}";
             return;
         }
     }
@@ -170,25 +178,12 @@
         var result = await HttpClient.PutAsJsonAsync($"{apiBaseUrl}/api/Snowflake/{user.Email}/Lock", user);
         if (result.IsSuccessStatusCode)
         {
-            secondaryMessage = "Account successfully locked.";
+            lockedMessage = "Account successfully locked.";
         }
         else
         {
-            secondaryMessage = $"Something went wrong. {result.Content.ReadAsStringAsync()}";
+            lockedMessage = $"Something went wrong. {result.Content.ReadAsStringAsync()}";
             return;
-        }
-    }
-
-    private ApplicationUser CreateUser()
-    {
-        try
-        {
-            return Activator.CreateInstance<ApplicationUser>();
-        }
-        catch
-        {
-            throw new InvalidOperationException($"Can't create an instance of '{nameof(ApplicationUser)}'. " +
-                $"Ensure that '{nameof(ApplicationUser)}' is not an abstract class and has a parameterless constructor.");
         }
     }
 
@@ -206,5 +201,11 @@
         [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
         [DataType(DataType.Password)]
         public string Password { get; set; } = "";
+
+        [Required]
+        [DataType(DataType.Password)]
+        [Display(Name = "Confirm password")]
+        [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
+        public string ConfirmPassword { get; set; } = "";
     }
 }
