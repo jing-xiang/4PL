@@ -36,22 +36,6 @@
     </div>
 </div>
 
-<div style="margin:10px">
-    <a href="@(NavigationManager.GetUriWithQueryParameters("Account/ResetPassword", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))">Reset password for testing purposes</a>
-</div>
-
-<div style="margin:10px">
-    <a href="@(NavigationManager.GetUriWithQueryParameters("Account/InvalidPasswordReset", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))">Invalid link for testing purposes</a>
-</div>
-
-<div style="margin:10px">
-    <a href="@(NavigationManager.GetUriWithQueryParameters("Account/ResetPasswordConfirmation", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))">reset confirmation for testing purposes</a>
-</div>
-
-<div style="margin:10px">
-    <a href="@(NavigationManager.GetUriWithQueryParameters("/Maintenance", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))">authorised view for testing purposes</a>
-</div>
-
 @code {
     
     [SupplyParameterFromForm]

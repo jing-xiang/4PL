@@ -60,11 +60,11 @@
             <h3>Update Details</h3>
             <hr />
             <div class="row">
+                @if (!string.IsNullOrEmpty(updateMessage))
+                {
+                    <div align="center" style="margin-bottom:10px" class="alert alert-@messageType">@updateMessage</div>
+                }
                 <div class="col-md-6">
-                    @if (!string.IsNullOrEmpty(updateMessage))
-                    {
-                        <div align="center" style="margin-bottom:10px" class="alert alert-success">@updateMessage</div>
-                    }
                     <div class="form-floating mb-3">
                         <input @bind="PasswordInput.Password" type="password" class="form-control" typ aria-required="true" placeholder="newPassword" />
                         <label for="newPassword">New Password</label>
@@ -76,15 +76,7 @@
                     <button @onclick="UpdatePassword" class="w-100 btn btn-lg btn-primary">Update Password</button>
                 </div>
                 <div class="col-md-6">
-                    @if (!string.IsNullOrEmpty(unlockedMessage))
-                    {
-                        <div align="center" style="margin-bottom:10px" class="text-success">@unlockedMessage</div>
-                    }
-                    @if (!string.IsNullOrEmpty(lockedMessage))
-                    {
-                        <div align="center" style="margin-bottom:10px" class="text-danger">@lockedMessage</div>
-                    }
-                    @if (user.IsLocked) {
+                    @if (lockedStatus == "TRUE") {
                         <button @onclick="UnlockUser" class="w-100 btn btn-lg btn-success">Unlock Account</button>
                     } else
                     {
@@ -106,8 +98,7 @@
     private PasswordModel PasswordInput { get; set; } = new();
 
     private string? updateMessage;
-    private string? lockedMessage;
-    private string? unlockedMessage;
+    private string? messageType;
 
     private string? apiBaseUrl;
 
@@ -129,8 +120,8 @@
     private async Task SearchUser()
     {
         updateMessage = "";
-        lockedMessage = "";
-        unlockedMessage = "";
+        messageType = "success";
+
         try
         {
             user = await HttpClient.GetFromJsonAsync<ApplicationUser>($"{apiBaseUrl}/api/Snowflake/e={Input.Email}");
@@ -155,6 +146,7 @@
         else
         {
             updateMessage = $"Something went wrong. {result.Content.ReadAsStringAsync()}";
+            messageType = "danger";
             return;
         }
     }
@@ -164,11 +156,13 @@
         var result = await HttpClient.PutAsJsonAsync($"{apiBaseUrl}/api/Snowflake/{user.Email}/Unlock", user);
         if (result.IsSuccessStatusCode)
         {
-            unlockedMessage = "Account successfully unlocked.";
+            updateMessage = "Account successfully unlocked.";
+            lockedStatus = "FALSE";
         }
         else
         {
-            unlockedMessage = $"Something went wrong. {result.Content.ReadAsStringAsync()}";
+            updateMessage = $"Something went wrong. {result.Content.ReadAsStringAsync()}";
+            messageType = "danger";
             return;
         }
     }
@@ -176,13 +170,15 @@
     private async Task LockUser()
     {
         var result = await HttpClient.PutAsJsonAsync($"{apiBaseUrl}/api/Snowflake/{user.Email}/Lock", user);
+        messageType = "danger";
         if (result.IsSuccessStatusCode)
         {
-            lockedMessage = "Account successfully locked.";
+            updateMessage = "Account successfully locked.";
+            lockedStatus = "TRUE";
         }
         else
         {
-            lockedMessage = $"Something went wrong. {result.Content.ReadAsStringAsync()}";
+            updateMessage = $"Something went wrong. {result.Content.ReadAsStringAsync()}";
             return;
         }
     }

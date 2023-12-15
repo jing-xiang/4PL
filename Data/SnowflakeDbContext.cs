@@ -1,8 +1,6 @@
 using Snowflake.Data.Client;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
-using System.Linq.Expressions;
-using System.Drawing;
 
 namespace _4PL.Data
 {
@@ -63,21 +61,57 @@ namespace _4PL.Data
             }
         }
 
+        public async Task<List<ApplicationSetting>> GetSystemSettings()
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                IDbCommand command = conn.CreateCommand();
+                command.CommandText = "CALL GET_SYSTEM_SETTINGS()";
+                IDataReader reader = command.ExecuteReader();
+                List<ApplicationSetting> settings = new();
+
+                while (reader.Read())
+                {
+                    ApplicationSetting setting = new ApplicationSetting()
+                    {
+                        SettingType = reader.GetString(0),
+                        Value = reader.GetString(1),
+                    };
+                    settings.Add(setting);
+                }
+                return settings;
+            }
+        }
+
+        public void UpdateSetting(ApplicationSetting setting)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                IDbCommand command = conn.CreateCommand();
+                command.CommandText = "CALL UPDATE_SYSTEM_SETTING(:setting_type, :new_value)";
+                command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "setting_type", Value = setting.SettingType, DbType = DbType.String });
+                command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "new_value", Value = setting.Value, DbType = DbType.String });
+
+                command.ExecuteScalar();
+            }
+        }
+
         public async Task<ApplicationUser> GetUserByEmailAsync(string email)
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
                 conn.Open();
+                IDbCommand getMaxDays = conn.CreateCommand();
+                getMaxDays.CommandText = "CALL GET_SETTING('MAX DAYS BEFORE LOCKED')";
+                int maxDaysBeforeLocked = Convert.ToInt32(getMaxDays.ExecuteScalar());
 
-                IDbCommand getSetting = conn.CreateCommand();
-                getSetting.CommandText = "CALL GET_MAX_DAYS_BEFORE_LOCKED()";
-                int maxDaysBeforeLocked = Convert.ToInt32(getSetting.ExecuteScalar());
-
-                ApplicationUser currUser = new ApplicationUser();
+                ApplicationUser currUser = new();
                 IDbCommand command = conn.CreateCommand();
                 command.CommandText = $"CALL GET_USER_BY_EMAIL('{email}')";
-
                 IDataReader reader = command.ExecuteReader();
+
                 if (reader.Read())
                 {
                     currUser.Name = reader.GetString(0);
@@ -95,7 +129,6 @@ namespace _4PL.Data
                 {
                     return null;
                 }
-
                 return currUser;
             }
         }
@@ -107,7 +140,7 @@ namespace _4PL.Data
                 conn.Open();
 
                 IDbCommand getSetting = conn.CreateCommand();
-                getSetting.CommandText = "CALL GET_MAX_DAYS_BEFORE_LOCKED()";
+                getSetting.CommandText = "CALL GET_SETTING('MAX DAYS BEFORE LOCKED')";
                 int maxDaysBeforeLocked = Convert.ToInt32(getSetting.ExecuteScalar());
 
                 ApplicationUser currUser = new ApplicationUser();
@@ -142,10 +175,11 @@ namespace _4PL.Data
             {
                 conn.Open();
                 IDbCommand command = conn.CreateCommand(); 
-                command.CommandText = $"CALL RESET_PASSWORD(:email, :password, :salt)";
+                command.CommandText = $"CALL RESET_PASSWORD(:email, :password, :salt, :reset_date)";
                 command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "email", Value = user.Email, DbType = DbType.String });
                 command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "password", Value = user.Hash, DbType = DbType.String });
                 command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "salt", Value = Convert.ToBase64String(user.Salt), DbType = DbType.String });
+                command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "reset_date", Value = DateTime.Now, DbType = DbType.DateTime });
 
                 command.ExecuteScalar();
             }
@@ -173,7 +207,7 @@ namespace _4PL.Data
                 conn.Open();
                 IDbCommand getSetting = conn.CreateCommand();
 
-                getSetting.CommandText = "CALL GET_MAX_FAILED_ATTEMPTS()";
+                getSetting.CommandText = "CALL GET_SETTING('MAX FAILED ATTEMPTS')";
                 int maxAttempts = Convert.ToInt32(getSetting.ExecuteScalar());
                 int updatedAttempts = user.FailedAttempts + 1;
 
@@ -182,7 +216,7 @@ namespace _4PL.Data
                     command.CommandText = "CALL UPDATE_ATTEMPTS(:email, :updated, :max_attempts)";
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "email", Value = user.Email, DbType = DbType.String });
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "updated", Value = updatedAttempts, DbType = DbType.Int32 });
-                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "max_attempts", Value = maxAttempts - 1, DbType = DbType.Int32 });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "max_attempts", Value = maxAttempts, DbType = DbType.Int32 });
 
                     return command.ExecuteScalar().ToString();
                 }

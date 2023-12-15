@@ -1,9 +1,69 @@
 ﻿@page "/Admin/SystemSettings"
 
+@using System.Data
+@using _4PL.Data
+
+@inject ILogger<SystemSettings> Logger
+@inject IConfiguration Configuration
+@inject HttpClient HttpClient
+@rendermode InteractiveServer
+
 <PageTitle>System Settings</PageTitle>
 
-<h3>System Settings</h3>
+@if (settings != null)
+{
+    <div class="col-md-8">
+        <h2>System Settings</h2>
+        <hr />
+        @if (!string.IsNullOrEmpty(updateMessage))
+        {
+            <div style="margin-bottom:10px" class="alert alert-@messageType">@updateMessage</div>
+        }
+        <table class="table">
+            <tbody>
+                @foreach (var setting in settings)
+                {
+                    <tr>
+                        <td>@setting.SettingType</td>
+                        <td>@setting.Value</td>
+                        <td><input type="text" @bind="@setting.Value" class="form-control" /></td>
+                        <td><button @onclick="() => UpdateSetting(setting)" class="btn btn-primary">Confirm</button></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+} else
+{
+    <p>Loading...</p>
+}
 
 @code {
+    private List<ApplicationSetting>? settings;
+    private string? apiBaseUrl;
+    private string? updateMessage;
+    private string? messageType;
 
+    protected override async Task OnInitializedAsync()
+    {
+        apiBaseUrl = Configuration["ApiBaseUrl"];
+        settings = await HttpClient.GetFromJsonAsync<List<ApplicationSetting>>($"{apiBaseUrl}/api/Snowflake/GetSystemSettings");
+    }
+
+    private async Task UpdateSetting(ApplicationSetting setting)
+    {
+        var result = await HttpClient.PutAsJsonAsync($"{apiBaseUrl}/api/Snowflake/{setting.SettingType}/UpdateSetting", setting);
+        if (result.IsSuccessStatusCode)
+        {
+            updateMessage = await result.Content.ReadAsStringAsync();
+            messageType = "success";
+            Logger.LogInformation(await result.Content.ReadAsStringAsync());
+        }
+        else
+        {
+            updateMessage = await result.Content.ReadAsStringAsync();
+            messageType = "danger";
+        }
+        settings = await HttpClient.GetFromJsonAsync<List<ApplicationSetting>>($"{apiBaseUrl}/api/Snowflake/GetSystemSettings");
+    }
 }

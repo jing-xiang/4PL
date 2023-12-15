@@ -107,7 +107,12 @@
             if (!validate.IsSuccessStatusCode)
             {
                 var update = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/Snowflake/UpdateAttempts", user);
-                errorMessage = await update.Content.ReadAsStringAsync();
+                int remaining = Convert.ToInt32(await update.Content.ReadAsStringAsync());
+                if (remaining == 0)
+                {
+                    RedirectManager.RedirectTo("Account/Lockout");
+                }
+                errorMessage = $"Invalid Password. Number of attempts remaining: {remaining}";
                 return;
             }
 

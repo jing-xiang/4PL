@@ -182,7 +182,7 @@ namespace _4PL.Data
             try
             {
                 string result = await _dbContext.UpdateAttempts(user);
-                return Ok($"Invalid credentials. Number of attempts remaining: {result}");
+                return Ok(result);
             }
             catch (Exception ex)
             {
@@ -197,6 +197,41 @@ namespace _4PL.Data
             {
                 _dbContext.ResetAttempts(user);
                 return Ok("Attempts have been reset.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal Server Error: {ex.Message}");
+            }
+        }
+
+        [HttpGet("GetSystemSettings")]
+        public async Task<ActionResult<List<ApplicationSetting>>> GetSystemSettings()
+        {
+            try
+            {
+                List<ApplicationSetting> result = await _dbContext.GetSystemSettings();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal Server Error: {ex.Message}");
+            }
+        }
+
+        [HttpPut("{settingType}/UpdateSetting")]
+        public IActionResult UpdateSetting([FromBody] ApplicationSetting setting)
+        {
+            try
+            {
+                if (setting.SettingType == "MAX FAILED ATTEMPTS" || setting.SettingType == "MAX DAYS BEFORE LOCKED" || setting.SettingType == "EMAIL PORT")
+                {
+                    if (!int.TryParse(setting.Value, out int result))
+                    {
+                        return BadRequest($"{setting.SettingType} must be a number.");
+                    }
+                }
+                _dbContext.UpdateSetting(setting);
+                return Ok($"{setting.SettingType} updated.");
             }
             catch (Exception ex)
             {
