@@ -1,0 +1,52 @@
+﻿@page "/shipment/results"
+@rendermode InteractiveServer
+@using System.Net.Http.Headers
+@using System.Text.Json
+@inject HttpClient HttpClient
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using _4PL.Data
+
+@inject NavigationManager NavManager
+
+<style>
+    table {
+        font-family: arial, sans-serif;
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    td, th {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+    }
+
+    tr:nth-child(even) {
+        background-color: #dddddd;
+    }
+</style>
+ <div class="card-body">
+    <QuickGrid Items="@ShipmentQueryable">
+                        <PropertyColumn Property="@(s => s.Job_No)" Sortable="true" />
+                    <PropertyColumn Property="@(s => s.Master_BL_No)"  Sortable="true" />
+                        
+                        </QuickGrid>
+                </div>
+
+@code {
+    IQueryable<Shipment> ShipmentQueryable = Enumerable.Empty<Shipment>().AsQueryable();
+
+
+    List<Shipment> shipments = new List<Shipment>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        shipments = await getShipmentData();
+    }
+
+    async Task<List<Shipment>> getShipmentData()
+    {
+        return await HttpClient.GetFromJsonAsync<List<Shipment>>($"{NavManager.BaseUri}api/shipment/ShipmentData");
+    }
+}
+

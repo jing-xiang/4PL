@@ -1,9 +1,11 @@
-﻿namespace _4PL.Data
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace _4PL.Data
 {
     public class Shipment
     {
         public string Job_No { get; set; }  
-        public string Master_BL_No { get; set; } = string.Empty;
+        public string Master_BL_No { get; set; } 
         public string Container_Mode { get; set; }
         public string Place_Of_Loading_ID { get; set; }
         public string Place_Of_Loading_Name { get; set; }

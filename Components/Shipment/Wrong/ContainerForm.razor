@@ -1,0 +1,53 @@
+﻿@page "/container/form"
+@inject HttpClient HttpClient
+@using _4PL.Data
+@rendermode InteractiveServer
+@inject IJSRuntime JS
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
+@inject ProtectedSessionStorage storage
+
+@inject NavigationManager NavManager
+
+<h3>Container Form</h3>
+
+<EditForm Model="container" OnSubmit="InsertContainer" Enhance>
+    <label>Container No</label>
+    <InputText @bind-Value="container.Container_No" />
+
+    <label>Container Type</label>
+    <InputText @bind-Value="container.Container_Type" />
+        
+    <label>Seal No 1</label>
+    <InputText @bind-Value="container.Seal_No_1" />
+
+    <label>Seal No 2</label>
+    <InputText @bind-Value="container.Seal_No_2" />
+    <button type="submit">Save</button>
+</EditForm>
+
+@code {
+
+    [SupplyParameterFromForm]
+    Container container { get; set; } = new();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var result = await storage.GetAsync<Shipment>("shipmentData");
+            if (result.Success)
+            {
+                Shipment shipment = result.Value;
+                container.Shipment_Job_No = shipment.Job_No;
+                StateHasChanged();
+            }
+        }
+    }
+    
+
+    async Task InsertContainer()
+    {
+        var response = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/Shipment/CreateContainer/", container);
+        await JS.InvokeVoidAsync("alert", "Successfully Added");
+    }
+}

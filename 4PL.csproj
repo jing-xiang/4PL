@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -10,19 +10,48 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="FileUploads\1afmsv3k.xlsx" />
+    <None Remove="FileUploads\2o1q5ved.xlsx" />
     <None Remove="FileUploads\4emfd3sm.xlsx" />
+    <None Remove="FileUploads\a5vi51hl.xlsx" />
+    <None Remove="FileUploads\bc0jxwow.xlsx" />
     <None Remove="FileUploads\bq4gm2i4.xlsx" />
     <None Remove="FileUploads\cqawrub3.xlsx" />
+    <None Remove="FileUploads\dgrwnoe5.xlsx" />
+    <None Remove="FileUploads\dkcb0ahm.xlsx" />
     <None Remove="FileUploads\edgnsbdy.xlsx" />
+    <None Remove="FileUploads\fc2rkxfv.xlsx" />
     <None Remove="FileUploads\fv1n1he3.xlsx" />
     <None Remove="FileUploads\gnm5t5ey.xlsx" />
+    <None Remove="FileUploads\gwn3tfva.xlsx" />
+    <None Remove="FileUploads\h3qi3v2p.xlsx" />
     <None Remove="FileUploads\ib54mr5j.xlsx" />
+    <None Remove="FileUploads\ixft0rnt.xlsx" />
+    <None Remove="FileUploads\jfav5db1.xlsx" />
     <None Remove="FileUploads\joodhqyj.xlsx" />
+    <None Remove="FileUploads\kcn0dxoy.xlsx" />
+    <None Remove="FileUploads\lf0jocbo.xlsx" />
+    <None Remove="FileUploads\lnku4anz.xlsx" />
+    <None Remove="FileUploads\lqioyai3.xlsx" />
     <None Remove="FileUploads\lvzeunsi.xlsx" />
+    <None Remove="FileUploads\lxcoah0j.xlsx" />
+    <None Remove="FileUploads\nivqv0gt.xlsx" />
     <None Remove="FileUploads\nrs1ccqb.xlsx" />
+    <None Remove="FileUploads\o3qai4h4.xlsx" />
     <None Remove="FileUploads\pemzjdjj.xlsx" />
     <None Remove="FileUploads\pgpzh5mp.xlsx" />
+    <None Remove="FileUploads\pkogypj1.xlsx" />
+    <None Remove="FileUploads\poz1thbd.xlsx" />
+    <None Remove="FileUploads\px1uh533.xlsx" />
+    <None Remove="FileUploads\qj1uiaau.xlsx" />
+    <None Remove="FileUploads\rtosrfdz.xlsx" />
     <None Remove="FileUploads\shipment_excel.xlsx" />
+    <None Remove="FileUploads\tbkg5z54.xlsx" />
+    <None Remove="FileUploads\td3e3uvs.xlsx" />
+    <None Remove="FileUploads\th4ebw1w.xlsx" />
+    <None Remove="FileUploads\wyeastym.xlsx" />
+    <None Remove="FileUploads\xftqdgj2.xlsx" />
+    <None Remove="FileUploads\ygo4ztd2.xlsx" />
     <None Remove="FileUploads\z1jji4ho.xlsx" />
   </ItemGroup>
 
@@ -36,13 +65,22 @@
       <Isolated>false</Isolated>
       <EmbedInteropTypes>true</EmbedInteropTypes>
     </COMReference>
+    <COMReference Include="{215d64d2-031c-33c7-96e3-61794cd1ee61}">
+      <WrapperTool>tlbimp</WrapperTool>
+      <VersionMinor>4</VersionMinor>
+      <VersionMajor>2</VersionMajor>
+      <Guid>215d64d2-031c-33c7-96e3-61794cd1ee61</Guid>
+    </COMReference>
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.QuickGrid" Version="8.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="8.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.0" />
+    <PackageReference Include="PSC.Blazor.Components.Tabs" Version="1.0.6" />
     <PackageReference Include="Snowflake.Data" Version="2.1.4" />
   </ItemGroup>
 

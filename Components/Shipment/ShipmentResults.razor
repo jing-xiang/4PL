@@ -1,0 +1,142 @@
+﻿@inject HttpClient HttpClient
+@using _4PL.Data
+
+@inject NavigationManager NavManager
+@rendermode InteractiveServer
+
+<style>
+    table {
+        font-family: arial, sans-serif;
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    td, th {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+    }
+
+    tr:nth-child(even) {
+        background-color: #dddddd;
+    }
+</style>
+
+<div>
+
+    <table class = "table">
+        <thead>
+            <tr>
+                <th>Job No</th>
+                <th>Master BL No</th>
+                <th>Container Mode</th>
+                <th>Place Of Loading ID</th>
+                <th>Place Of Loading Name</th>
+                <th>Place Of Discharge ID</th>
+                <th>Place Of Discharge Name</th>
+                <th>Vessel Name</th>
+                <th>Voyage No</th>
+                <th>ETD Date</th>
+                <th>ETA Date</th>
+                <th>Carrier Matchcode</th>
+                <th>Carrier Name</th>
+                <th>Carrier Contract No</th>
+                <th>Carrier Booking Reference No</th>
+                <th>Inco Terms</th>
+                <th>Controlling Customer Name</th>
+                <th>Shipper Name</th>
+                <th>Consignee Name</th>
+                <th>Total No Of Pieces</th>
+                <th>Package Type</th>
+                <th>Total No Of Volume Weight MTQ</th>
+                <th>Total No Of Gross Weight KGM</th>
+                <th>Description</th>
+                <th>Shipment Note</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @foreach (Shipment s in shipments) {
+                <tr>
+                    <td>
+                        <a href= "/shipment/view?Shipment_Job_No=@s.Job_No">
+                            @s.Job_No
+                        </a>
+                    </td>
+                    <td>@s.Master_BL_No</td>
+                    <td>@s.Container_Mode</td>
+                    <td>@s.Place_Of_Loading_ID</td>
+                    <td>@s.Place_Of_Loading_Name</td>
+                    <td>@s.Place_Of_Discharge_ID</td>
+                    <td>@s.Place_Of_Discharge_Name</td>
+                    <td>@s.Vessel_Name</td>
+                    <td>@s.Voyage_No</td>
+                    <td>@s.ETD_Date.Date</td>
+                    <td>@s.ETA_Date.Date</td>
+                    <td>@s.Carrier_Matchcode</td>
+                    <td>@s.Carrier_Name</td>
+                    <td>@s.Carrier_Contract_No</td>
+                    <td>@s.Carrier_Booking_Reference_No</td>
+                    <td>@s.Inco_Terms</td>
+                    <td>@s.Controlling_Customer_Name</td>
+                    <td>@s.Shipper_Name</td>
+                    <td>@s.Consignee_Name</td>
+                    <td>@s.Total_No_Of_Pieces</td>
+                    <td>@s.Package_Type</td>
+                    <td>@s.Total_No_Of_Volume_Weight_MTQ</td>
+                    <td>@s.Total_No_Of_Gross_Weight_KGM</td>
+                    <td>@s.Description</td>
+                    <td>@s.Shipment_Note</td>
+                    <button @onclick="() => navigateEdit(s.Job_No)">Edit</button>
+                    <button @onclick="() => DeleteShipment(s.Job_No)">Delete</button>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    List<Shipment> shipments = new List<Shipment>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        shipments = await getShipmentData();
+    }
+
+    async Task<List<Shipment>> getShipmentData()
+    {
+        return await HttpClient.GetFromJsonAsync<List<Shipment>>($"{NavManager.BaseUri}api/shipment/ShipmentData");
+    }
+
+    private void navigateEdit(string Job_No)
+    {
+        NavManager.NavigateTo($"/shipment/edit?Shipment_Job_No={Job_No}");
+    }
+
+    private void navigateView(string Job_No)
+    {
+        NavManager.NavigateTo($"/shipment/view?Shipment_Job_No={Job_No}");
+    }
+
+    async Task DeleteShipment(string Job_No)
+    {
+        var response = await HttpClient.DeleteAsync($"{NavManager.BaseUri}api/shipment/DeleteShipment/{Job_No}");
+        if (response.IsSuccessStatusCode)
+        {
+            // Remove the shipment from the local list
+            var shipmentToRemove = shipments.FirstOrDefault(s => s.Job_No == Job_No);
+            if (shipmentToRemove != null)
+            {
+                shipments.Remove(shipmentToRemove);
+            }
+            StateHasChanged();
+        }
+        else
+        {
+            Console.WriteLine("Error deleting shipment");
+        }
+        //shipments = await getShipmentData();
+        //StateHasChanged();
+    }
+}
+

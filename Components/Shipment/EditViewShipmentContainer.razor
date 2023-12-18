@@ -1,0 +1,323 @@
+﻿@page "/shipment/edit"
+@page "/shipment/view"
+
+@inject HttpClient HttpClient
+@using _4PL.Data
+@rendermode InteractiveServer
+@inject IJSRuntime JS
+
+@inject NavigationManager NavManager
+@using Microsoft.AspNetCore.WebUtilities
+
+<style>
+    table {
+        font-family: arial, sans-serif;
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    td, th {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+    }
+
+    tr:nth-child(even) {
+        background-color: #dddddd;
+    }
+</style>
+
+@if (isView)
+{
+    <h3>Shipment Container</h3>
+} else {
+    <h3>Editing Shipment Container</h3>
+}
+
+<div class="tab">
+    <button @onclick="(x => DisplayTab(1))">Shipment</button>
+    <button @onclick="(x => DisplayTab(2))">Container</button>
+</div>
+@if (tab1)
+{
+
+    <EditForm Model="shipment" OnSubmit="UpdateShipment" Enhance>
+     <div>
+         <label>Job No</label>
+         <InputText @bind-Value="shipment.Job_No" disabled="true"/>
+     </div>
+
+     <div>
+         <label>Master BL No</label>
+         <InputText @bind-Value="shipment.Master_BL_No" disabled =@isView/>
+     </div>
+
+     <div>
+         <label>Container Mode</label>
+         <InputText @bind-Value="shipment.Container_Mode" disabled=@isView />
+     </div>
+
+     <div>
+         <label>Place Of Loading ID</label>
+         <InputText @bind-Value="shipment.Place_Of_Loading_ID" disabled=@isView />
+     </div>
+
+
+     <div>
+         <label>Place Of Loading Name</label>
+         <InputText @bind-Value="shipment.Place_Of_Loading_Name" disabled=@isView />
+     </div>
+
+     <div>
+         <label>Place Of Discharge ID</label>
+         <InputText @bind-Value="shipment.Place_Of_Discharge_ID" disabled=@isView />
+     </div>
+
+     <div>
+         <label>Place Of Discharge Name</label>
+         <InputText @bind-Value="shipment.Place_Of_Discharge_Name" disabled=@isView />
+     </div>
+
+     <div>
+         <label>Vessel Name</label>
+         <InputText @bind-Value="shipment.Vessel_Name" disabled=@isView />
+     </div>
+
+     <div>
+         <label>Voyage No</label>
+         <InputText @bind-Value="shipment.Voyage_No" disabled=@isView />
+     </div>
+
+     <div>
+         <label>ETD</label>
+         <InputDate @bind-Value="shipment.ETD_Date" disabled=@isView />
+     </div>
+
+     <div>
+         <label>ETA</label>
+         <InputDate @bind-Value="shipment.ETA_Date" disabled=@isView />
+     </div>
+
+     <div>
+         <label>Carrier Matchcode</label>
+         <InputText @bind-Value="shipment.Carrier_Matchcode" disabled=@isView />
+     </div>
+
+     <div>
+         <label>Carrier Name</label>
+         <InputText @bind-Value="shipment.Carrier_Name" disabled=@isView />
+     </div>
+
+     <div>
+         <label>Carrier Contract No </label>
+         <InputText @bind-Value="shipment.Carrier_Contract_No" disabled=@isView />
+     </div>
+
+     <div>
+         <label>Carrier Booking Reference No </label>
+         <InputText @bind-Value="shipment.Carrier_Booking_Reference_No" disabled=@isView />
+     </div>
+
+     <div>
+         <label>Inco Terms </label>
+         <InputText @bind-Value="shipment.Inco_Terms" disabled=@isView />
+     </div>
+
+     <div>
+         <label>Controlling Customer Name </label>
+         <InputText @bind-Value="shipment.Controlling_Customer_Name" disabled=@isView />
+     </div>
+
+     <div>
+         <label>Shipper Name </label>
+         <InputText @bind-Value="shipment.Shipper_Name" disabled=@isView />
+     </div>
+
+     <div>
+         <label>Consignee Name </label>
+         <InputText @bind-Value="shipment.Consignee_Name" disabled=@isView />
+     </div>
+
+     <div>
+         <label>Total No Of Pieces </label>
+         <InputNumber @bind-Value="shipment.Total_No_Of_Pieces" disabled=@isView />
+     </div>
+
+     <div>
+         <label>Package Type </label>
+         <InputText @bind-Value="shipment.Package_Type" disabled=@isView />
+     </div>
+
+     <div>
+         <label>Total No Of Volume Weight MTQ </label>
+         <InputNumber @bind-Value="shipment.Total_No_Of_Volume_Weight_MTQ" disabled=@isView />
+     </div>
+
+     <div>
+         <label>Total No Of Gross Weight KGM </label>
+         <InputNumber @bind-Value="shipment.Total_No_Of_Gross_Weight_KGM" disabled=@isView />
+     </div>
+
+     <div>
+         <label>Description </label>
+         <InputText @bind-Value="shipment.Description" disabled=@isView />
+     </div>
+
+     <div>
+         <label>Shipment Note </label>
+         <InputText @bind-Value="shipment.Shipment_Note" disabled=@isView />
+     </div>
+
+     <button type="button" @onclick="navigate">Cancel</button>
+     <button type="submit" disabled=@isView>Save</button>
+ </EditForm>
+
+}
+@if (tab2)
+{
+    <EditForm Model="container" OnSubmit="InsertContainer" Enhance>
+     <label>Container No</label>
+     <InputText @bind-Value="container.Container_No" disabled=@isView />
+
+     <label>Container Type</label>
+     <InputText @bind-Value="container.Container_Type" disabled=@isView />
+
+     <label>Seal No 1</label>
+     <InputText @bind-Value="container.Seal_No_1" disabled=@isView />
+
+     <label>Seal No 2</label>
+     <InputText @bind-Value="container.Seal_No_2" disabled=@isView />
+     <button type="submit" disabled=@isView>Save</button>
+ </EditForm>
+
+    <div>
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Container No</th>
+                    <th>Container Type</th>
+                    <th>Seal No 1</th>
+                    <th>Seal No 2</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @foreach (Container c in containers)
+                {
+                    <tr>
+                        <td>@c.Container_No</td>
+                        <td>@c.Container_Type</td>
+                        <td>@c.Seal_No_1</td>
+                        <td>@c.Seal_No_2</td>
+                        <button @onclick="() => DeleteContainer(c.Shipment_Job_No, c.Container_No )">Delete</button>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    //tab display
+    private bool tab1 = true;
+    private bool tab2 = false;
+
+    public void DisplayTab(int tabNumber)
+    {
+        if (tabNumber == 1)
+        {
+            this.tab1 = true;
+            this.tab2 = false;
+        }
+        if (tabNumber == 2)
+        {
+            this.tab1 = false;
+            this.tab2 = true;
+        }
+    }
+
+    //posting form input
+    [SupplyParameterFromForm]
+    Shipment shipment { get; set; } = new();
+    Container container { get; set; } = new();
+
+    async Task UpdateShipment()
+    {
+        var response = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/Shipment/UpdateShipment/", shipment);
+        await JS.InvokeVoidAsync("alert", "Successfully Updated");
+        NavManager.NavigateTo("/shipment");
+    }
+
+    async Task InsertContainer()
+    {
+        if (shipment.Job_No == "")
+        {
+            await JS.InvokeVoidAsync("alert", "Please fill in the Shipment Job No");
+        }
+        else
+        {
+            container.Shipment_Job_No = shipment.Job_No;
+            var response = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/Shipment/CreateContainer/", container);
+            await JS.InvokeVoidAsync("alert", "Successfully Added");
+            containers = await getContainerData();
+        }
+    }
+
+    async Task navigate()
+    {
+        NavManager.NavigateTo("/shipment");
+    }
+
+    async Task DeleteContainer(string Shipment_Job_No, string Container_No)
+    {
+        var response = await HttpClient.DeleteAsync($"{NavManager.BaseUri}api/shipment/DeleteContainer/{Shipment_Job_No}/{Container_No}");
+        if (response.IsSuccessStatusCode)
+        {
+            containers = await getContainerData();
+            StateHasChanged();
+        }
+        else
+        {
+            Console.WriteLine("Error deleting container");
+        }
+    }
+
+
+    //fetching shipment and containers data
+    [Parameter]
+    public string Shipment_Job_No { get; set; }
+    List<Container> containers = new List<Container>();
+    bool isView = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var uri = NavManager.ToAbsoluteUri(NavManager.Uri);
+        isView = NavManager.Uri.Contains("/view");
+        if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("Shipment_Job_No", out var Job_No))
+        {
+            Shipment_Job_No = Job_No.First();
+        }
+        shipment = await getShipmentData();
+        containers = await getContainerData();
+    }
+
+    async Task<List<Container>> getContainerData()
+    {
+
+        if (Shipment_Job_No != "")
+        {
+            return await HttpClient.GetFromJsonAsync<List<Container>>($"{NavManager.BaseUri}api/shipment/ContainerData/{Shipment_Job_No}");
+        }
+        return containers;
+    }
+
+    async Task<Shipment> getShipmentData()
+    {
+        if (Shipment_Job_No != "")
+        {
+            return await HttpClient.GetFromJsonAsync<Shipment>($"{NavManager.BaseUri}api/shipment/ShipmentData/{Shipment_Job_No}");
+        }
+        return new();
+    }
+}

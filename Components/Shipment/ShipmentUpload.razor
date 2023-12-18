@@ -9,13 +9,20 @@
 @inject IHttpClientFactory ClientFactory
 @inject HttpClient HttpClient
 
-<h1>Upload Files</h1>
+<h1>Shipments</h1>
 
 <p>
     <label>
         Upload up to @maxAllowedFiles files:
         <InputFile OnChange="@OnInputFileChange" multiple />
     </label>
+
+    @if (isLoading)
+    {
+        <div>
+            <span>Loading...</span>
+        </div>
+    }
 </p>
 
 @if (files.Count > 0)
@@ -30,7 +37,7 @@
 
                         @if (@numShipments == "0")
                         {
-                            <span> All shipments already exist!</span>
+                            <div> All shipments already exist!</div>
                         }
 
                         else if (FileUpload(uploadResults, file.Name, out var result))
@@ -56,7 +63,12 @@
 <p>
     @message
 </p>
-<ShipmentCard></ShipmentCard>
+
+<button @onclick="navigate">
+    Add New Shipment
+</button>
+
+<ShipmentResults></ShipmentResults>
 
 @code {
     private List<File> files = new();
@@ -65,11 +77,13 @@
     private bool shouldRender;
     private string? message;
     public string numShipments = "";
-
+    private bool isLoading = false;
     protected override bool ShouldRender() => shouldRender;
 
     private async Task OnInputFileChange(InputFileChangeEventArgs e)
     {
+        isLoading = true;
+        StateHasChanged();
         shouldRender = false;
         long maxFileSize = 1024 * 1000;
         var upload = false;
@@ -153,14 +167,18 @@
                     uploadResults = uploadResults.Concat(newUploadResults).ToList();
                     HttpResponseMessage result = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/Shipment/CreateShipments/", uploadResults[0].StoredFileName);
                     numShipments = result.Content.ReadAsStringAsync().Result;
-   
-                    //NavManager.NavigateTo("/shipment/" + uploadResults[0].StoredFileName);
                 }
 
             }
         }
-
+        isLoading = false;
+        StateHasChanged();
         shouldRender = true;
+    }
+
+    private void navigate()
+    {
+        NavManager.NavigateTo("/shipment/add");
     }
 
     private static bool FileUpload(IList<UploadResult> uploadResults,

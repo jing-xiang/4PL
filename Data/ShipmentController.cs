@@ -8,6 +8,7 @@ using System.Net;
 using Excel = Microsoft.Office.Interop.Excel;
 using Microsoft.Office.Interop.Excel;
 using Org.BouncyCastle.Utilities;
+using Microsoft.EntityFrameworkCore;
 namespace _4PL.Data
 {
     [Route("api/[controller]")]
@@ -31,7 +32,14 @@ namespace _4PL.Data
             return Ok(shipmentData);
         }
 
-        // Read
+        //Create and Update Shipment
+        [HttpPost("CreateShipment")]
+        public IActionResult insertFormtoSnowflake([FromBody] Shipment shipment)
+        {
+            string uploadMessage = _dbcontext.InsertShipment(shipment);
+            return Ok(uploadMessage);
+        }
+
         [HttpPost("CreateShipments")]
         public IActionResult insertExceltoSnowflake ([FromBody] string fileNameWithoutExtension)
         {
@@ -41,7 +49,7 @@ namespace _4PL.Data
             foreach(var kvp in dict)
             {
                 Shipment shipment = kvp.Value.Item1;
-                string uploadMessage = _dbcontext.CallStoredProcedureForShipment(shipment);
+                string uploadMessage = _dbcontext.InsertShipment(shipment);
                 if (!uploadMessage.Equals("Error"))
                 {
                     output++;
@@ -49,10 +57,25 @@ namespace _4PL.Data
                 List<Container> containers = kvp.Value.Item2;
                 foreach (var container in containers)
                 {
-                    _dbcontext.CallStoredProcedureForContainer(container);
+                    _dbcontext.InsertContainer(container);
                 }
             }
             return Ok(output.ToString());
+        }
+
+        [HttpPost("UpdateShipment")]
+        public IActionResult updateFormtoSnowflake([FromBody] Shipment shipment)
+        {
+            _dbcontext.UpdateShipment(shipment);
+            return Ok();
+        }
+
+        // Create and Update Container
+        [HttpPost("CreateContainer")]
+        public IActionResult insertFormtoSnowflake([FromBody] Container container)
+        {
+            _dbcontext.InsertContainer(container);
+            return Ok();
         }
 
         // Create
@@ -79,27 +102,18 @@ namespace _4PL.Data
                 {
                     if (file.Length == 0)
                     {
-                        //logger.LogInformation("{FileName} length is 0 (Err: 1)",
-                        //    trustedFileNameForDisplay);
-                        //uploadResult.ErrorCode = 1;
+                        uploadResult.ErrorCode = 1;
                     }
                     else if (file.Length > maxFileSize)
                     {
-                        //logger.LogInformation("{FileName} of {Length} bytes is " +
-                        //    "larger than the limit of {Limit} bytes (Err: 2)",
-                        //    trustedFileNameForDisplay, file.Length, maxFileSize);
-                        //uploadResult.ErrorCode = 2;
+                        uploadResult.ErrorCode = 2;
                     }
                     else
                     {
                         try
                         {
                             trustedFileNameForFileStorage = Path.GetFileNameWithoutExtension(Path.GetRandomFileName());
-                            //trustedFileNameForFileStorage = "shipment_excel";
 
-                            //var path = Path.Combine(env.ContentRootPath,
-                            //    env.EnvironmentName, "unsafe_uploads",
-                            //    trustedFileNameForFileStorage);
                             var path = Path.Combine(Directory.GetCurrentDirectory(),
                                 "FileUploads",
                                 trustedFileNameForFileStorage + ".xlsx");
@@ -107,15 +121,11 @@ namespace _4PL.Data
                             await using FileStream fs = new(path, FileMode.Create);
                             await file.CopyToAsync(fs);
 
-                            //logger.LogInformation("{FileName} saved at {Path}",
-                            //    trustedFileNameForDisplay, path);
                             uploadResult.Uploaded = true;
                             uploadResult.StoredFileName = trustedFileNameForFileStorage;
                         }
                         catch (IOException ex)
                         {
-                            //logger.LogError("{FileName} error on upload (Err: 3): {Message}",
-                            //    trustedFileNameForDisplay, ex.Message);
                             uploadResult.ErrorCode = 3;
                         }
                     }
@@ -124,9 +134,6 @@ namespace _4PL.Data
                 }
                 else
                 {
-                    //logger.LogInformation("{FileName} not uploaded because the " +
-                    //    "request exceeded the allowed {Count} of files (Err: 4)",
-                    //    trustedFileNameForDisplay, maxAllowedFiles);
                     uploadResult.ErrorCode = 4;
                 }
 
@@ -136,20 +143,58 @@ namespace _4PL.Data
             return new CreatedResult(resourcePath, uploadResults);
         }
 
+        //Delete
+        [HttpDelete("DeleteShipment/{Shipment_Job_No}")]
+        public ActionResult DeleteShipment(string Shipment_Job_No)
+        {
+            System.Console.WriteLine($"Deleting shipment: {Shipment_Job_No}");
+            int numDeleted = _dbcontext.DeleteShipment(Shipment_Job_No);
+
+            return Ok(numDeleted > 0 ? true : false);
+        }
+
+        [HttpDelete("DeleteContainer/{Shipment_Job_No}/{Container_No}")]
+        public ActionResult DeleteContainer(string Shipment_Job_No, string Container_No)
+        {
+            int numDeleted = _dbcontext.DeleteContainer(Shipment_Job_No, Container_No);
+
+            return Ok(numDeleted > 0 ? true : false);
+        }
+
+        /*[HttpPost("Search")]
+        public IActionResult Search(string Job_No, string Master_BL_No, DateTime ETD_Date, DateTime ETA_Date)
+        {
+
+        }*/
+
         // Read
         [HttpGet("ShipmentData")]
         public IActionResult fetchShipmentData()
         {
-            List<Shipment> shipments = _dbcontext.fetchShipment();
+            List<Shipment> shipments = _dbcontext.fetchShipments();
+            return Ok(shipments);
+        }
+
+        [HttpGet("ShipmentData/{Shipment_Job_No}")]
+        public IActionResult fetchShipmentData(string Shipment_Job_No)
+        {
+            Shipment shipments = _dbcontext.fetchShipment(Shipment_Job_No);
             return Ok(shipments);
         }
 
         [HttpGet("ContainerData")]
-        public IActionResult fetchContainerData()
+        [HttpGet("ContainerData/{Shipment_Job_No}")]
+        public IActionResult fetchContainerData(string Shipment_Job_No)
         {
-            List<Container> containers = _dbcontext.fetchContainer();
+            List<Container> containers = new();
+            if (Shipment_Job_No != null)
+            {
+                containers = _dbcontext.fetchContainers(Shipment_Job_No);
+            }
             return Ok(containers);
         }
+
+
 
         private Dictionary<string, Tuple<Shipment , List<Container>>> ReadExcelFile(string fileNameWithoutExtension)
         {
@@ -179,72 +224,68 @@ namespace _4PL.Data
                 Container c = new Container();
 
                 //ways to automatically assign this, given the different data type
-                string jobNo = cellIsEmpty(cell) ? "-" : cell.Value2;
+                string jobNo = cellIsEmpty(cell) ? "" : cell.Value2;
                 s.Job_No = jobNo;
 
                 cell = nextCell(xlWorkSheet, cell);
-                s.Master_BL_No = cellIsEmpty(cell) ? "-" : cell.Value2;
+                s.Master_BL_No = cellIsEmpty(cell) ? "" : cell.Value2;
 
                 cell = nextCell(xlWorkSheet, cell);
-                s.Container_Mode = cellIsEmpty(cell) ? "-" : cell.Value2;
+                s.Container_Mode = cellIsEmpty(cell) ? "" : cell.Value2;
 
                 cell = nextCell(xlWorkSheet, cell);
-                s.Place_Of_Loading_ID = cellIsEmpty(cell) ? "-" : cell.Value2;
+                s.Place_Of_Loading_ID = cellIsEmpty(cell) ? "" : cell.Value2;
 
                 cell = nextCell(xlWorkSheet, cell);
-                s.Place_Of_Loading_Name = cellIsEmpty(cell) ? "-" : cell.Value2;
+                s.Place_Of_Loading_Name = cellIsEmpty(cell) ? "" : cell.Value2;
 
                 cell = nextCell(xlWorkSheet, cell);
-                s.Place_Of_Discharge_ID = cellIsEmpty(cell) ? "-" : cell.Value2;
+                s.Place_Of_Discharge_ID = cellIsEmpty(cell) ? "" : cell.Value2;
 
                 cell = nextCell(xlWorkSheet, cell);
-                s.Place_Of_Discharge_Name = cellIsEmpty(cell) ? "-" : cell.Value2;
+                s.Place_Of_Discharge_Name = cellIsEmpty(cell) ? "" : cell.Value2;
 
                 cell = nextCell(xlWorkSheet, cell);
-                s.Vessel_Name = cellIsEmpty(cell) ? "-" : cell.Value2;
+                s.Vessel_Name = cellIsEmpty(cell) ? "" : cell.Value2;
 
                 cell = nextCell(xlWorkSheet, cell);
-                s.Voyage_No = cellIsEmpty(cell) ? "-" : cell.Value2;
+                s.Voyage_No = cellIsEmpty(cell) ? "" : cell.Value2;
            
                 cell = nextCell(xlWorkSheet, cell);
-                s.ETD_Date = DateTime.Now;
+                s.ETD_Date = cellIsEmpty(cell) ? DateTime.Now : DateTime.ParseExact(cell.Text, "d-MMM-yy", null);
 
                 cell = nextCell(xlWorkSheet, cell);
-                //16-Jan-2023
-                //01/16/2023 --> MM/dd/yyyy
-                //find the cell.Text
-                //s.ETA_Date = cellIsEmpty(cell) ? DateTime.Now : DateTime.ParseExact(cell.Text, "d-mmm-yy", null);
-                s.ETA_Date = DateTime.Now;
+                s.ETA_Date = cellIsEmpty(cell) ? DateTime.Now : DateTime.ParseExact(cell.Text, "d-MMM-yy", null);
 
                 cell = nextCell(xlWorkSheet, cell);
-                s.Carrier_Matchcode = cellIsEmpty(cell) ? "-" : cell.Value2;
+                s.Carrier_Matchcode = cellIsEmpty(cell) ? "" : cell.Value2;
 
                 cell = nextCell(xlWorkSheet, cell);
-                s.Carrier_Name = cellIsEmpty(cell) ? "-" : cell.Value2;
+                s.Carrier_Name = cellIsEmpty(cell) ? "" : cell.Value2;
 
                 cell = nextCell(xlWorkSheet, cell);
-                s.Carrier_Contract_No = cellIsEmpty(cell) ? "-" : cell.Value2;
+                s.Carrier_Contract_No = cellIsEmpty(cell) ? "" : cell.Value2;
 
                 cell = nextCell(xlWorkSheet, cell);
-                s.Carrier_Booking_Reference_No = cellIsEmpty(cell) ? "-" : cell.Value2;
+                s.Carrier_Booking_Reference_No = cellIsEmpty(cell) ? "" : cell.Value2;
                 
                 cell = nextCell(xlWorkSheet, cell);
-                s.Inco_Terms = cellIsEmpty(cell) ? "-" : cell.Value2;
+                s.Inco_Terms = cellIsEmpty(cell) ? "" : cell.Value2;
 
                 cell = nextCell(xlWorkSheet, cell);
-                s.Controlling_Customer_Name = cellIsEmpty(cell) ? "-" : cell.Value2; 
+                s.Controlling_Customer_Name = cellIsEmpty(cell) ? "" : cell.Value2; 
 
                 cell = nextCell(xlWorkSheet, cell);
-                s.Shipper_Name = cellIsEmpty(cell) ? "-" : cell.Value2; 
+                s.Shipper_Name = cellIsEmpty(cell) ? "" : cell.Value2; 
 
                 cell = nextCell(xlWorkSheet, cell);
-                s.Consignee_Name = cellIsEmpty(cell) ? "-" : cell.Value2;
+                s.Consignee_Name = cellIsEmpty(cell) ? "" : cell.Value2;
 
                 cell = nextCell(xlWorkSheet, cell);
                 s.Total_No_Of_Pieces = cellIsEmpty(cell) ? 0 : (int)cell.Value2;
 
                 cell = nextCell(xlWorkSheet, cell);
-                s.Package_Type = cellIsEmpty(cell) ? "-" : cell.Value2;
+                s.Package_Type = cellIsEmpty(cell) ? "" : cell.Value2;
 
                 cell = nextCell(xlWorkSheet, cell);
                 s.Total_No_Of_Volume_Weight_MTQ = cellIsEmpty(cell) ? 0.0 : (double)cell.Value2;
@@ -253,22 +294,22 @@ namespace _4PL.Data
                 s.Total_No_Of_Gross_Weight_KGM = cellIsEmpty(cell) ? 0.0 : (double)cell.Value2;
 
                 cell = nextCell(xlWorkSheet, cell);
-                s.Description = cellIsEmpty(cell) ? "-" : cell.Value2;
+                s.Description = cellIsEmpty(cell) ? "" : cell.Value2;
 
                 cell = nextCell(xlWorkSheet, cell);
-                s.Shipment_Note = cellIsEmpty(cell) ? "-" : cell.Value2;
+                s.Shipment_Note = cellIsEmpty(cell) ? "" : cell.Value2;
 
                 cell = nextCell(xlWorkSheet, cell);
-                c.Container_No = cellIsEmpty(cell) ? "-" : cell.Value2;
+                c.Container_No = cellIsEmpty(cell) ? "" : cell.Value2;
 
                 cell = nextCell(xlWorkSheet, cell);
-                c.Container_Type = cellIsEmpty(cell) ? "-" : cell.Value2;
+                c.Container_Type = cellIsEmpty(cell) ? "" : cell.Value2;
 
                 cell = nextCell(xlWorkSheet, cell);
-                c.Seal_No_1 = cellIsEmpty(cell) ? "-" : cell.Value2;
+                c.Seal_No_1 = cellIsEmpty(cell) ? "" : cell.Value2;
 
                 cell = nextCell(xlWorkSheet, cell);
-                c.Seal_No_2 = cellIsEmpty(cell) ? "-" : cell.Value2;
+                c.Seal_No_2 = cellIsEmpty(cell) ? "" : cell.Value2;
 
                 c.Shipment_Job_No = jobNo;
 

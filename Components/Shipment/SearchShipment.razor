@@ -1,0 +1,54 @@
+﻿@page "/shipment/search"
+@inject HttpClient HttpClient
+@using _4PL.Data
+@rendermode InteractiveServer
+
+@inject NavigationManager NavManager
+
+<h3>Search Shipment</h3>
+    <EditForm Model="shipment" Enhance>
+        <div>
+            <label>Job No</label>
+            <InputText @bind-Value="shipment.Job_No"/>
+        </div>
+
+        <div>
+            <label>Master BL No</label>
+            <InputText @bind-Value="shipment.Master_BL_No" />
+        </div>
+
+        <div>
+            <label>Place Of Loading Name</label>
+            <InputText @bind-Value="shipment.Place_Of_Loading_Name" />
+        </div>
+
+        <div>
+            <label>Place Of Discharge Name</label>
+            <InputText @bind-Value="shipment.Place_Of_Discharge_Name" />
+        </div>
+
+        <div>
+            <label>Vessel Name</label>
+            <InputText @bind-Value="shipment.Vessel_Name" />
+        </div>
+
+        <div>
+            <label>Voyage No</label>
+            <InputText @bind-Value="shipment.Voyage_No" />
+        </div>
+
+        <div>
+            <label>ETD</label>
+            <InputDate @bind-Value="shipment.ETD_Date" />
+        </div>
+
+        <div>
+            <label>ETA</label>
+            <InputDate @bind-Value="shipment.ETA_Date" />
+        </div>
+        </EditForm >
+
+@code {
+    [SupplyParameterFromForm]
+    Shipment shipment { get; set; } = new();
+}
