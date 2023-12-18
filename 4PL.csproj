@@ -29,6 +29,8 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Snowflake.Data" Version="2.1.4" />
+    <PackageReference Include="Syncfusion.Blazor.Buttons" Version="23.2.4" />
+    <PackageReference Include="Syncfusion.Blazor.Themes" Version="23.2.4" />
   </ItemGroup>
 
 </Project>
