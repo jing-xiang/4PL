@@ -73,7 +73,7 @@ namespace _4PL.Data
 
                 while (reader.Read())
                 {
-                    ApplicationSetting setting = new ApplicationSetting()
+                    ApplicationSetting setting = new()
                     {
                         SettingType = reader.GetString(0),
                         Value = reader.GetString(1),
@@ -98,7 +98,82 @@ namespace _4PL.Data
             }
         }
 
-        public async Task<ApplicationUser> GetUserByEmailAsync(string email)
+        public async Task<List<ApplicationUser>> GetUsersByFieldAsync(string field, string value)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                IDbCommand command = conn.CreateCommand();
+                command.CommandText = $"CALL GET_USERS_BY_FIELD('{field}', '{value}')";
+                IDataReader reader = command.ExecuteReader();
+                List<ApplicationUser> users = new();
+
+                while (reader.Read())
+                {
+                    ApplicationUser? user = new ApplicationUser(
+                        reader.GetString(0),
+                        reader.GetString(1),
+                        reader.GetInt32(2),
+                        reader.GetBoolean(3),
+                        reader.GetDateTime(4)
+                    );
+                    users.Add(user);
+                }
+                return users;
+            }
+        }
+
+        public async Task<List<ApplicationUser>> GetUsersByBothAsync(string name, string email)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                IDbCommand command = conn.CreateCommand();
+                command.CommandText = $"CALL GET_USERS_BY_BOTH('{name}', '{email}')";
+                IDataReader reader = command.ExecuteReader();
+                List<ApplicationUser> users = new();
+
+                while (reader.Read())
+                {
+                    ApplicationUser? user = new ApplicationUser(
+                        reader.GetString(0),
+                        reader.GetString(1),
+                        reader.GetInt32(2),
+                        reader.GetBoolean(3),
+                        reader.GetDateTime(4)
+                    );
+                    users.Add(user);
+                }
+                return users;
+            }
+        }
+
+        public async Task<List<ApplicationUser>> GetAllUsers()
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                IDbCommand command = conn.CreateCommand();
+                command.CommandText = "CALL GET_ALL_USERS()";
+                IDataReader reader = command.ExecuteReader();
+                List<ApplicationUser> users = new();
+
+                while (reader.Read())
+                {
+                    ApplicationUser? user = new ApplicationUser(
+                        reader.GetString(0),
+                        reader.GetString(1),
+                        reader.GetInt32(2),
+                        reader.GetBoolean(3),
+                        reader.GetDateTime(4)
+                    );
+                    users.Add(user);
+                }
+                return users;
+            }
+        }
+
+        public async Task<ApplicationUser?> VerifyUserExist(string email)
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
@@ -133,7 +208,7 @@ namespace _4PL.Data
             }
         }
 
-        public async Task<ApplicationUser> GetUserByTokenAsync(string token)
+        public async Task<ApplicationUser?> GetUserByTokenAsync(string token)
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
@@ -261,7 +336,6 @@ namespace _4PL.Data
                 IDbCommand command = conn.CreateCommand();
                 command.CommandText = $"CALL LOCK_USER(:email)";
                 command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "email", Value = user.Email, DbType = DbType.String });
-                
                 command.ExecuteScalar();
             }
         }

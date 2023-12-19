@@ -2,8 +2,6 @@ using _4PL.Components;
 using _4PL.Components.Account;
 using _4PL.Data;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,6 +25,8 @@ builder.Services.AddHttpClient();
 //https://stackoverflow.com/questions/73527777/there-is-no-registered-service-of-type-system-net-http-ihttpclientfactory
 builder.Services.AddHttpClient();
 builder.Services.AddControllers();
+
+builder.WebHost.UseStaticWebAssets();
 
 var app = builder.Build();
 

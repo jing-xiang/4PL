@@ -2,6 +2,7 @@
 
 @using System.Data
 @using _4PL.Data
+@using Microsoft.AspNetCore.Components.QuickGrid
 
 @inject ILogger<SystemSettings> Logger
 @inject IConfiguration Configuration
@@ -10,28 +11,30 @@
 
 <PageTitle>System Settings</PageTitle>
 
-@if (settings != null)
+@if (isLoaded)
 {
-    <div class="col-md-8">
-        <h2>System Settings</h2>
+    <div class="col-md-10">
+        <h3>System Settings</h3>
         <hr />
         @if (!string.IsNullOrEmpty(updateMessage))
         {
             <div style="margin-bottom:10px" class="alert alert-@messageType">@updateMessage</div>
         }
-        <table class="table">
-            <tbody>
-                @foreach (var setting in settings)
-                {
-                    <tr>
-                        <td>@setting.SettingType</td>
-                        <td>@setting.Value</td>
-                        <td><input type="text" @bind="@setting.Value" class="form-control" /></td>
-                        <td><button @onclick="() => UpdateSetting(setting)" class="btn btn-primary">Confirm</button></td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+        <div class="grid" tabindex="-1">
+            <QuickGrid Items="@settings" Pagination="@pagination">
+                <PropertyColumn Title="Type" Class="setting" Property="@(s => s.SettingType)" Sortable="false" />
+                <PropertyColumn Title="Current" Class="setting" Property="@(s => s.Value)" Sortable="false" />
+                <TemplateColumn Title="New">
+                    <input type="text" class="w-auto form-control" @bind="context.Value"/>
+                </TemplateColumn>
+                <TemplateColumn Title="" >
+                    <button type="submit" class="btn btn-outline-secondary" @onclick="() => UpdateSetting(context)">
+                        Confirm
+                    </button>
+                </TemplateColumn>
+            </QuickGrid>
+        </div>
+        <hr />
     </div>
 } else
 {
@@ -39,15 +42,21 @@
 }
 
 @code {
-    private List<ApplicationSetting>? settings;
     private string? apiBaseUrl;
     private string? updateMessage;
     private string? messageType;
+    private bool isLoaded;
+
+    IQueryable<ApplicationSetting>? settings;
+    PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
+    ApplicationUser? currSetting;
 
     protected override async Task OnInitializedAsync()
     {
         apiBaseUrl = Configuration["ApiBaseUrl"];
-        settings = await HttpClient.GetFromJsonAsync<List<ApplicationSetting>>($"{apiBaseUrl}/api/Snowflake/GetSystemSettings");
+        var result = await HttpClient.GetFromJsonAsync<List<ApplicationSetting>>($"{apiBaseUrl}/api/Snowflake/GetSystemSettings");
+        settings = result.AsQueryable();
+        isLoaded = true;
     }
 
     private async Task UpdateSetting(ApplicationSetting setting)
@@ -64,6 +73,7 @@
             updateMessage = await result.Content.ReadAsStringAsync();
             messageType = "danger";
         }
-        settings = await HttpClient.GetFromJsonAsync<List<ApplicationSetting>>($"{apiBaseUrl}/api/Snowflake/GetSystemSettings");
+        var updated = await HttpClient.GetFromJsonAsync<List<ApplicationSetting>>($"{apiBaseUrl}/api/Snowflake/GetSystemSettings");
+        settings = updated.AsQueryable();
     }
 }
