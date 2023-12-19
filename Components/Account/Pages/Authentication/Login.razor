@@ -82,7 +82,7 @@
 
     public async Task LoginUser()
     {
-        ApplicationUser? user = CreateUser();
+        ApplicationUser? user = new();
 
         try {
             user = await HttpClient.GetFromJsonAsync<ApplicationUser>($"{apiBaseUrl}/api/Snowflake/e={Input.Email}");
@@ -120,41 +120,32 @@
             {
                 Logger.LogWarning("User logged in.");
                 await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/Snowflake/ResetAttempts", user);
-                var claims = new List<Claim>
-                    {
-                        new Claim(ClaimTypes.Name, user.Email),
-                        new Claim("Name", user.Name),
-                        new Claim(ClaimTypes.Role, "User"),
-                    };
-
-                var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-                var authProperties = new AuthenticationProperties
-                    {
-                        AllowRefresh = true,
-                        IsPersistent = false,
-                    };
-
-                await HttpContext.SignInAsync(
-                    CookieAuthenticationDefaults.AuthenticationScheme,
-                    new ClaimsPrincipal(claimsIdentity),
-                    authProperties);
-
+                await HttpSignInAsync(user);
                 RedirectManager.RedirectTo(ReturnUrl);
             }
         }
     }
 
-    private ApplicationUser CreateUser()
+    private async Task HttpSignInAsync(ApplicationUser user)
     {
-        try
-        {
-            return Activator.CreateInstance<ApplicationUser>();
-        }
-        catch
-        {
-            throw new InvalidOperationException($"Can't create an instance of '{nameof(ApplicationUser)}'. " +
-                $"Ensure that '{nameof(ApplicationUser)}' is not an abstract class and has a parameterless constructor.");
-        }
+        var claims = new List<Claim>
+                    {
+                        new Claim(ClaimTypes.Email, user.Email),
+                        new Claim(ClaimTypes.Name, user.Name),
+                        new Claim(ClaimTypes.Role, "User"),
+                    };
+
+        var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        var authProperties = new AuthenticationProperties
+            {
+                AllowRefresh = true,
+                IsPersistent = false,
+            };
+
+        await HttpContext.SignInAsync(
+            CookieAuthenticationDefaults.AuthenticationScheme,
+            new ClaimsPrincipal(claimsIdentity),
+            authProperties);
     }
 
     private sealed class InputModel

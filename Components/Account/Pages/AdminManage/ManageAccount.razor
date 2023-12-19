@@ -57,8 +57,6 @@
                 </div>
             </div>
             <hr />
-            <h3>Update Details</h3>
-            <hr />
             <div class="row">
                 @if (!string.IsNullOrEmpty(updateMessage))
                 {
@@ -70,7 +68,7 @@
                         <label for="newPassword">New Password</label>
                     </div>
                     <div class="form-floating mb-3">
-                        <input @bind="PasswordInput.Password" type="password" class="form-control" aria-required="true" placeholder="confirmPassword" />
+                        <input @bind="PasswordInput.ConfirmPassword" type="password" class="form-control" aria-required="true" placeholder="confirmPassword" />
                         <label for="confirmPassword">Confirm New Password</label>
                     </div>
                     <button @onclick="UpdatePassword" class="w-100 btn btn-lg btn-primary">Update Password</button>
@@ -157,6 +155,7 @@
         if (result.IsSuccessStatusCode)
         {
             updateMessage = "Account successfully unlocked.";
+            messageType = "success";
             lockedStatus = "FALSE";
         }
         else

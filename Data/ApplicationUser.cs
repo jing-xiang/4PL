@@ -14,12 +14,23 @@ namespace _4PL.Data
         // Actual Implementation
         // public string Password { get; set; } = Guid.NewGuid().ToString();
         public bool IsLocked { get; set; } = false;
-        public int FailedAttempts { get; set; } = 0;
+        public int FailedAttempts { get; set; } = 1;
         public DateTime LastReset { get; set; } = DateTime.Now;
         public bool IsNew { get; set; } = true;
         public string Hash { get; set; } = "";
         public byte[] Salt { get; set; } = new byte[10];
         public string Token { get; set; } = "";
+
+        public ApplicationUser() { }
+
+        public ApplicationUser(string name, string email, int failedAttempts, bool isLoocked, DateTime lastReset)
+        {
+            Name = name;
+            Email = email;
+            FailedAttempts = failedAttempts;
+            IsLocked = isLoocked;
+            LastReset = lastReset;
+        }
 
         public override string ToString()
         {

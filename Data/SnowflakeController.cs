@@ -2,6 +2,7 @@
 using System.Security.Cryptography;
 using System.Data;
 using Components.Account;
+using Microsoft.AspNetCore.Identity;
 
 namespace _4PL.Data
 {
@@ -28,7 +29,7 @@ namespace _4PL.Data
             try
             {
                 await _dbContext.RegisterUser(user);
-                var emailSettings = _dbContext.GetEmailSettings().Result;
+                var emailSettings = await _dbContext.GetEmailSettings();
                 EmailService emailService = new EmailService(emailSettings);
                 emailService.SendPasswordResetLinkAsync(user.Email, token);
 
@@ -45,11 +46,11 @@ namespace _4PL.Data
         }
 
         [HttpGet("e={userEmail}")]
-        public async Task<IActionResult> GetUserByEmailAsync(string userEmail)
+        public async Task<IActionResult> VerifyUserExist(string userEmail)
         {
             try
             {
-                var user = await _dbContext.GetUserByEmailAsync(userEmail);
+                var user = await _dbContext.VerifyUserExist(userEmail);
                 if (user == null)
                 {
                     return NotFound("User does not exist.");
@@ -58,7 +59,7 @@ namespace _4PL.Data
             }
             catch (Exception ex)
             {
-                return Conflict(ex);
+                return BadRequest(ex);
             }
         }
 
@@ -76,7 +77,7 @@ namespace _4PL.Data
             } 
             catch (Exception ex)
             {
-                return Conflict(ex);
+                return BadRequest(ex);
             }
         }
 
@@ -122,7 +123,25 @@ namespace _4PL.Data
             }
             catch (Exception ex)
             {
-                return BadRequest($"{ex.Message}");
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPut("{userEmail}/UpdateEmail")]
+        public async Task<IActionResult> UpdateEmail([FromBody] ApplicationUser emailModel)
+        {
+            try
+            {
+                await _dbContext.UpdateEmail(emailModel);
+                return Ok("Email successfully changed.");
+            }
+            catch (DuplicateNameException ex)
+            {
+                return Conflict(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
             }
         }
 
@@ -136,21 +155,24 @@ namespace _4PL.Data
             }
             catch (Exception ex)
             {
-                return BadRequest($"{ex.Message}");
+                return BadRequest(ex.Message);
             }
         }
 
         [HttpPut("{userEmail}/Unlock")]
-        public IActionResult UnlockUser([FromBody] ApplicationUser user)
+        public async Task<IActionResult> UnlockUserAsync([FromBody] ApplicationUser user)
         {
             try
             {
                 _dbContext.UnlockUser(user);
+                var emailSettings = await _dbContext.GetEmailSettings();
+                EmailService emailService = new EmailService(emailSettings);
+                emailService.SendPasswordResetLinkAsync(user.Email, user.Token);
                 return Ok("User unlocked.");
             }
             catch (Exception ex)
             {
-                return BadRequest($"{ex.Message}");
+                return BadRequest(ex.Message);
             }
         }
 
@@ -159,7 +181,7 @@ namespace _4PL.Data
         {
             try
             {
-                ApplicationUser user = await _dbContext.GetUserByEmailAsync(email);
+                ApplicationUser user = await _dbContext.VerifyUserExist(email);
                 if (user == null)
                 {
                     return NotFound("User does not exist.");
@@ -204,17 +226,63 @@ namespace _4PL.Data
             }
         }
 
+        [HttpGet("f={field}/v={value}")]
+        public async Task<ActionResult<List<ApplicationUser>>> GetUsersByFieldAsync(string field, string value)
+        {
+            try
+            {
+                List<ApplicationUser> users = await _dbContext.GetUsersByFieldAsync(field, value);
+                return Ok(users);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Internal Server Error: {ex.Message}");
+            }
+        }
+
+        [HttpGet("n={name}/e={email}")]
+        public async Task<ActionResult<List<ApplicationUser>>> GetUsersByBothAsync(string name, string email)
+        {
+            try
+            {
+                List<ApplicationUser> users = await _dbContext.GetUsersByBothAsync(name, email);
+                if (users == null)
+                {
+                    return NotFound(users);
+                }
+                return Ok(users);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal Server Error: {ex.Message}");
+            }
+        }
+
+        [HttpGet("GetAllUsers")]
+        public async Task<ActionResult<List<ApplicationUser>>> GetAllUsers()
+        {
+            try
+            {
+                List<ApplicationUser> users = await _dbContext.GetAllUsers();
+                return Ok(users);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal Server Error: {ex.Message}");
+            }
+        }
+
         [HttpGet("GetSystemSettings")]
         public async Task<ActionResult<List<ApplicationSetting>>> GetSystemSettings()
         {
             try
             {
-                List<ApplicationSetting> result = await _dbContext.GetSystemSettings();
-                return Ok(result);
+                List<ApplicationSetting> settings = await _dbContext.GetSystemSettings();
+                return Ok(settings);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal Server Error: {ex.Message}");
+                return BadRequest($"Internal Server Error: {ex.Message}");
             }
         }
 
@@ -236,6 +304,20 @@ namespace _4PL.Data
             catch (Exception ex)
             {
                 return StatusCode(500, $"Internal Server Error: {ex.Message}");
+            }
+        }
+
+        [HttpDelete("d={userEmail}")]
+        public IActionResult DeleteUser(string userEmail)
+        {
+            try
+            {
+                _dbContext.DeleteUser(userEmail);
+                return Ok("User deleted.");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
             }
         }
 
