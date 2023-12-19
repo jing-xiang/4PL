@@ -1,0 +1,110 @@
+﻿@page "/Admin"
+
+@using System.ComponentModel.DataAnnotations
+@using _4PL.Data
+
+@inject ILogger<AddAccount> Logger
+@inject IConfiguration Configuration
+@inject HttpClient HttpClient
+
+<PageTitle>Admin</PageTitle>
+
+<div class="row">
+    <div class="col-md-6">
+        <EditForm Model="Input" FormName="searchUser" OnValidSubmit="SearchUser" method="post">
+            <DataAnnotationsValidator />
+            <h2>Search User</h2>
+            <hr />
+
+            <ValidationSummary class="text-danger" role="alert" />
+            @if (searchFailed) { <div align="center" style="margin-bottom:10px" class="text-danger"> No user found. </div> }
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+                <label for="name">Email</label>
+            </div>
+            <button type="submit" class="w-100 btn btn-lg btn-primary">Search</button>
+        </EditForm>
+        @if (user != null)
+        {
+            <hr />
+            <h3>User Details</h3>
+            <hr />
+            <div class="row">
+                <div class="col-md-6">
+                    <p>
+                        <strong>Name</strong>
+                        <input class="form-control" type="text" readonly value="@user.Name" />
+                    </p>
+                    <p>
+                        <strong>Email</strong>
+                        <input class="form-control" type="text" readonly value="@user.Email" />
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <p>
+                        <strong>Locked Status</strong>
+                        <input class="form-control" type="text" readonly value="@lockedStatus" />
+                    </p>
+                    <p>
+                        <strong>Failed Attempts</strong>
+                        <input class="form-control" type="text" readonly value="@user.FailedAttempts" />
+                    </p>
+                    <p>
+                        <strong>Last Password Reset Date</strong>
+                        <input class="form-control" type="text" readonly value="@user.LastReset" />
+                    </p>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    private SearchModel Input { get; set; } = new();
+
+    private string? updateMessage;
+
+    private string? apiBaseUrl;
+
+    ApplicationUser? user;
+    private string? lockedStatus;
+
+    private bool searchFailed;
+
+    protected override void OnInitialized()
+    {
+        apiBaseUrl = Configuration["ApiBaseUrl"];
+        // user = await UserAccessor.GetRequiredUserAsync(HttpContext);
+        // username = await UserManager.GetUserNameAsync(user);
+        // phoneNumber = await UserManager.GetPhoneNumberAsync(user);
+
+        // Input.PhoneNumber ??= phoneNumber;
+    }
+
+    private async Task SearchUser()
+    {
+        try
+        {
+            user = await HttpClient.GetFromJsonAsync<ApplicationUser>($"{apiBaseUrl}/api/Snowflake/e={Input.Email}");
+            lockedStatus = user.IsLocked ? "TRUE" : "FALSE";
+        }
+        catch (HttpRequestException ex)
+        {
+            searchFailed = true;
+            Logger.LogInformation("No user found.");
+            return;
+        }
+    }
+
+    private sealed class SearchModel
+    {
+        [Required]
+        [EmailAddress]
+        [Display(Name = "Email")]
+        public string Email { get; set; } = "";
+    }
+}

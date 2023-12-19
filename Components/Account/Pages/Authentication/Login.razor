@@ -3,21 +3,16 @@
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Authentication.Cookies
-@using Microsoft.AspNetCore.Components.Server
-@using Microsoft.AspNetCore.Identity
 @using System.Security.Claims
 @using _4PL.Data
 
-@inject SignInManager<ApplicationUser> SignInManager
-@inject UserManager<ApplicationUser> UserManager
 @inject ILogger<Login> Logger
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
 @inject HttpClient HttpClient
 @inject IConfiguration Configuration
-@inject AuthenticationStateProvider Authentication
 
-<PageTitle>Test</PageTitle>
+<PageTitle>Login</PageTitle>
 
 <div align="center" style="margin:50px">
     <div class="col-md-4">
@@ -76,31 +71,29 @@
 
     protected override async Task OnInitializedAsync()
     {
+        apiBaseUrl = Configuration["ApiBaseUrl"];
+
         if (HttpMethods.IsGet(HttpContext.Request.Method))
         {
             // Clear the existing external cookie to ensure a clean login process
-            await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         }
-    }
-
-    protected override void OnInitialized()
-    {
-        apiBaseUrl = Configuration["ApiBaseUrl"];
     }
 
     public async Task LoginUser()
     {
-        var response = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/Snowflake/GetUser", Input.Email);
-        Logger.LogInformation(response.StatusCode.ToString());
-        Logger.LogInformation(response.Content.ToString());
-        if (!response.IsSuccessStatusCode)
+        ApplicationUser? user = CreateUser();
+
+        try {
+            user = await HttpClient.GetFromJsonAsync<ApplicationUser>($"{apiBaseUrl}/api/Snowflake/e={Input.Email}");
+        } 
+        catch (HttpRequestException ex)
         {
-            Logger.LogInformation($"http request failed with error {response.StatusCode}");
-            errorMessage = await response.Content.ReadAsStringAsync();
+            Logger.LogInformation("User not found.");
+            errorMessage = "User does not exist.";
             return;
         }
 
-        ApplicationUser? user = await response.Content.ReadFromJsonAsync<ApplicationUser>();
         user.Password = Input.Password;
 
         if (user.IsLocked)
@@ -110,21 +103,57 @@
         }
         else
         {
-            var validate = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/Snowflake/ValidateLogin", user);
+            var validate = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/Snowflake/ValidatePassword", user);
             if (!validate.IsSuccessStatusCode)
             {
                 var update = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/Snowflake/UpdateAttempts", user);
-                errorMessage = await update.Content.ReadAsStringAsync();
+                int remaining = Convert.ToInt32(await update.Content.ReadAsStringAsync());
+                if (remaining == 0)
+                {
+                    RedirectManager.RedirectTo("Account/Lockout");
+                }
+                errorMessage = $"Invalid Password. Number of attempts remaining: {remaining}";
                 return;
             }
 
             else
             {
                 Logger.LogWarning("User logged in.");
-                await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/Snowflake/UpdateAttempts", user);
-                // reset attempts to zero.
+                await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/Snowflake/ResetAttempts", user);
+                var claims = new List<Claim>
+                    {
+                        new Claim(ClaimTypes.Name, user.Email),
+                        new Claim("Name", user.Name),
+                        new Claim(ClaimTypes.Role, "User"),
+                    };
+
+                var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                var authProperties = new AuthenticationProperties
+                    {
+                        AllowRefresh = true,
+                        IsPersistent = false,
+                    };
+
+                await HttpContext.SignInAsync(
+                    CookieAuthenticationDefaults.AuthenticationScheme,
+                    new ClaimsPrincipal(claimsIdentity),
+                    authProperties);
+
                 RedirectManager.RedirectTo(ReturnUrl);
             }
+        }
+    }
+
+    private ApplicationUser CreateUser()
+    {
+        try
+        {
+            return Activator.CreateInstance<ApplicationUser>();
+        }
+        catch
+        {
+            throw new InvalidOperationException($"Can't create an instance of '{nameof(ApplicationUser)}'. " +
+                $"Ensure that '{nameof(ApplicationUser)}' is not an abstract class and has a parameterless constructor.");
         }
     }
 

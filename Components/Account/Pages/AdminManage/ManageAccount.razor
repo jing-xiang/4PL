@@ -1,0 +1,207 @@
+﻿@page "/Admin/ManageAccount"
+
+@using System.ComponentModel.DataAnnotations
+@using _4PL.Data
+
+@inject ILogger<AddAccount> Logger
+@inject IConfiguration Configuration
+@inject HttpClient HttpClient
+@rendermode InteractiveServer
+
+<PageTitle>Manage Account</PageTitle>
+
+<div class="row">
+    <div class="col-md-8">
+        <EditForm Model="Input" FormName="searchUser" OnValidSubmit="SearchUser" method="post">
+            <DataAnnotationsValidator />
+            <h2>Manage an Account</h2>
+            <hr />
+
+            <ValidationSummary class="text-danger" role="alert" />
+            @if (searchFailed) { <div align="center" style="margin-bottom:10px" class="text-danger"> No user found. </div> }
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+                <label for="name">Email</label>
+            </div>
+            <button type="submit" class="w-100 btn btn-lg btn-primary">Search</button>
+        </EditForm>
+        @if (user != null)
+        {
+            <hr />
+            <h3>User Details</h3>
+            <hr />
+            <div class="row">
+                <div class="col-md-6">
+                    <p>
+                        <strong>Name</strong>
+                        <input class="form-control" type="text" readonly value="@user.Name" />
+                    </p>
+                    <p>
+                        <strong>Email</strong>
+                        <input class="form-control" type="text" readonly value="@user.Email" />
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <p>
+                        <strong>Locked Status</strong>
+                        <input class="form-control" type="text" readonly value="@lockedStatus" />
+                    </p>
+                    <p>
+                        <strong>Failed Attempts</strong>
+                        <input class="form-control" type="text" readonly value="@user.FailedAttempts" />
+                    </p>
+                    <p>
+                        <strong>Last Password Reset Date</strong>
+                        <input class="form-control" type="text" readonly value="@user.LastReset" />
+                    </p>
+                </div>
+            </div>
+            <hr />
+            <h3>Update Details</h3>
+            <hr />
+            <div class="row">
+                @if (!string.IsNullOrEmpty(updateMessage))
+                {
+                    <div align="center" style="margin-bottom:10px" class="alert alert-@messageType">@updateMessage</div>
+                }
+                <div class="col-md-6">
+                    <div class="form-floating mb-3">
+                        <input @bind="PasswordInput.Password" type="password" class="form-control" typ aria-required="true" placeholder="newPassword" />
+                        <label for="newPassword">New Password</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <input @bind="PasswordInput.Password" type="password" class="form-control" aria-required="true" placeholder="confirmPassword" />
+                        <label for="confirmPassword">Confirm New Password</label>
+                    </div>
+                    <button @onclick="UpdatePassword" class="w-100 btn btn-lg btn-primary">Update Password</button>
+                </div>
+                <div class="col-md-6">
+                    @if (lockedStatus == "TRUE") {
+                        <button @onclick="UnlockUser" class="w-100 btn btn-lg btn-success">Unlock Account</button>
+                    } else
+                    {
+                        <button @onclick="LockUser" class="w-100 btn btn-lg btn-danger">Lock Account</button>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    private SearchModel Input { get; set; } = new();
+
+    private PasswordModel PasswordInput { get; set; } = new();
+
+    private string? updateMessage;
+    private string? messageType;
+
+    private string? apiBaseUrl;
+
+    ApplicationUser? user;
+    private string? lockedStatus;
+
+    private bool searchFailed;
+
+    protected override void OnInitialized()
+    {
+        apiBaseUrl = Configuration["ApiBaseUrl"];
+        // user = await UserAccessor.GetRequiredUserAsync(HttpContext);
+        // username = await UserManager.GetUserNameAsync(user);
+        // phoneNumber = await UserManager.GetPhoneNumberAsync(user);
+
+        // Input.PhoneNumber ??= phoneNumber;
+    }
+
+    private async Task SearchUser()
+    {
+        updateMessage = "";
+        messageType = "success";
+
+        try
+        {
+            user = await HttpClient.GetFromJsonAsync<ApplicationUser>($"{apiBaseUrl}/api/Snowflake/e={Input.Email}");
+            lockedStatus = user.IsLocked ? "TRUE" : "FALSE";
+        }
+        catch (HttpRequestException ex)
+        {
+            searchFailed = true;
+            Logger.LogInformation("No user found.");
+            return;
+        }
+    }
+
+    private async Task UpdatePassword()
+    {
+        user.Password = PasswordInput.Password;
+        var result = await HttpClient.PutAsJsonAsync($"{apiBaseUrl}/api/Snowflake/{user.Email}/ResetPassword", user);
+        if (result.IsSuccessStatusCode)
+        {
+            updateMessage = "Password successfully updated.";
+        }
+        else
+        {
+            updateMessage = $"Something went wrong. {result.Content.ReadAsStringAsync()}";
+            messageType = "danger";
+            return;
+        }
+    }
+
+    private async Task UnlockUser()
+    {
+        var result = await HttpClient.PutAsJsonAsync($"{apiBaseUrl}/api/Snowflake/{user.Email}/Unlock", user);
+        if (result.IsSuccessStatusCode)
+        {
+            updateMessage = "Account successfully unlocked.";
+            lockedStatus = "FALSE";
+        }
+        else
+        {
+            updateMessage = $"Something went wrong. {result.Content.ReadAsStringAsync()}";
+            messageType = "danger";
+            return;
+        }
+    }
+
+    private async Task LockUser()
+    {
+        var result = await HttpClient.PutAsJsonAsync($"{apiBaseUrl}/api/Snowflake/{user.Email}/Lock", user);
+        messageType = "danger";
+        if (result.IsSuccessStatusCode)
+        {
+            updateMessage = "Account successfully locked.";
+            lockedStatus = "TRUE";
+        }
+        else
+        {
+            updateMessage = $"Something went wrong. {result.Content.ReadAsStringAsync()}";
+            return;
+        }
+    }
+
+    private sealed class SearchModel
+    {
+        [Required]
+        [EmailAddress]
+        [Display(Name = "Email")]
+        public string Email { get; set; } = "";
+    }
+
+    private sealed class PasswordModel
+    {
+        [Required]
+        [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
+        [DataType(DataType.Password)]
+        public string Password { get; set; } = "";
+
+        [Required]
+        [DataType(DataType.Password)]
+        [Display(Name = "Confirm password")]
+        [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
+        public string ConfirmPassword { get; set; } = "";
+    }
+}

@@ -2,7 +2,6 @@
 using System.Security.Cryptography;
 using System.Data;
 using Components.Account;
-using Microsoft.AspNetCore.Identity;
 
 namespace _4PL.Data
 {
@@ -21,59 +20,82 @@ namespace _4PL.Data
         {
             byte[] salt = GenerateSalt();
             string hashedPassword = HashPassword(user.Password, salt);
+            string token = Guid.NewGuid().ToString();
+            user.Hash = hashedPassword;
+            user.Salt = salt;
+            user.Token = token;
 
             try
             {
-                _dbContext.RegisterUser(user, hashedPassword, Convert.ToBase64String(salt));
-                var ResetToken = Guid.NewGuid().ToString();
+                await _dbContext.RegisterUser(user);
                 var emailSettings = _dbContext.GetEmailSettings().Result;
-                IEmailService emailService = new EmailService(emailSettings);
-                emailService.SendPasswordResetLinkAsync(user.Email, ResetToken);
+                EmailService emailService = new EmailService(emailSettings);
+                emailService.SendPasswordResetLinkAsync(user.Email, token);
 
                 return Ok("User registered successfully. Check email for confirmation.");
             }
             catch (DuplicateNameException ex)
             {
-                return Conflict($"{ex.Message}");
+                return Conflict(ex.Message);
             }
             catch (Exception ex)
             {
-                return Conflict($"{ex.Message}");
+                return Conflict(ex.Message);
             }
         }
 
-        [HttpPost("GetUser")]
-        public async Task<IActionResult> GetUser([FromBody] string email)
+        [HttpGet("e={userEmail}")]
+        public async Task<IActionResult> GetUserByEmailAsync(string userEmail)
         {
             try
             {
-                ApplicationUser user = _dbContext.GetUser(email).Result;
+                var user = await _dbContext.GetUserByEmailAsync(userEmail);
+                if (user == null)
+                {
+                    return NotFound("User does not exist.");
+                }
                 return Ok(user);
             }
-            catch (InvalidOperationException ex)
+            catch (Exception ex)
             {
-                return NotFound($"{ex.Message}");
+                return Conflict(ex);
             }
         }
 
-        [HttpPost("ValidateLogin")]
-        public async Task<IActionResult> ValidateLogin([FromBody] ApplicationUser user)
+        [HttpGet("t={token}")]
+        public async Task<IActionResult> GetUserByTokenAsync(string token)
         {
             try
             {
-                string storedHash = _dbContext.GetStringField(user, "password").Result;
-                byte[] storedSalt = Convert.FromBase64String(_dbContext.GetStringField(user, "salt").Result);
+                var user = await _dbContext.GetUserByTokenAsync(token);
+                if (user == null)
+                {
+                    return NotFound("User does not exist.");
+                }
+                return Ok(user);
+            } 
+            catch (Exception ex)
+            {
+                return Conflict(ex);
+            }
+        }
+
+        [HttpPost("ValidatePassword")]
+        public async Task<IActionResult> ValidatePassword([FromBody] ApplicationUser user)
+        {
+            try
+            {
+                string storedHash = _dbContext.GetStringFieldByEmail(user.Email, "password").Result;
+                byte[] storedSalt = Convert.FromBase64String(_dbContext.GetStringFieldByEmail(user.Email, "salt").Result);
                 string inputHash = HashPassword(user.Password, storedSalt);
-                Console.WriteLine(storedHash);
-                Console.WriteLine(storedSalt);
 
                 if (storedHash == inputHash)
                 {
-                    return Ok("Login successful.");
+                    return Ok("Password matches.");
                 }
                 else
                 {
-                    return Unauthorized("Login unsuccessful.");
+                    return Unauthorized("Password is incorrect.");
                 }
             }
             catch (Exception ex)
@@ -82,12 +104,20 @@ namespace _4PL.Data
             }
         }
 
-        [HttpPost("ResetPassword")]
+        [HttpPut("{userEmail}/ResetPassword")]
         public async Task<IActionResult> ResetPassword([FromBody] ApplicationUser user)
         {
+            byte[] salt = GenerateSalt();
+            string hashedPassword = HashPassword(user.Password, salt);
+            string newToken = Guid.NewGuid().ToString();
+            user.Hash = hashedPassword;
+            user.Salt = salt;
+            user.Token = newToken;
+
             try
             {
-                _dbContext.ResetPassword(user);
+                await _dbContext.ResetPassword(user);
+                await _dbContext.UpdateToken(user);
                 return Ok("Password successfully updated.");
             }
             catch (Exception ex)
@@ -96,14 +126,112 @@ namespace _4PL.Data
             }
         }
 
+        [HttpPut("{userEmail}/Lock")]
+        public IActionResult LockUser([FromBody] ApplicationUser user)
+        {
+            try
+            {
+                _dbContext.LockUser(user);
+                return Ok("User locked.");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"{ex.Message}");
+            }
+        }
+
+        [HttpPut("{userEmail}/Unlock")]
+        public IActionResult UnlockUser([FromBody] ApplicationUser user)
+        {
+            try
+            {
+                _dbContext.UnlockUser(user);
+                return Ok("User unlocked.");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"{ex.Message}");
+            }
+        }
+
+        [HttpPost("ForgotPassword")]
+        public async Task<IActionResult> ForgotPassword([FromBody] string email)
+        {
+            try
+            {
+                ApplicationUser user = await _dbContext.GetUserByEmailAsync(email);
+                if (user == null)
+                {
+                    return NotFound("User does not exist.");
+                }
+
+                var emailSettings = await _dbContext.GetEmailSettings();
+                EmailService emailService = new EmailService(emailSettings);
+                emailService.SendPasswordResetLinkAsync(email, user.Token);
+                return Ok("Password reset link sent.");
+            }
+            catch (AggregateException ex)
+            {
+                return NotFound(ex.InnerException.Message);
+            }
+        }
+
         [HttpPost("UpdateAttempts")]
         public async Task<IActionResult> UpdateAttempts([FromBody] ApplicationUser user)
         {
             try
             {
-                Console.WriteLine("updating user attempts");
                 string result = await _dbContext.UpdateAttempts(user);
-                return Ok($"Invalid credentials. Number of attempts remaining: {result}");
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal Server Error: {ex.Message}");
+            }
+        }
+
+        [HttpPost("ResetAttempts")]
+        public async Task<IActionResult> ResetAttempts([FromBody] ApplicationUser user)
+        {
+            try
+            {
+                _dbContext.ResetAttempts(user);
+                return Ok("Attempts have been reset.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal Server Error: {ex.Message}");
+            }
+        }
+
+        [HttpGet("GetSystemSettings")]
+        public async Task<ActionResult<List<ApplicationSetting>>> GetSystemSettings()
+        {
+            try
+            {
+                List<ApplicationSetting> result = await _dbContext.GetSystemSettings();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal Server Error: {ex.Message}");
+            }
+        }
+
+        [HttpPut("{settingType}/UpdateSetting")]
+        public IActionResult UpdateSetting([FromBody] ApplicationSetting setting)
+        {
+            try
+            {
+                if (setting.SettingType == "MAX FAILED ATTEMPTS" || setting.SettingType == "MAX DAYS BEFORE LOCKED" || setting.SettingType == "EMAIL PORT")
+                {
+                    if (!int.TryParse(setting.Value, out int result))
+                    {
+                        return BadRequest($"{setting.SettingType} must be a number.");
+                    }
+                }
+                _dbContext.UpdateSetting(setting);
+                return Ok($"{setting.SettingType} updated.");
             }
             catch (Exception ex)
             {

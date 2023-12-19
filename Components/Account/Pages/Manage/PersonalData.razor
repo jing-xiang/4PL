@@ -1,6 +1,6 @@
 ﻿@page "/Account/Manage/PersonalData"
 
-@inject IdentityUserAccessor UserAccessor
+@* @inject IdentityUserAccessor UserAccessor *@
 
 <PageTitle>Personal Data</PageTitle>
 
@@ -27,8 +27,8 @@
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
 
-    protected override async Task OnInitializedAsync()
-    {
-        _ = await UserAccessor.GetRequiredUserAsync(HttpContext);
-    }
+    // protected override async Task OnInitializedAsync()
+    // {
+    //     _ = await UserAccessor.GetRequiredUserAsync(HttpContext);
+    // }
 }
