@@ -57,7 +57,6 @@ namespace _4PL.Data
                 using (IDbCommand command1 = conn.CreateCommand())
                 {
                     command1.CommandText = $"SELECT * FROM access_model";
-                    Console.WriteLine("feaggarrgr");
                     using (var reader = command1.ExecuteReader())
                     {
 
@@ -71,17 +70,12 @@ namespace _4PL.Data
                         }
                     }
                 }
-                
-                { 
                     for (int i = 0; i < access_types.Count; i++)
                         {
                             IDbCommand command2 = conn.CreateCommand();
                             command2.CommandText = $"INSERT INTO access_control (email, access_type, is_accessible) VALUES ('{user.Email}', '{access_types[i]}', false)";
                             command2.ExecuteScalar();
                         }
-                    
-                }
-
             }
         
         }
