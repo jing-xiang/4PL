@@ -9,19 +9,14 @@
 @using Snowflake.Data;
 @using Newtonsoft.Json;
 
-@inject UserManager<ApplicationUser> UserManager
-@inject IUserStore<ApplicationUser> UserStore
-@inject SignInManager<ApplicationUser> SignInManager
-@inject IEmailSender<ApplicationUser> EmailSender
-@inject ILogger<Register> Logger
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
 @inject IConfiguration Configuration
 @inject HttpClient HttpClient
 @inject SnowflakeDbContext DbContext
 @inject ILogger<AccessRights> Logger
-@rendermode InteractiveServer
 @inject IJSRuntime JSRuntime
+@rendermode InteractiveServer
 
 <PageTitle>Access Rights</PageTitle>
 
