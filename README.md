@@ -2,6 +2,6 @@
 
 ASP.NET Core Framework with Snowflake 
 
-#Migrate Database 
+# Migrate Database 
 PM> Add-Migration InitialCreate
 PM> Update-Database

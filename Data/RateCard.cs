@@ -5,10 +5,9 @@ namespace _4PL.Data
 {
     public class RateCard
     {
-        private static int LAST_ID = 0;
         // To replace with UUID from database once connected
         [Key]
-        public int Id { get; set; }
+        public Guid Id { get; set; }
         public string Lane_ID { get; set; }
         public string Controlling_Customer_Matchcode { get; set; }
         public string Controlling_Customer_Name { get; set; }
@@ -30,12 +29,14 @@ namespace _4PL.Data
         public string Temperature_Controlled {  get; set; }
         public string Container_Mode { get; set; }
         public string Container_Type { get; set;}
-        public string Local_Currency { get; set;}
+
+        //To delete
+        //public string Local_Currency { get; set;}
         public List<Charge> Charges { get; set; }
 
-        public RateCard(string lane_ID, string controlling_Customer_Matchcode, string controlling_Customer_Name, string transport_Mode, string function, DateTime rate_Validity_From, DateTime rate_Validity_To, string pOL_Name, string pOL_Country, string pOL_Port, string pOD_Name, string pOD_Country, string pOD_Port, string creditor_Matchcode, string creditor_Name, string pickup_Address, string delivery_Address, string dangerous_Goods, string temperature_Controlled, string container_Mode, string container_Type, string local_Currency, List<Charge> charges)
+        public RateCard(string Id, string lane_ID, string controlling_Customer_Matchcode, string controlling_Customer_Name, string transport_Mode, string function, DateTime rate_Validity_From, DateTime rate_Validity_To, string pOL_Name, string pOL_Country, string pOL_Port, string pOD_Name, string pOD_Country, string pOD_Port, string creditor_Matchcode, string creditor_Name, string pickup_Address, string delivery_Address, string dangerous_Goods, string temperature_Controlled, string container_Mode, string container_Type, List<Charge> charges)
         {
-            Id = RateCard.LAST_ID++;
+            this.Id = Guid.Parse(Id);
             this.Lane_ID = lane_ID;
             this.Controlling_Customer_Matchcode = controlling_Customer_Matchcode;
             this.Controlling_Customer_Name = controlling_Customer_Name;
@@ -57,13 +58,13 @@ namespace _4PL.Data
             this.Temperature_Controlled = temperature_Controlled;
             this.Container_Mode = container_Mode;
             this.Container_Type = container_Type;
-            this.Local_Currency = local_Currency;
+            //this.Local_Currency = local_Currency;
             this.Charges = charges;
         }
 
         public RateCard()
         {
-            Id = RateCard.LAST_ID++;
+            Id = Guid.NewGuid();
             this.Lane_ID = "empty";
             this.Controlling_Customer_Matchcode = "empty";
             this.Controlling_Customer_Name = "empty";
@@ -85,7 +86,7 @@ namespace _4PL.Data
             this.Temperature_Controlled = "empty";
             this.Container_Mode = "empty";
             this.Container_Type = "empty";
-            this.Local_Currency = "empty";
+            //this.Local_Currency = "empty";
             this.Charges = new List<Charge>();
         }
     }
