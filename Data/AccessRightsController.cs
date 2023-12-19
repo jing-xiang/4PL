@@ -138,5 +138,20 @@ namespace _4PL.Data
                 return NotFound($"{ex.Message}");
             }
         }
+
+        [HttpPost("AddAccessRights")]
+        public async Task<ActionResult<string[]>> AddAccessRights([FromBody] List<string> parameterList)
+        {
+            try
+            {
+                Console.WriteLine("request received");
+                var result = _dbContext.AddAccessRights(parameterList[0], parameterList[1]);
+                return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return NotFound($"{ex.Message}");
+            }
+        }
     }
 }

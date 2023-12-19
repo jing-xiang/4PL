@@ -195,6 +195,27 @@
             </EditForm>
         </div>
     </div>
+    <div>
+        <h2>Add New Access Type</h2>
+        <EditForm Model="NewAccessRights" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="AddNewAccessRight" FormName="copyaccessrights">
+            <DataAnnotationsValidator />
+            <hr />
+            <ValidationSummary class="text-danger" />
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div style="margin-bottom:10px" class="text-danger">@errorMessage</div>
+            }
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="NewAccessRights.Heading" class="form-control" autocomplete="username" aria-required="true" placeholder="ratecard_read" />
+                <label for="access type">Access Type</label>
+            </div>
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="NewAccessRights.Description" class="form-control" autocomplete="username" aria-required="true" placeholder="Reading the rate card." />
+                <label for="description">Description</label>
+            </div>
+            <button type="submit" class="w-100 btn btn-lg btn-primary">Add Access Type</button>
+        </EditForm>
+    </div>
 }
 else
 {
@@ -208,7 +229,7 @@ else
     private TargetUserRegisterModel InputTarget { get; set; } = new();
 
     public AccessRightsModel[] Rights { get; set; } = new AccessRightsModel[16];
-    public AddNewAccessRightsModel[] AddNewRights { get; set; } = new AddNewAccessRightsModel[16];
+    public AddNewAccessRightsModel NewAccessRights { get; set; } = new();
 
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
@@ -449,6 +470,20 @@ else
         }
     }
 
+    public async Task AddNewAccessRight (EditContext editContext)
+    {
+        string confirmMessage = $"Are you sure you want to add the access right '{NewAccessRights.Heading}'?";
+        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", confirmMessage);
+        if (confirmed)
+        {
+            List<string> parameterList = new List<string>();
+            parameterList.Add(NewAccessRights.Heading);
+            parameterList.Add(NewAccessRights.Description);
+            var response = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/AccessRights/AddAccessRights", parameterList);
+            Logger.LogInformation(response.Content.ReadAsStringAsync().Result);
+        }
+    }
+
     private sealed class UserRegisterModel
     {
         public string Name { get; set; } = "";
@@ -481,6 +516,6 @@ else
     public class AddNewAccessRightsModel
     {
         public string Heading { get; set; } = "";
-        public string AccessRight { get; set; } = "";
+        public string Description { get; set; } = "";
     }
 }
