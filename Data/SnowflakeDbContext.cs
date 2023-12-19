@@ -291,12 +291,12 @@ namespace _4PL.Data
                 conn.Open();
                 using (IDbCommand command = conn.CreateCommand())
                 {
-                    command.CommandText = $"DELETE FROM access_control WHERE email = '{parameterList[0]}";
+                    command.CommandText = $"DELETE FROM access_control WHERE email = '{parameterList[0]}'";
                     command.ExecuteScalar();
                     Console.WriteLine("access rights deleted");
                     for (int i = 1; i < parameterList.Count; i++)
                     {
-                        command.CommandText = $"INSERT INTO access_control (email, access_type, is_accessible) VALUES ('{parameterList[0]}', '{parameterList[i]}', '{access_type[i - 1]}";
+                        command.CommandText = $"INSERT INTO access_control (email, access_type, is_accessible) VALUES ('{parameterList[0]}', '{access_type[i-1]}', '{parameterList[i]}')";
                         command.ExecuteScalar();
                         Console.WriteLine("access rights saved");
                     }
