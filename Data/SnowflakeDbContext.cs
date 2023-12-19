@@ -244,6 +244,21 @@ namespace _4PL.Data
             }
         }
 
+        public async Task<string> GetStringFieldByEmail(string email, string field)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = $"CALL GET_STRING_FIELD(:email, :field)";
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "email", Value = email, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "field", Value = field, DbType = DbType.String });
+                    return command.ExecuteScalar().ToString();
+                }
+            }
+        }
+
         public async Task ResetPassword(ApplicationUser user)
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
@@ -260,17 +275,20 @@ namespace _4PL.Data
             }
         }
 
-        public async Task<string> GetStringFieldByEmail(string email, string field)
+        public async Task UpdateEmail(ApplicationUser emailModel)
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
                 conn.Open();
-                using (IDbCommand command = conn.CreateCommand())
+                IDbCommand command = conn.CreateCommand();
+                command.CommandText = $"CALL UPDATE_EMAIL(:email, :new_email)";
+                command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "email", Value = emailModel.Email, DbType = DbType.String });
+                command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "new_email", Value = emailModel.Name, DbType = DbType.String });
+
+                bool isDuplicate = Convert.ToBoolean(command.ExecuteScalar());
+                if (isDuplicate)
                 {
-                    command.CommandText = $"CALL GET_STRING_FIELD(:email, :field)";
-                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "email", Value = email, DbType = DbType.String });
-                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "field", Value = field, DbType = DbType.String });
-                    return command.ExecuteScalar().ToString();
+                    throw new DuplicateNameException("Email already in use for another account.");
                 }
             }
         }
@@ -349,6 +367,18 @@ namespace _4PL.Data
                 command.CommandText = $"CALL UNLOCK_USER(:email)";
                 command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "email", Value = user.Email, DbType = DbType.String });
 
+                command.ExecuteScalar();
+            }
+        }
+
+        public void DeleteUser(string email)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                IDbCommand command = conn.CreateCommand();
+                command.CommandText = $"CALL DELETE_USER(:email)";
+                command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "email", Value = email, DbType = DbType.String });
                 command.ExecuteScalar();
             }
         }

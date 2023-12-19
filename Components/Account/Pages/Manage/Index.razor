@@ -13,8 +13,8 @@
 <PageTitle>Profile</PageTitle>
 
 <div class="row">
-    <div class="col-md-6">
-        <h2>Profile</h2>
+    <div class="col-md-8">
+        <h3>Profile</h3>
         <hr />
         <p>
             <strong>Name</strong>
@@ -27,15 +27,15 @@
     </div>
 </div>
 @code {
-    private string? apiBaseUrl;
-    private string? currEmail;
-    private string? currName;
-
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
 
     [SupplyParameterFromForm]
     private InputModel Input { get; set; } = new();
+
+    private string? apiBaseUrl;
+    private string? currEmail;
+    private string? currName;
 
     protected override void OnInitialized()
     {

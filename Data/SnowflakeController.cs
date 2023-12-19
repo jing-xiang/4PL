@@ -2,6 +2,7 @@
 using System.Security.Cryptography;
 using System.Data;
 using Components.Account;
+using Microsoft.AspNetCore.Identity;
 
 namespace _4PL.Data
 {
@@ -58,7 +59,7 @@ namespace _4PL.Data
             }
             catch (Exception ex)
             {
-                return Conflict(ex);
+                return BadRequest(ex);
             }
         }
 
@@ -76,7 +77,7 @@ namespace _4PL.Data
             } 
             catch (Exception ex)
             {
-                return Conflict(ex);
+                return BadRequest(ex);
             }
         }
 
@@ -122,7 +123,25 @@ namespace _4PL.Data
             }
             catch (Exception ex)
             {
-                return BadRequest($"{ex.Message}");
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPut("{userEmail}/UpdateEmail")]
+        public async Task<IActionResult> UpdateEmail([FromBody] ApplicationUser emailModel)
+        {
+            try
+            {
+                await _dbContext.UpdateEmail(emailModel);
+                return Ok("Email successfully changed.");
+            }
+            catch (DuplicateNameException ex)
+            {
+                return Conflict(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
             }
         }
 
@@ -136,7 +155,7 @@ namespace _4PL.Data
             }
             catch (Exception ex)
             {
-                return BadRequest($"{ex.Message}");
+                return BadRequest(ex.Message);
             }
         }
 
@@ -153,7 +172,7 @@ namespace _4PL.Data
             }
             catch (Exception ex)
             {
-                return BadRequest($"{ex.Message}");
+                return BadRequest(ex.Message);
             }
         }
 
@@ -217,7 +236,7 @@ namespace _4PL.Data
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal Server Error: {ex.Message}");
+                return BadRequest($"Internal Server Error: {ex.Message}");
             }
         }
 
@@ -227,6 +246,10 @@ namespace _4PL.Data
             try
             {
                 List<ApplicationUser> users = await _dbContext.GetUsersByBothAsync(name, email);
+                if (users == null)
+                {
+                    return NotFound(users);
+                }
                 return Ok(users);
             }
             catch (Exception ex)
@@ -259,7 +282,7 @@ namespace _4PL.Data
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal Server Error: {ex.Message}");
+                return BadRequest($"Internal Server Error: {ex.Message}");
             }
         }
 
@@ -281,6 +304,20 @@ namespace _4PL.Data
             catch (Exception ex)
             {
                 return StatusCode(500, $"Internal Server Error: {ex.Message}");
+            }
+        }
+
+        [HttpDelete("d={userEmail}")]
+        public IActionResult DeleteUser(string userEmail)
+        {
+            try
+            {
+                _dbContext.DeleteUser(userEmail);
+                return Ok("User deleted.");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
             }
         }
 
