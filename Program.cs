@@ -2,6 +2,12 @@ using _4PL.Components;
 using _4PL.Components.Account;
 using _4PL.Data;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Components.Account;
+using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Snowflake.Data.Client;
+using Syncfusion.Blazor;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,6 +24,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 });
 
 builder.Services.AddScoped<IdentityRedirectManager>();
+builder.Services.AddSyncfusionBlazor();
 builder.Services.AddSingleton<SnowflakeDbContext>();
 builder.Services.AddControllers();
 builder.Services.AddHttpClient();
