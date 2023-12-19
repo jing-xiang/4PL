@@ -199,7 +199,7 @@ namespace _4PL.Data
                 
                 using (IDbCommand command = conn.CreateCommand())
                 {
-                    command.CommandText = "CALL CREATE_SHIPMENT (:Job_No, :Master_BL_No, :Container_Mode, :Place_Of_Loading_ID, :Place_Of_Loading_Name, :Place_Of_Discharge_ID, " +
+                    command.CommandText = @$"CALL CREATE_SHIPMENT (:Job_No, :Master_BL_No, :Container_Mode, :Place_Of_Loading_ID, :Place_Of_Loading_Name, :Place_Of_Discharge_ID, " +
                         ":Place_Of_Discharge_Name, :Vessel_Name, :Voyage_No, :ETD_Date, :ETA_Date, :Carrier_Matchcode, :Carrier_Name, :Carrier_Contract_No, :Carrier_Booking_Reference_No, :Inco_Terms, " +
                         ":Controlling_Customer_Name, :Shipper_Name,  :Consignee_Name, :Total_No_Of_Pieces, :Package_Type,  :Total_No_Of_Volume_Weight_MTQ, :Total_No_Of_Gross_Weight_KGM, :Description, :Shipment_Note)";
 
@@ -244,7 +244,7 @@ namespace _4PL.Data
 
                 using (IDbCommand command = conn.CreateCommand())
                 {
-                    command.CommandText = "CALL UPDATE_SHIPMENT (:Job_No, :Master_BL_No, :Container_Mode, :Place_Of_Loading_ID, :Place_Of_Loading_Name, :Place_Of_Discharge_ID, " +
+                    command.CommandText = @$"CALL UPDATE_SHIPMENT (:Job_No, :Master_BL_No, :Container_Mode, :Place_Of_Loading_ID, :Place_Of_Loading_Name, :Place_Of_Discharge_ID, " +
                         ":Place_Of_Discharge_Name, :Vessel_Name, :Voyage_No, :ETD_Date, :ETA_Date, :Carrier_Matchcode, :Carrier_Name, :Carrier_Contract_No, :Carrier_Booking_Reference_No, :Inco_Terms, " +
                         ":Controlling_Customer_Name, :Shipper_Name,  :Consignee_Name, :Total_No_Of_Pieces, :Package_Type,  :Total_No_Of_Volume_Weight_MTQ, :Total_No_Of_Gross_Weight_KGM, :Description, :Shipment_Note)";
 
@@ -287,7 +287,7 @@ namespace _4PL.Data
                 
                 using (IDbCommand command = conn.CreateCommand())
                 {
-                    command.CommandText = "CALL CREATE_CONTAINER (:Shipment_Job_No, :Container_No, :Container_Type, :Seal_No_1, :Seal_No_2)";
+                    command.CommandText = @$"CALL CREATE_CONTAINER (:Shipment_Job_No, :Container_No, :Container_Type, :Seal_No_1, :Seal_No_2)";
 
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Shipment_Job_No", Value = container.Shipment_Job_No, DbType = DbType.String });
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Container_No", Value = container.Container_No, DbType = DbType.String });
@@ -352,7 +352,7 @@ namespace _4PL.Data
             }
         }
 
-        public List<Shipment> fetchShipments()
+        public List<Shipment> fetchShipments(string Job_No, string Master_BL_No, string Place_Of_Loading_Name, string Place_Of_Discharge_Name, string Vessel_Name, string Voyage_No, string Container_No, string Container_Type)
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
@@ -360,7 +360,17 @@ namespace _4PL.Data
                 List<Shipment> result = new List<Shipment>();
                 using (IDbCommand command = conn.CreateCommand())
                 {
-                    command.CommandText = @$"SELECT * FROM DEV_RL_DB.HWL_4PL.SHIPMENT";
+                    command.CommandText = @$"SELECT s.* 
+                        FROM DEV_RL_DB.HWL_4PL.SHIPMENT s
+                        JOIN  DEV_RL_DB.HWL_4PL.SHIPMENT_CONTAINER c ON s.JOB_NO = c.SHIPMENT_JOB_NO
+                        WHERE s.JOB_NO ILIKE '{Job_No}' 
+                        AND s.MASTER_BL_NO ILIKE '{Master_BL_No}' 
+                        AND s.PLACE_OF_LOADING_NAME ILIKE '{Place_Of_Loading_Name}' 
+                        AND s.PLACE_OF_DISCHARGE_NAME ILIKE '{Place_Of_Discharge_Name}' 
+                        AND s.VESSEL_NAME ILIKE '{Vessel_Name}' 
+                        AND s.VOYAGE_NO ILIKE '{Voyage_No}'
+                        AND c.CONTAINER_NO ILIKE '{Container_No}'
+                        AND c.CONTAINER_TYPE ILIKE '{Container_Type}'";
                     IDataReader reader = command.ExecuteReader();
 
                     //Read result

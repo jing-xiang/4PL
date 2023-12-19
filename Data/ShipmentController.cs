@@ -161,19 +161,13 @@ namespace _4PL.Data
             return Ok(numDeleted > 0 ? true : false);
         }
 
-        /*[HttpPost("Search")]
-        public IActionResult Search(string Job_No, string Master_BL_No, DateTime ETD_Date, DateTime ETA_Date)
+        [HttpGet("Search")]
+        public IActionResult Search(string Job_No, string Master_BL_No, string Place_Of_Loading_Name, string Place_Of_Discharge_Name, string Vessel_Name, string Voyage_No, string Container_No, string Container_Type)
         {
-
-        }*/
-
-        // Read
-        [HttpGet("ShipmentData")]
-        public IActionResult fetchShipmentData()
-        {
-            List<Shipment> shipments = _dbcontext.fetchShipments();
+            List<Shipment> shipments = _dbcontext.fetchShipments(Job_No, Master_BL_No, Place_Of_Loading_Name, Place_Of_Discharge_Name, Vessel_Name, Voyage_No, Container_No, Container_Type);
             return Ok(shipments);
         }
+
 
         [HttpGet("ShipmentData/{Shipment_Job_No}")]
         public IActionResult fetchShipmentData(string Shipment_Job_No)
@@ -335,8 +329,6 @@ namespace _4PL.Data
         {
             return xlWorkSheet.Cells[cell.Row, cell.Column + 1];
         }
-
-        
 
     }
 }

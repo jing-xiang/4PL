@@ -210,7 +210,7 @@
                         <td>@c.Container_Type</td>
                         <td>@c.Seal_No_1</td>
                         <td>@c.Seal_No_2</td>
-                        <button @onclick="() => DeleteContainer(c.Shipment_Job_No, c.Container_No )">Delete</button>
+                        <button @onclick="() => DeleteContainer(c.Shipment_Job_No, c.Container_No )" disabled=@isView>Delete</button>
                     </tr>
                 }
             </tbody>
@@ -275,6 +275,7 @@
         if (response.IsSuccessStatusCode)
         {
             containers = await getContainerData();
+            await JS.InvokeVoidAsync("alert", $"Container {Container_No} has been deleted");
             StateHasChanged();
         }
         else

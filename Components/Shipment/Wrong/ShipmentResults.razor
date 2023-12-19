@@ -1,6 +1,6 @@
 ﻿@inject HttpClient HttpClient
 @using _4PL.Data
-
+@inject IJSRuntime JS
 @inject NavigationManager NavManager
 @rendermode InteractiveServer
 
@@ -129,6 +129,7 @@
             {
                 shipments.Remove(shipmentToRemove);
             }
+            await JS.InvokeVoidAsync("alert", $"Shipment {Job_No} has been deleted");
             StateHasChanged();
         }
         else
