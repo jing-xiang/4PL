@@ -1,0 +1,79 @@
+﻿@page "/Admin/SystemSettings"
+
+@using System.Data
+@using _4PL.Data
+@using Microsoft.AspNetCore.Components.QuickGrid
+
+@inject ILogger<SystemSettings> Logger
+@inject IConfiguration Configuration
+@inject HttpClient HttpClient
+@rendermode InteractiveServer
+
+<PageTitle>System Settings</PageTitle>
+
+@if (isLoaded)
+{
+    <div class="col-md-10">
+        <h3>System Settings</h3>
+        <hr />
+        @if (!string.IsNullOrEmpty(updateMessage))
+        {
+            <div style="margin-bottom:10px" class="alert alert-@messageType">@updateMessage</div>
+        }
+        <div class="grid" tabindex="-1">
+            <QuickGrid Items="@settings" Pagination="@pagination">
+                <PropertyColumn Title="Type" Class="setting" Property="@(s => s.SettingType)" Sortable="false" />
+                <PropertyColumn Title="Current" Class="setting" Property="@(s => s.Value)" Sortable="false" />
+                <TemplateColumn Title="New">
+                    <input type="text" class="w-auto form-control" @bind="context.Value"/>
+                </TemplateColumn>
+                <TemplateColumn Title="" >
+                    <button type="submit" class="btn btn-outline-secondary" @onclick="() => UpdateSetting(context)">
+                        Confirm
+                    </button>
+                </TemplateColumn>
+            </QuickGrid>
+        </div>
+        <hr />
+    </div>
+} else
+{
+    <p>Loading...</p>
+}
+
+@code {
+    private string? apiBaseUrl;
+    private string? updateMessage;
+    private string? messageType;
+    private bool isLoaded;
+
+    IQueryable<ApplicationSetting>? settings;
+    PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
+    ApplicationUser? currSetting;
+
+    protected override async Task OnInitializedAsync()
+    {
+        apiBaseUrl = Configuration["ApiBaseUrl"];
+        var result = await HttpClient.GetFromJsonAsync<List<ApplicationSetting>>($"{apiBaseUrl}/api/Snowflake/GetSystemSettings");
+        settings = result.AsQueryable();
+        isLoaded = true;
+    }
+
+    private async Task UpdateSetting(ApplicationSetting setting)
+    {
+        var result = await HttpClient.PutAsJsonAsync($"{apiBaseUrl}/api/Snowflake/{setting.SettingType}/UpdateSetting", setting);
+        if (result.IsSuccessStatusCode)
+        {
+            updateMessage = await result.Content.ReadAsStringAsync();
+            messageType = "success";
+            Logger.LogInformation(await result.Content.ReadAsStringAsync());
+        }
+        else
+        {
+            updateMessage = await result.Content.ReadAsStringAsync();
+            messageType = "danger";
+        }
+        var updated = await HttpClient.GetFromJsonAsync<List<ApplicationSetting>>($"{apiBaseUrl}/api/Snowflake/GetSystemSettings");
+        settings = updated.AsQueryable();
+    }
+}

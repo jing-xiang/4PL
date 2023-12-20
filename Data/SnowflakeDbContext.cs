@@ -1,7 +1,12 @@
 using Snowflake.Data.Client;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
+using System.Diagnostics.Contracts;
+using Microsoft.Identity.Client;
+using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using _4PL.Components.Account.Pages.Manage;
 
 namespace _4PL.Data
 {
@@ -19,7 +24,7 @@ namespace _4PL.Data
             _connectionString = configuration.GetConnectionString("SnowflakeConnection");
         }
 
-        public void RegisterUser(ApplicationUser user, string hashedPassword, string salt)
+        public async Task RegisterUser(ApplicationUser user)
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
@@ -28,16 +33,17 @@ namespace _4PL.Data
 
                 using (IDbCommand command = conn.CreateCommand())
                 {
-                    command.CommandText = "CALL ADD_USER (:email, :name, :password, :is_locked, :failed_attempts, :last_password_reset, :is_new, :salt)";
+                    command.CommandText = "CALL ADD_USER(:email, :name, :password, :is_locked, :failed_attempts, :last_password_reset, :is_new, :salt, :token)";
 
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "email", Value = user.Email, DbType = DbType.String });
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "name", Value = user.Name, DbType = DbType.String });
-                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "password", Value = hashedPassword, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "password", Value = user.Hash, DbType = DbType.String });
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "is_locked", Value = false, DbType = DbType.Boolean });
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "failed_attempts", Value = 0, DbType = DbType.Int32 });
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "last_password_reset", Value = DateTime.Now, DbType = DbType.DateTime });
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "is_new", Value = true, DbType = DbType.Boolean });
-                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "salt", Value = salt, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "salt", Value = Convert.ToBase64String(user.Salt), DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "token", Value = user.Token, DbType = DbType.String });
 
                     isDuplicate = Convert.ToBoolean(command.ExecuteScalar());
                 }
@@ -61,58 +67,190 @@ namespace _4PL.Data
             }
         }
 
-        public async Task<ApplicationUser> GetUser(string email)
+        public async Task<List<ApplicationSetting>> GetSystemSettings()
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
                 conn.Open();
-                Console.WriteLine("get user connection opened");
-                IDbCommand getSetting = conn.CreateCommand();
-                getSetting.CommandText = "SELECT value FROM system_settings WHERE setting_type = 'MAX_DAYS_BEFORE_LOCKED'";
-                int maxDaysBeforeLocked = Convert.ToInt32(getSetting.ExecuteScalar());
-                Console.WriteLine("max days pulled");
-
-                ApplicationUser currUser = new ApplicationUser();
                 IDbCommand command = conn.CreateCommand();
-                command.CommandText = $"CALL GET_USER_INFO ('{email}')";
-                Console.WriteLine("command created");
-                using (var reader = command.ExecuteReader())
-                {
-                    if (reader.Read())
-                    {
-                        Console.WriteLine("reading the result");
-                        currUser.Name = reader.GetString(0);
-                        currUser.Email = reader.GetString(1);
-                        currUser.FailedAttempts = reader.GetInt32(3);
-                        currUser.IsNew = reader.GetBoolean(5);
-                        currUser.LastReset = reader.GetDateTime(4);
+                command.CommandText = "CALL GET_SYSTEM_SETTINGS()";
+                IDataReader reader = command.ExecuteReader();
+                List<ApplicationSetting> settings = new();
 
-                        int daysSinceLastChange = (DateTime.Now - currUser.LastReset).Days;
-                        currUser.IsLocked = daysSinceLastChange >= maxDaysBeforeLocked ? true : reader.GetBoolean(2);
-                        Console.WriteLine("get user connection opened");
-                    } else
+                while (reader.Read())
+                {
+                    ApplicationSetting setting = new()
                     {
-                        throw new InvalidOperationException("User does not exist.");
-                    }
+                        SettingType = reader.GetString(0),
+                        Value = reader.GetString(1),
+                    };
+                    settings.Add(setting);
                 }
-                Console.WriteLine("user pulled from database");
-                return currUser;
+                return settings;
             }
         }
 
-        public void ResetPassword(ApplicationUser user)
+        public void UpdateSetting(ApplicationSetting setting)
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
                 conn.Open();
-
                 IDbCommand command = conn.CreateCommand();
-                command.CommandText = $"UPDATE user_information SET password = '{user.Password}' WHERE email = '{user.Email}";
+                command.CommandText = "CALL UPDATE_SYSTEM_SETTING(:setting_type, :new_value)";
+                command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "setting_type", Value = setting.SettingType, DbType = DbType.String });
+                command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "new_value", Value = setting.Value, DbType = DbType.String });
+
                 command.ExecuteScalar();
             }
         }
 
-        public async Task<string> GetStringField(ApplicationUser user, string field)
+        public async Task<List<ApplicationUser>> GetUsersByFieldAsync(string field, string value)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                IDbCommand command = conn.CreateCommand();
+                command.CommandText = $"CALL GET_USERS_BY_FIELD('{field}', '{value}')";
+                IDataReader reader = command.ExecuteReader();
+                List<ApplicationUser> users = new();
+
+                while (reader.Read())
+                {
+                    ApplicationUser? user = new ApplicationUser(
+                        reader.GetString(0),
+                        reader.GetString(1),
+                        reader.GetInt32(2),
+                        reader.GetBoolean(3),
+                        reader.GetDateTime(4)
+                    );
+                    users.Add(user);
+                }
+                return users;
+            }
+        }
+
+        public async Task<List<ApplicationUser>> GetUsersByBothAsync(string name, string email)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                IDbCommand command = conn.CreateCommand();
+                command.CommandText = $"CALL GET_USERS_BY_BOTH('{name}', '{email}')";
+                IDataReader reader = command.ExecuteReader();
+                List<ApplicationUser> users = new();
+
+                while (reader.Read())
+                {
+                    ApplicationUser? user = new ApplicationUser(
+                        reader.GetString(0),
+                        reader.GetString(1),
+                        reader.GetInt32(2),
+                        reader.GetBoolean(3),
+                        reader.GetDateTime(4)
+                    );
+                    users.Add(user);
+                }
+                return users;
+            }
+        }
+
+        public async Task<List<ApplicationUser>> GetAllUsers()
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                IDbCommand command = conn.CreateCommand();
+                command.CommandText = "CALL GET_ALL_USERS()";
+                IDataReader reader = command.ExecuteReader();
+                List<ApplicationUser> users = new();
+
+                while (reader.Read())
+                {
+                    ApplicationUser? user = new ApplicationUser(
+                        reader.GetString(0),
+                        reader.GetString(1),
+                        reader.GetInt32(2),
+                        reader.GetBoolean(3),
+                        reader.GetDateTime(4)
+                    );
+                    users.Add(user);
+                }
+                return users;
+            }
+        }
+
+        public async Task<ApplicationUser?> VerifyUserExist(string email)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                IDbCommand getMaxDays = conn.CreateCommand();
+                getMaxDays.CommandText = "CALL GET_SETTING('MAX DAYS BEFORE LOCKED')";
+                int maxDaysBeforeLocked = Convert.ToInt32(getMaxDays.ExecuteScalar());
+
+                ApplicationUser currUser = new();
+                IDbCommand command = conn.CreateCommand();
+                command.CommandText = $"CALL GET_USER_BY_EMAIL('{email}')";
+                IDataReader reader = command.ExecuteReader();
+
+                if (reader.Read())
+                {
+                    currUser.Name = reader.GetString(0);
+                    currUser.Email = reader.GetString(1);
+                    currUser.FailedAttempts = reader.GetInt32(3);
+                    currUser.IsNew = reader.GetBoolean(5);
+                    currUser.LastReset = reader.GetDateTime(4);
+                    currUser.Token = reader.GetString(6);
+
+                    // check if exceeded maximum number of days without password reset
+                    int daysSinceLastChange = (DateTime.Now - currUser.LastReset).Days;
+                    currUser.IsLocked = daysSinceLastChange >= maxDaysBeforeLocked ? true : reader.GetBoolean(2);
+                }
+                else
+                {
+                    return null;
+                }
+                return currUser;
+            }
+        }
+
+        public async Task<ApplicationUser?> GetUserByTokenAsync(string token)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+
+                IDbCommand getSetting = conn.CreateCommand();
+                getSetting.CommandText = "CALL GET_SETTING('MAX DAYS BEFORE LOCKED')";
+                int maxDaysBeforeLocked = Convert.ToInt32(getSetting.ExecuteScalar());
+
+                ApplicationUser currUser = new ApplicationUser();
+                IDbCommand command = conn.CreateCommand();
+                command.CommandText = $"CALL GET_USER_BY_TOKEN('{token}')";
+
+                IDataReader reader = command.ExecuteReader();
+                if (reader.Read())
+                {
+                    currUser.Name = reader.GetString(0);
+                    currUser.Email = reader.GetString(1);
+                    currUser.FailedAttempts = reader.GetInt32(3);
+                    currUser.IsNew = reader.GetBoolean(5);
+                    currUser.LastReset = reader.GetDateTime(4);
+
+                    // check if exceeded maximum number of days without password reset
+                    int daysSinceLastChange = (DateTime.Now - currUser.LastReset).Days;
+                    currUser.IsLocked = daysSinceLastChange >= maxDaysBeforeLocked ? true : reader.GetBoolean(2);
+                }
+                else
+                {
+                    return null;
+                }
+
+                return currUser;
+            }
+        }
+
+        public async Task<string> GetStringFieldByEmail(string email, string field)
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
@@ -120,10 +258,43 @@ namespace _4PL.Data
                 using (IDbCommand command = conn.CreateCommand())
                 {
                     command.CommandText = $"CALL GET_STRING_FIELD(:email, :field)";
-                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "email", Value = user.Email, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "email", Value = email, DbType = DbType.String });
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "field", Value = field, DbType = DbType.String });
-                    Console.WriteLine("field retrieved");
                     return command.ExecuteScalar().ToString();
+                }
+            }
+        }
+
+        public async Task ResetPassword(ApplicationUser user)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                IDbCommand command = conn.CreateCommand(); 
+                command.CommandText = $"CALL RESET_PASSWORD(:email, :password, :salt, :reset_date)";
+                command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "email", Value = user.Email, DbType = DbType.String });
+                command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "password", Value = user.Hash, DbType = DbType.String });
+                command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "salt", Value = Convert.ToBase64String(user.Salt), DbType = DbType.String });
+                command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "reset_date", Value = DateTime.Now, DbType = DbType.DateTime });
+
+                command.ExecuteScalar();
+            }
+        }
+
+        public async Task UpdateEmail(ApplicationUser emailModel)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                IDbCommand command = conn.CreateCommand();
+                command.CommandText = $"CALL UPDATE_EMAIL(:email, :new_email)";
+                command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "email", Value = emailModel.Email, DbType = DbType.String });
+                command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "new_email", Value = emailModel.Name, DbType = DbType.String });
+
+                bool isDuplicate = Convert.ToBoolean(command.ExecuteScalar());
+                if (isDuplicate)
+                {
+                    throw new DuplicateNameException("Email already in use for another account.");
                 }
             }
         }
@@ -134,23 +305,36 @@ namespace _4PL.Data
             {
                 conn.Open();
                 IDbCommand getSetting = conn.CreateCommand();
-                getSetting.CommandText = "CALL GET_MAX_FAILED_ATTEMPTS()";
-                Console.WriteLine("command ready to execute");
-                Console.WriteLine(getSetting.ExecuteScalar());
+
+                getSetting.CommandText = "CALL GET_SETTING('MAX FAILED ATTEMPTS')";
                 int maxAttempts = Convert.ToInt32(getSetting.ExecuteScalar());
-                Console.WriteLine("max attempts obtained");
                 int updatedAttempts = user.FailedAttempts + 1;
 
                 using (IDbCommand command = conn.CreateCommand())
                 {
-                    Console.WriteLine("command created");
                     command.CommandText = "CALL UPDATE_ATTEMPTS(:email, :updated, :max_attempts)";
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "email", Value = user.Email, DbType = DbType.String });
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "updated", Value = updatedAttempts, DbType = DbType.Int32 });
-                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "max_attempts", Value = maxAttempts - 1, DbType = DbType.Int32 });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "max_attempts", Value = maxAttempts, DbType = DbType.Int32 });
 
-                    Console.WriteLine("command ready to execute");
                     return command.ExecuteScalar().ToString();
+                }
+            }
+        }
+
+        public async Task UpdateToken(ApplicationUser user)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = "CALL UPDATE_TOKEN(:email, :updated)";
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "email", Value = user.Email, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "updated", Value = user.Token, DbType = DbType.String });
+
+                    command.ExecuteScalar();
                 }
             }
         }
@@ -162,9 +346,50 @@ namespace _4PL.Data
                 conn.Open();
                 using (IDbCommand command = conn.CreateCommand())
                 {
-                    command.CommandText = $"UPDATE user_information SET failed_attempts = 0 WHERE email = {user.Email}";
+                    command.CommandText = "CALL RESET_ATTEMPTS(:email)";
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "email", Value = user.Email, DbType = DbType.String });
                     command.ExecuteScalar();
                 }
+            }
+        }
+        public void LockUser(ApplicationUser user)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                IDbCommand command = conn.CreateCommand();
+                command.CommandText = $"CALL LOCK_USER(:email)";
+                command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "email", Value = user.Email, DbType = DbType.String });
+                command.ExecuteScalar();
+            }
+        }
+
+        public void UnlockUser(ApplicationUser user)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                IDbCommand command = conn.CreateCommand();
+                command.CommandText = $"CALL UNLOCK_USER(:email)";
+                command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "email", Value = user.Email, DbType = DbType.String });
+
+                command.ExecuteScalar();
+            }
+        }
+
+        public void DeleteUser(string email)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                IDbCommand command = conn.CreateCommand();
+
+                command.CommandText = $"CALL DELETE_USER(:email)";
+
+                command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "email", Value = email, DbType = DbType.String });
+                Console.WriteLine("command created");
+                command.ExecuteScalar();
+                Console.WriteLine("command executed");
             }
         }
 
@@ -179,24 +404,127 @@ namespace _4PL.Data
                     command.CommandText = $"SELECT * FROM access_control WHERE email = '{email}'";
                     using (var reader = command.ExecuteReader())
                     {
-                        //new array
-                        bool[] accessRights = new bool[16];
+                        //new list
+                        List<bool> accessRights = new List<bool>(); 
                         while (reader.Read())
                         {
                             //fetch access rights
-                            var RateCardRead = reader.GetBoolean(2);
-                            Console.WriteLine(RateCardRead);
+                            var right = reader.GetBoolean(2);
                             Console.WriteLine("access rights fetched");
                             //append to array
-                            accessRights.Append(RateCardRead);
+                            accessRights.Add(right);
                         }
-                            
-                            return accessRights;
+                            return accessRights.ToArray();
                     }
                 }
             }
         }
 
+        public async Task<string[]> FetchAccessRightsHeadings(string email)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                ApplicationUser currUser = new ApplicationUser();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = $"SELECT * FROM access_control WHERE email = '{email}'";
+                    using (var reader = command.ExecuteReader())
+                    {
+                        List<string> headings = new List<string>();
+                        while (reader.Read())
+                        {
+                            //fetch access rights
+                            var heading = reader.GetString(1);
+                            Console.WriteLine("headings fetched");
+                            //append to array
+                            headings.Add(heading);
+                        }
+                        return headings.ToArray();
+                    }
+                }
+            }
+        }
+
+        public async Task<string[]> FetchAvailableAccounts()
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                ApplicationUser currUser = new ApplicationUser();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = $"SELECT * FROM user_information";
+                    using (var reader = command.ExecuteReader())
+                    {
+                        List<string> availableAccounts = new List<string>();
+                        while (reader.Read())
+                        {
+                            //fetch access rights
+                            var email = reader.GetString(0);
+                            Console.WriteLine("available accounts fetched");
+                            //append to array
+                            availableAccounts.Add(email);
+                            Console.WriteLine(email);
+                        }
+                        return availableAccounts.ToArray();
+                    }
+                }
+            }
+        }
+        
+        public async Task CopyAccessRights(string email, string[] access_type, bool[] is_accessible)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                        command.CommandText = $"DELETE FROM access_control WHERE email = '{email}'";
+                        command.ExecuteScalar();
+                    for (int i = 0; i < access_type.Length; i++)
+                    {
+                        command.CommandText = $"INSERT INTO access_control (email, access_type, is_accessible) VALUES ('{email}', '{access_type[i]}', {is_accessible[i]})";
+                        command.ExecuteScalar();
+                    }
+                }
+            }
+        }
+
+        public async Task DeleteAccessRights(string email, string access_type)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = $"DELETE FROM access_control WHERE email = '{email}' AND access_type = '{access_type}'";
+                    command.ExecuteScalar();
+                    Console.WriteLine("access rights deleted");
+                }
+            }
+        }
+
+        public async Task SaveAccessRights(List<string> parameterList, string[] access_type)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = $"DELETE FROM access_control WHERE email = '{parameterList[0]}'";
+                    command.ExecuteScalar();
+                    Console.WriteLine("access rights deleted");
+                    for (int i = 1; i < parameterList.Count; i++)
+                    {
+                        command.CommandText = $"INSERT INTO access_control (email, access_type, is_accessible) VALUES ('{parameterList[0]}', '{access_type[i-1]}', '{parameterList[i]}')";
+                        command.ExecuteScalar();
+                        Console.WriteLine("access rights saved");
+                    }
+                }
+            }
+        }
+        
 
         /*
          * Ratecard

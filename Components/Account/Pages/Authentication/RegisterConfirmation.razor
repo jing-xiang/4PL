@@ -5,14 +5,13 @@
 @using Microsoft.AspNetCore.WebUtilities
 @using _4PL.Data
 
-@inject UserManager<ApplicationUser> UserManager
-@inject IEmailSender<ApplicationUser> EmailSender
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
 
 <PageTitle>Register confirmation</PageTitle>
 
 <h1>Register confirmation</h1>
+<hr />
 
 <StatusMessage Message="@statusMessage" />
 

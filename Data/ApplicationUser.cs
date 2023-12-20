@@ -9,25 +9,27 @@ namespace _4PL.Data
         public string Email { get; set; }
 
         // Default values upon registration
-        public string Password { get; set; } = "Password123!";
+        public string Password { get; set; } = "123123"; // for testing/development purposes now
+
+        // Actual Implementation
+        // public string Password { get; set; } = Guid.NewGuid().ToString();
         public bool IsLocked { get; set; } = false;
-        public int FailedAttempts { get; set; } = 0;
+        public int FailedAttempts { get; set; } = 1;
         public DateTime LastReset { get; set; } = DateTime.Now;
         public bool IsNew { get; set; } = true;
+        public string Hash { get; set; } = "";
+        public byte[] Salt { get; set; } = new byte[10];
+        public string Token { get; set; } = "";
 
-        public void lockOut()
-        {
-            IsLocked = true;
-        }
+        public ApplicationUser() { }
 
-        public void unlockOut()
+        public ApplicationUser(string name, string email, int failedAttempts, bool isLoocked, DateTime lastReset)
         {
-            IsLocked = false;
-        }
-
-        public bool getLockedStatus()
-        {
-            return IsLocked;
+            Name = name;
+            Email = email;
+            FailedAttempts = failedAttempts;
+            IsLocked = isLoocked;
+            LastReset = lastReset;
         }
 
         public override string ToString()

@@ -2,118 +2,66 @@
 
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Identity
+@using System.Security.Claims
 @using _4PL.Data
 
-@inject UserManager<ApplicationUser> UserManager
-@inject SignInManager<ApplicationUser> SignInManager
-@inject IdentityUserAccessor UserAccessor
 @inject IdentityRedirectManager RedirectManager
+@inject ILogger<Index> Logger
+@inject IConfiguration Configuration
+@inject HttpClient HttpClient
 
 <PageTitle>Profile</PageTitle>
 
-<h3>Profile</h3>
-<StatusMessage />
-
 <div class="row">
-    <div class="col-md-6">
-        <EditForm Model="Input" FormName="profile" OnValidSubmit="OnValidSubmitAsync" method="post">
-            <DataAnnotationsValidator />
-            <ValidationSummary class="text-danger" role="alert" />
-            <div class="form-floating mb-3">
-                <input type="text" value="@username" class="form-control" placeholder="Please choose your username." disabled />
-                <label for="username" class="form-label">Username</label>
-            </div>
-            <div class="form-floating mb-3">
-                <InputText @bind-Value="Input.PhoneNumber" class="form-control" placeholder="Please enter your phone number." />
-                <label for="phone-number" class="form-label">Phone number</label>
-                <ValidationMessage For="() => Input.PhoneNumber" class="text-danger" />
-            </div>
-            <button type="submit" class="w-100 btn btn-lg btn-primary">Save</button>
-        </EditForm>
+    <div class="col-md-8">
+        <h3>Profile</h3>
+        <hr />
+        <p>
+            <strong>Name</strong>
+            <input class="form-control" type="text" readonly value="@currName" />
+        </p>
+        <p>
+            <strong>Email</strong>
+            <input class="form-control" type="text" readonly value="@currEmail" />
+        </p>
     </div>
-    <h1></h1>
-    <h4>Access Rights</h4>
-    <table border="1">
-        <thead>
-        <tr>
-            <th colspan="4">Rate Card</th>
-            <th colspan="4">Shipment</th>
-            <th colspan="4">Shipment Auto Rating</th>
-        </tr>
-        </thead>
-        <thead>
-        <tr>
-            <td>Read</td>
-            <td>Modify</td>
-            <td>Import</td>
-            <td>Delete</td>
-            <td>Read</td>
-            <td>Modify</td>
-            <td>Import</td>
-            <td>Delete</td>
-            <td>Read</td>
-            <td>Modify</td>
-            <td>Import</td>
-            <td>Delete</td>
-        </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>&#9989;</td>
-                <td>&#9989;</td>
-                <td>&#9989;</td>
-                <td>&#9989;</td>
-                <td>&#9989;</td>
-                <td>&#9989;</td>
-                <td>&#9989;</td>
-                <td>&#9989;</td>
-                <td>&#9989;</td>
-                <td>&#9989;</td>
-                <td>&#9989;</td>
-                <td>&#9989;</td>
-            </tr>
-        </tbody>
-    </table>
 </div>
-<div class="nav-item px-3">
-    <NavLink class="nav-link" href="Account/AccessRights">
-        <span class="bi bi-person-nav-menu" aria-hidden="true"></span> Account/AccessRights
-    </NavLink>
-</div>
-
 @code {
-    private ApplicationUser user = default!;
-    private string? username;
-    private string? phoneNumber;
-
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
 
     [SupplyParameterFromForm]
     private InputModel Input { get; set; } = new();
 
-    protected override async Task OnInitializedAsync()
-    {
-        user = await UserAccessor.GetRequiredUserAsync(HttpContext);
-        username = await UserManager.GetUserNameAsync(user);
-        phoneNumber = await UserManager.GetPhoneNumberAsync(user);
+    private string? apiBaseUrl;
+    private string? currEmail;
+    private string? currName;
 
-        Input.PhoneNumber ??= phoneNumber;
+    protected override void OnInitialized()
+    {
+        apiBaseUrl = Configuration["ApiBaseUrl"];
+        currEmail = HttpContext.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+        currName = HttpContext.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
+        // user = await UserAccessor.GetRequiredUserAsync(HttpContext);
+        // username = await UserManager.GetUserNameAsync(user);
+        // phoneNumber = await UserManager.GetPhoneNumberAsync(user);
+
+        // Input.PhoneNumber ??= phoneNumber;
     }
 
     private async Task OnValidSubmitAsync()
     {
-        if (Input.PhoneNumber != phoneNumber)
-        {
-            var setPhoneResult = await UserManager.SetPhoneNumberAsync(user, Input.PhoneNumber);
-            if (!setPhoneResult.Succeeded)
-            {
-                RedirectManager.RedirectToCurrentPageWithStatus("Error: Failed to set phone number.", HttpContext);
-            }
-        }
+        // if (Input.PhoneNumber != phoneNumber)
+        // {
+        //     var setPhoneResult = await UserManager.SetPhoneNumberAsync(user, Input.PhoneNumber);
+        //     if (!setPhoneResult.Succeeded)
+        //     {
+        //         RedirectManager.RedirectToCurrentPageWithStatus("Error: Failed to set phone number.", HttpContext);
+        //     }
+        // }
 
-        await SignInManager.RefreshSignInAsync(user);
-        RedirectManager.RedirectToCurrentPageWithStatus("Your profile has been updated", HttpContext);
+        // await SignInManager.RefreshSignInAsync(user);
+        // RedirectManager.RedirectToCurrentPageWithStatus("Your profile has been updated", HttpContext);
     }
 
     private sealed class InputModel
