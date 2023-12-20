@@ -999,7 +999,32 @@ namespace _4PL.Data
             }
         }
 
-        public List<string> Search(long limit=10, long offset=0)
+        public List<string> Search(
+            long limit = 10,
+            long offset = 0,
+            RateCard formInput = null
+            //string Lane_ID = "%",
+            //string Controlling_Customer_Matchcode = "%",
+            //string Controlling_Customer_Name = "%",
+            //string Transport_Mode = "%",
+            //string Function = "%",
+            //DateTime Rate_Validity_From = new DateTime(),
+            //DateTime Rate_Validity_To = new DateTime(),
+            //string POL_Name = "%",
+            //string POL_Country = "%",
+            //string POL_Port = "%",
+            //string POD_Name = "%",
+            //string POD_Country = "%",
+            //string POD_Port = "%",
+            //string Creditor_Matchcode = "%",
+            //string Creditor_Name = "%",
+            //string Pickup_Address = "%",
+            //string Delivery_Address = "%",
+            //string Dangerous_Goods = "%",
+            //string Temperature_Controlled = "%",
+            //string Container_Mode = "%",
+            //string Container_Type = "%"
+        )
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
@@ -1029,12 +1054,64 @@ namespace _4PL.Data
                 {
 
                     command.CommandText = @$"SELECT * FROM DEV_RL_DB.HWL_4PL.RATECARDS
+                        WHERE LANE_ID ILIKE :Lane_ID
+                            AND CONTROLLING_CUSTOMER_MATCHCODE ILIKE :Controlling_Customer_Matchcode
+                            AND CONTROLLING_CUSTOMER_NAME ILIKE :Controlling_Customer_Name
+                            AND TRANSPORT_MODE ILIKE :Transport_Mode
+                            AND FUNC ILIKE :Function
+                            AND RATE_VALIDITY_FROM >= :Rate_Validity_From
+                            AND RATE_VALIDITY_TO <= :Rate_Validity_To
+                            AND POL_NAME ILIKE :POL_Name
+                            AND POL_COUNTRY ILIKE :POL_Country
+                            AND POL_PORT ILIKE :POL_Port
+                            AND POD_NAME ILIKE :POD_Name
+                            AND POD_COUNTRY ILIKE :POD_Country
+                            AND POD_PORT ILIKE :POD_Port
+                            AND CREDITOR_MATCHCODE ILIKE :Creditor_Matchcode
+                            AND CREDITOR_NAME ILIKE :Creditor_Name
+                            AND PICKUP_ADDRESS_NAME ILIKE :Pickup_Address
+                            AND DELIVERY_ADDRESS_NAME ILIKE :Delivery_Address
+                            AND DANGEROUS_GOODS ILIKE :Dangerous_Goods
+                            AND TEMPERATURE_CONTROLLED ILIKE :Temperature_Controlled
+                            AND CONTAINER_MODE ILIKE :Container_Mode
+                            AND CONTAINER_TYPE ILIKE :Container_Type
+
                         LIMIT :limit
                         OFFSET :offset
                         
-                    ";
+                    ;";
+
+                    Console.WriteLine(formInput.Rate_Validity_From);
+                    Console.WriteLine(formInput.Rate_Validity_To);
+
 
                     //command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "ratecard_id", Value = ratecardId, DbType = DbType.Guid });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Lane_ID", Value = formInput.Lane_ID, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Controlling_Customer_Matchcode", Value = formInput.Controlling_Customer_Matchcode, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Controlling_Customer_Name", Value = formInput.Controlling_Customer_Name, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Transport_Mode", Value = formInput.Transport_Mode, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Function", Value = formInput.Function, DbType = DbType.String });
+                    //command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Rate_Validity_From", Value = (formInput.Rate_Validity_From.Equals(DateTime.MinValue) ? "%" : formInput.Rate_Validity_From.ToString()), DbType = DbType.String });
+                    //command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Rate_Validity_To", Value = (formInput.Rate_Validity_To.Equals(DateTime.MinValue) ? "%" : formInput.Rate_Validity_To.ToString()), DbType = DbType.String });
+
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Rate_Validity_From", Value = formInput.Rate_Validity_From, DbType = DbType.Date });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Rate_Validity_To", Value = formInput.Rate_Validity_To, DbType = DbType.Date });
+
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "POL_Name", Value = formInput.POL_Name, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "POL_Country", Value = formInput.POL_Country, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "POL_Port", Value = formInput.POL_Port, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "POD_Name", Value = formInput.POD_Name, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "POD_Country", Value = formInput.POD_Country, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "POD_Port", Value = formInput.POD_Port, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Creditor_Matchcode", Value = formInput.Creditor_Matchcode, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Creditor_Name", Value = formInput.Creditor_Name, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Pickup_Address", Value = formInput.Pickup_Address, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Delivery_Address", Value = formInput.Delivery_Address, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Dangerous_Goods", Value = formInput.Dangerous_Goods, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Temperature_Controlled", Value = formInput.Temperature_Controlled, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Container_Mode", Value = formInput.Container_Mode, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Container_Type", Value = formInput.Container_Type, DbType = DbType.String });
+
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "limit", Value = limit, DbType = DbType.Int64 });
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "offset", Value = offset, DbType = DbType.Int64 });
 

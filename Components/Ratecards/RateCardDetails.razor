@@ -1,22 +1,26 @@
-﻿@page "/ratecard/{transactionId}"
-@page "/ratecard/{transactionId}/{ratecardsOffset}"
-
-@inject HttpClient HttpClient
+﻿@inject HttpClient HttpClient
+@inject IJSRuntime JS
+@inject NavigationManager NavManager
+@inject IConfiguration Configuration
+@rendermode InteractiveServer
 @using _4PL.Data
 @using Microsoft.AspNetCore.Components.Forms
 @using System.ComponentModel.DataAnnotations
-@inject IJSRuntime JS
-@inject NavigationManager NavManager
+@using System.Diagnostics
 
-<PageTitle>Ratecard</PageTitle>
-
-<h3>RateCard</h3>
+<h3>RateCards</h3>
 
 <div>
+    @if (!successMessage.Equals(""))
+    {
+        <div class="alert alert-success">
+            @successMessage
+        </div>
+    }
     @foreach (string ratecardId in ratecardIds)
     {
         <div class="card-columns">
-            <RateCardComponent ratecardId="@ratecardId"></RateCardComponent>
+            <RateCardComponent ratecardId="@ratecardId" deleteRatecardMethod="@deleteRatecardMethod" deleteChargeMethod="@deleteChargeMethod"></RateCardComponent>
         </div>
     }
 </div>
@@ -31,6 +35,8 @@
     [Parameter]
     public List<string> ratecardIds { get; set; } = new();
 
+    public string successMessage = "";
+
     // protected override async Task OnInitializedAsync()
     // {
     //     if (transactionId != "")
@@ -43,5 +49,29 @@
     // {
     //     return await HttpClient.GetFromJsonAsync<List<RateCard>>($"{Configuration["ApiBaseUrl"]}/api/RateCard/GetTransactionDetails/{transactionId}/{ratecardsOffset}");
     // }
+
+    public async Task<HttpResponseMessage> deleteChargeMethod(string chargeId)
+    {
+        HttpResponseMessage result = await HttpClient.DeleteAsync($"{Configuration["ApiBaseUrl"]}/api/RateCard/DeleteCharge/{chargeId}");
+
+        if (result.Content.ReadAsStringAsync().Result == "true")
+        {
+            successMessage = "Successfully deleted charge!";
+        }
+
+        return result;
+    }
+
+    public async Task<HttpResponseMessage> deleteRatecardMethod(string ratecardId)
+    {
+        HttpResponseMessage result = await HttpClient.DeleteAsync($"{Configuration["ApiBaseUrl"]}/api/RateCard/DeleteRatecard/{ratecardId}");
+
+        if (result.Content.ReadAsStringAsync().Result == "true")
+        {
+            successMessage = "Successfully deleted ratecards!";
+        }
+
+        return result;
+    }
 
 }
