@@ -411,6 +411,8 @@ namespace _4PL.Data
                 command.CommandText = $"CALL DELETE_USER(:email)";
                 command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "email", Value = email, DbType = DbType.String });
                 command.ExecuteScalar();
+                command.CommandText = $"DELETE FROM access_control WHERE email = '{email}'";
+                command.ExecuteScalar();
             }
         }
 
