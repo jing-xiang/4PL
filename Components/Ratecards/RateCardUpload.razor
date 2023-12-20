@@ -1,4 +1,5 @@
-﻿@page "/ratecard/upload"
+﻿@page "/ratecard"
+@page "/ratecard/upload"
 
 @rendermode InteractiveServer
 @using System.Net.Http.Headers
@@ -59,6 +60,13 @@
     @message
 </p>
 
+@if (isLoading)
+{
+    <p>Uploading file...</p>
+}
+
+<RateCardSearch></RateCardSearch>
+
 @code {
     private List<File> files = new();
     private List<UploadResult> uploadResults = new();
@@ -66,10 +74,15 @@
     private bool shouldRender;
     private string? message;
 
+    public bool isLoading = false;
+
     protected override bool ShouldRender() => shouldRender;
 
     private async Task OnInputFileChange(InputFileChangeEventArgs e)
     {
+        shouldRender = true;
+        isLoading = true;
+        StateHasChanged();
         shouldRender = false;
         long maxFileSize = 1024 * 1000;
         var upload = false;
@@ -167,7 +180,8 @@
 
             }
         }
-
+        isLoading = false;
+        StateHasChanged();
         shouldRender = true;
 
         
