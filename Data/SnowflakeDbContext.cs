@@ -415,6 +415,8 @@ namespace _4PL.Data
                 Console.WriteLine("command created");
                 command.ExecuteScalar();
                 Console.WriteLine("command executed");
+                command.CommandText = $"DELETE FROM access_control WHERE email = '{email}'";
+                command.ExecuteScalar();
             }
         }
 
