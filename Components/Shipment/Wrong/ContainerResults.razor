@@ -1,0 +1,69 @@
+﻿@inject HttpClient HttpClient
+@using _4PL.Data
+@inject IJSRuntime JS
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
+@inject ProtectedSessionStorage storage
+
+@inject NavigationManager NavManager
+
+<h3>Container Results</h3>
+
+<style>
+    table {
+        font-family: arial, sans-serif;
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    td, th {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+    }
+
+    tr:nth-child(even) {
+        background-color: #dddddd;
+    }
+</style>
+
+<div>
+
+    <table class = "table">
+        <thead>
+            <tr>
+                <th>Container No</th>
+                <th>Container Type</th>
+                <th>Seal No 1</th>
+                <th>Seal No 2</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @foreach (Container c in containers) {
+                <tr>
+                    <td>@c.Container_No</td>
+                    <td>@c.Container_Type</td>
+                    <td>@c.Seal_No_1</td>
+                    <td>@c.Seal_No_2</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    Shipment shipment = new();
+    List<Container> containers = new List<Container>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        containers = await getContainerData();
+    }
+
+    async Task<List<Container>> getContainerData()
+    {
+        string jobno = shipment.Job_No;
+        
+        return await HttpClient.GetFromJsonAsync<List<Container>>($"{NavManager.BaseUri}api/shipment/ContainerData/" + jobno);
+    }
+}

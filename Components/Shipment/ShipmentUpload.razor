@@ -1,0 +1,203 @@
+﻿@page "/shipment"
+
+@using System.Net.Http.Headers
+@using System.Text.Json
+@using _4PL.Data
+
+@inject NavigationManager NavManager
+@inject IHttpClientFactory ClientFactory
+@inject HttpClient HttpClient
+
+@rendermode InteractiveServer
+
+<h3>Shipments</h3>
+
+<p >
+    <label>
+        Upload up to @maxAllowedFiles files:
+        <InputFile OnChange="@OnInputFileChange" multiple />
+    </label>
+
+    @if (isLoading)
+    {
+        <div>
+            <span>Loading...</span>
+        </div>
+    }
+</p>
+
+@if (files.Count > 0)
+{
+    <div class="card">
+        <div class="card-body">
+            <ul>
+                @foreach (var file in files)
+                {
+                    <li>
+                        File: @file.Name
+
+                        @if (@numShipments == "0")
+                        {
+                            <div class="text-danger"> All shipments already exist!</div>
+                        }
+
+                        else if (FileUpload(uploadResults, file.Name, out var result))
+                        {
+                            <div class="text-success">
+                                @numShipments New Shipment(s) Uploaded
+                            </div>
+                        }
+                        else
+                        {
+                            <span>
+                                There was an error uploading the file
+                                (Error: @result.ErrorCode).
+                            </span>
+                        }
+                    </li>
+                }
+            </ul>
+        </div>
+    </div>
+}
+
+<p>
+    @message
+</p>
+
+<button class="btn btn-sm btn-success" @onclick="navigate">
+    Add New Shipment
+</button>
+
+<div class="search-container" >
+    <SearchShipment />
+</div>
+
+
+
+@code {
+    private List<File> files = new();
+    private List<UploadResult> uploadResults = new();
+    private int maxAllowedFiles = 1;
+    private bool shouldRender;
+    private string? message;
+    public string numShipments = "";
+    private bool isLoading = false;
+    protected override bool ShouldRender() => shouldRender;
+
+    private async Task OnInputFileChange(InputFileChangeEventArgs e)
+    {
+        shouldRender = true;
+        isLoading = true;
+        StateHasChanged();
+        shouldRender = false;
+        long maxFileSize = 1024 * 1000;
+        var upload = false;
+        uploadResults.Clear();
+        files.Clear();
+
+        using var content = new MultipartFormDataContent();
+
+        if (e.FileCount > maxAllowedFiles)
+        {
+            message = $"Try again with no more than {maxAllowedFiles} files.";
+        }
+        else
+        {
+            foreach (var file in e.GetMultipleFiles(maxAllowedFiles))
+            {
+                if (uploadResults.SingleOrDefault(
+                    f => f.FileName == file.Name) is null)
+                {
+                    try
+                    {
+                        files.Add(new() { Name = file.Name });
+
+                        var fileContent =
+                            new StreamContent(file.OpenReadStream(maxFileSize));
+
+                        fileContent.Headers.ContentType =
+                            new MediaTypeHeaderValue(file.ContentType);
+
+                        content.Add(
+                            content: fileContent,
+                            name: "\"files\"",
+                            fileName: file.Name);
+
+                        upload = true;
+                    }
+                    catch (Exception ex)
+                    {
+                        // Logger.LogInformation(
+                        //     "{FileName} not uploaded (Err: 5): {Message}",
+                        //     file.Name, ex.Message);
+
+
+                        uploadResults.Add(
+                            new()
+                                {
+                                    FileName = ex.Message,
+                                    ErrorCode = 5,
+                                    Uploaded = false
+                                });
+                    }
+                }
+            }
+
+            message = string.Empty;
+        }
+
+        if (upload)
+        {
+            var client = ClientFactory.CreateClient();
+
+            var response =
+                await client.PostAsync($"{NavManager.BaseUri}api/Shipment/UploadExcel", content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var options =
+                    new JsonSerializerOptions
+                        {
+                            PropertyNameCaseInsensitive = true,
+                        };
+
+                using var responseStream =
+                    await response.Content.ReadAsStreamAsync();
+
+                var newUploadResults = await JsonSerializer
+                    .DeserializeAsync<IList<UploadResult>>(responseStream, options);
+
+                if (newUploadResults is not null)
+                {
+                    uploadResults = uploadResults.Concat(newUploadResults).ToList();
+                    HttpResponseMessage result = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/Shipment/CreateShipments/", uploadResults[0].StoredFileName);
+                    numShipments = result.Content.ReadAsStringAsync().Result;
+                }
+
+            }
+        }
+        isLoading = false;
+        StateHasChanged();
+        shouldRender = true;
+    }
+
+    private void navigate()
+    {
+        NavManager.NavigateTo("/shipment/add");
+    }
+
+    private static bool FileUpload(IList<UploadResult> uploadResults,
+        string? fileName, out UploadResult result)
+    {
+        result = uploadResults
+            .SingleOrDefault(f => f.FileName == fileName) ?? new();
+
+        return result.Uploaded;
+    }
+
+    private class File
+    {
+        public string? Name { get; set; }
+    }
+}

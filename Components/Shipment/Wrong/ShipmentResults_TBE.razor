@@ -1,0 +1,76 @@
+﻿@page "/shipment/results"
+@rendermode InteractiveServer
+@using System.Net.Http.Headers
+@using System.Text.Json
+@inject HttpClient HttpClient
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using _4PL.Data
+
+@inject NavigationManager NavManager
+
+<style>
+    table {
+        font-family: arial, sans-serif;
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    td, th {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+    }
+
+    tr:nth-child(even) {
+        background-color: #dddddd;
+    }
+</style>
+ <div class="py-3">
+    <QuickGrid Items="@ShipmentQueryable">
+        <PropertyColumn Title="Job No" Property="@(s => s.Job_No)" Sortable="true" />
+        <PropertyColumn Title="Master BL No" Property="@(s => s.Master_BL_No)"  Sortable="true" />
+        <PropertyColumn Title="Container Mode" Property="@(s => s.Container_Mode)" Sortable="true" />
+        <PropertyColumn Title="Place Of Loading ID" Property="@(s => s.Place_Of_Loading_ID)" Sortable="true" />
+        <PropertyColumn Title="Place Of Loading Name" Property="@(s => s.Place_Of_Loading_Name)" Sortable="true" />
+        <PropertyColumn Title="Place Of Discharge ID" Property="@(s => s.Place_Of_Discharge_ID)" Sortable="true" />
+        <PropertyColumn Title="Place Of Discharge Name" Property="@(s => s.Place_Of_Discharge_Name)" Sortable="true" />
+        <PropertyColumn Title="Vessel Name" Property="@(s => s.Vessel_Name)" Sortable="true" />
+        <PropertyColumn Title="Voyage No" Property="@(s => s.Voyage_No)" Sortable="true" />
+        <PropertyColumn Title="ETD Date" Property="@(s => s.ETD_Date.Date)" Sortable="true" />
+        <PropertyColumn Title="ETA Date" Property="@(s => s.ETA_Date.Date)" Sortable="true" />
+        <PropertyColumn Title="Carrier Matchcode" Property="@(s => s.Carrier_Matchcode)" Sortable="true" />
+        <PropertyColumn Title="Carrier Name" Property="@(s => s.Carrier_Name)" Sortable="true" />
+        <PropertyColumn Title="Carrier Contract No" Property="@(s => s.Carrier_Contract_No)" Sortable="true" />
+        <PropertyColumn Title="Carrier Booking Reference No" Property="@(s => s.Carrier_Booking_Reference_No)" Sortable="true" />
+        <PropertyColumn Title="Inco Terms" Property="@(s => s.Inco_Terms)" Sortable="true" />
+        <PropertyColumn Title="Controlling Customer Name" Property="@(s => s.Controlling_Customer_Name)" Sortable="true" />
+        <PropertyColumn Title="Shipper Name" Property="@(s => s.Shipper_Name)" Sortable="true" />
+        <PropertyColumn Title="Consignee Name" Property="@(s => s.Consignee_Name)" Sortable="true" />
+        <PropertyColumn Title="Total No Of Pieces" Property="@(s => s.Total_No_Of_Pieces)" Sortable="true" />
+        <PropertyColumn Title="Package Type" Property="@(s => s.Package_Type)" Sortable="true" />
+        <PropertyColumn Title="Total No Of Volume Weight MTQ" Property="@(s => s.Total_No_Of_Volume_Weight_MTQ)" Sortable="true" />
+        <PropertyColumn Title="Total No Of Gross Weight KGM" Property="@(s => s.Total_No_Of_Gross_Weight_KGM)" Sortable="true" />
+        <PropertyColumn Title="Description" Property="@(s => s.Description)" Sortable="true" />
+        <PropertyColumn Title="Shipment Note" Property="@(s => s.Shipment_Note)" Sortable="true" />
+    </QuickGrid>
+</div>
+
+@code {
+    IQueryable<Shipment> ShipmentQueryable = Enumerable.Empty<Shipment>().AsQueryable();
+
+
+    List<Shipment> shipments = new List<Shipment>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await getShipmentData();
+        ShipmentQueryable = result.AsQueryable();
+        StateHasChanged();
+    }
+
+    async Task<List<Shipment>> getShipmentData()
+    {
+        return await HttpClient.GetFromJsonAsync<List<Shipment>>($"{NavManager.BaseUri}api/shipment/ShipmentData");
+    }
+}
+
