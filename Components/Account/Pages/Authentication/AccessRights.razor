@@ -197,6 +197,12 @@
     </div>
     <div>
         <h2>Add New Access Type</h2>
+        @if(isAddedSuccessful)
+        {
+            <div class="alert alert-success">
+                Access type added successfully! All new users will now have this access type by default.
+            </div>
+        }
         <EditForm Model="NewAccessRights" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="AddNewAccessRight" FormName="copyaccessrights">
             <DataAnnotationsValidator />
             <hr />
@@ -212,6 +218,10 @@
             <div class="form-floating mb-3">
                 <InputText @bind-Value="NewAccessRights.Description" class="form-control" autocomplete="username" aria-required="true" placeholder="Reading the rate card." />
                 <label for="description">Description</label>
+            </div>
+            <div>
+                <InputCheckbox placeholder="Update for all users" @bind-Value="NewAccessRights.UpdateForAllUsers" />
+                <label for="updateForAllUsers">Update for all users?</label>
             </div>
             <button type="submit" class="w-100 btn btn-lg btn-primary">Add Access Type</button>
         </EditForm>
@@ -246,6 +256,7 @@ else
     private bool isCopySuccessful = false;
     private string? copySuccessMessage;
     private bool isDeleteSuccessful = false;
+    private bool isAddedSuccessful = false;
     private string deleteSuccessMessage = string.Empty;
     private int flag = 0;
 
@@ -419,7 +430,7 @@ else
                         };
                 }
                 StateHasChanged();
-                }
+            }
         }
     }
 
@@ -479,8 +490,15 @@ else
             List<string> parameterList = new List<string>();
             parameterList.Add(NewAccessRights.Heading);
             parameterList.Add(NewAccessRights.Description);
+            parameterList.Add(NewAccessRights.UpdateForAllUsers.ToString());
             var response = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/AccessRights/AddAccessRights", parameterList);
             Logger.LogInformation(response.Content.ReadAsStringAsync().Result);
+            Console.WriteLine(NewAccessRights.UpdateForAllUsers);
+            if (response.IsSuccessStatusCode)
+            {
+                isAddedSuccessful = true;
+                StateHasChanged();
+            }
         }
     }
 
@@ -517,5 +535,6 @@ else
     {
         public string Heading { get; set; } = "";
         public string Description { get; set; } = "";
+        public bool UpdateForAllUsers { get; set; } = false;
     }
 }

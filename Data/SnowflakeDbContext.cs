@@ -546,7 +546,7 @@ namespace _4PL.Data
             }
         }
 
-        public async Task AddAccessRights(string access_type, string description)
+        public async Task AddAccessRights(string access_type, string description, string[] accounts)
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
@@ -560,7 +560,12 @@ namespace _4PL.Data
                     {
                         command.CommandText = $"INSERT INTO access_model (access_type, description) VALUES ('{access_type}', '{description}')";
                         command.ExecuteScalar();
-                        Console.WriteLine("access rights added (or updated if existing)");
+                        for (int i = 0; i < accounts.Length; i++)
+                        {
+                            command.CommandText = $"INSERT INTO access_control (email, access_type, is_accessible) VALUES ('{accounts[i]}', '{access_type}', false)";
+                            command.ExecuteScalar();
+                        }
+                        Console.WriteLine("access rights added");
                     }
                     else
                     {

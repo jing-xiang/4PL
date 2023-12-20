@@ -144,8 +144,9 @@ namespace _4PL.Data
         {
             try
             {
+                string[] accounts = _dbContext.FetchAvailableAccounts().Result;
                 Console.WriteLine("request received");
-                var result = _dbContext.AddAccessRights(parameterList[0], parameterList[1]);
+                var result = _dbContext.AddAccessRights(parameterList[0], parameterList[1], accounts);
                 return Ok(result);
             }
             catch (InvalidOperationException ex)
