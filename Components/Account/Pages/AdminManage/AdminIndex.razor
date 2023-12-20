@@ -8,15 +8,15 @@
 @inject IConfiguration Configuration
 @inject HttpClient HttpClient
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
 @rendermode InteractiveServer
 
 <PageTitle>Admin</PageTitle>
 
 <div class="row">
-    <div class="col-md-10">
+    <div class="col-md-10 overflow-auto">
         @if (isLoaded)
         {
-            <h3>Search User</h3>
             <hr />
             <div style="display: flex; align-items:center">
                 <input type="text" class="form-control" style="margin-right:5px" autocomplete="off" @bind="SearchInput.Name" placeholder="Name" />
@@ -52,6 +52,11 @@
             </div>
             <div class="grid" tabindex="-1">
                 <QuickGrid Items="@users" Pagination="@pagination">
+                    <TemplateColumn Title="">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary" @onclick="() => ManageUser(context.Email)">
+                            Edit
+                        </button>
+                    </TemplateColumn>
                     <PropertyColumn Property="@(u => u.Name)" Class="name" Sortable="true" />
                     <PropertyColumn Property="@(u => u.Email)" Class="email" Sortable="true" />
                     <PropertyColumn Title="Attempts" Property="@(u => u.FailedAttempts)" Sortable="true" Align="Align.End" />
@@ -59,14 +64,13 @@
                     <TemplateColumn Title="Last Reset" SortBy="@userResetSort" Align="Align.End">
                         @context.LastReset.ToShortDateString()
                     </TemplateColumn>
-                    <TemplateColumn Title="" >
-                        <button type="submit" class="btn btn-sm btn-outline-dark" @onclick="() => ManageUser(context.Email)">
-                            Edit
-                        </button>
-                    </TemplateColumn>
                 </QuickGrid>
             </div>
             <Paginator State="@pagination" />
+            @if (!string.IsNullOrEmpty(deleteMessage))
+            {
+                <div align="center" style="margin-bottom:10px" class="alert alert-danger">@deleteMessage</div>
+            }
             
             @if (currUser != null)
             {
@@ -112,17 +116,6 @@
                     </div>
                 </div>
                 <hr />
-                @if (isToConfirm)
-                {
-                    <div class="row mb-2">
-                        <div class="col-md-6">
-                            <button @onclick="ConfirmDelete" class="w-100 btn btn-danger">Confirm</button>
-                        </div>
-                        <div class="col-md-6">
-                            <button @onclick="CancelDelete" class="w-100 btn btn-outline-primary">Cancel</button>
-                        </div>
-                    </div>
-                }
                 <button @onclick="DeleteUser" class="w-100 btn btn-lg btn-danger">Delete Account</button>
                 <hr />
             }
@@ -143,6 +136,7 @@
 
     private string? updateMessage;
     private string? userUpdateMessage;
+    private string? deleteMessage;
     private string? messageType;
     private string? apiBaseUrl;
     private string? lockedStatus;
@@ -158,46 +152,30 @@
     protected override async Task OnInitializedAsync()
     {
         apiBaseUrl = Configuration["ApiBaseUrl"];
-        var result = await HttpClient.GetFromJsonAsync<List<ApplicationUser>>($"{apiBaseUrl}/api/Snowflake/GetAllUsers");
-        users = result.AsQueryable();
+        await LoadUsers();
         isLoaded = true;
     }
 
-    private void ResetFieldsForSearch()
+    private async Task LoadUsers()
     {
-        updateMessage = null;
-        userUpdateMessage = null;
-        currUser = null;
-        AddUserInput.Name = "";
-        AddUserInput.Email = "";
+        var result = await HttpClient.GetFromJsonAsync<List<ApplicationUser>>($"{apiBaseUrl}/api/Snowflake/GetAllUsers");
+        users = result.AsQueryable();
     }
 
-    private void ResetFieldsForAdd()
+    private void ResetStrings()
     {
         updateMessage = null;
         userUpdateMessage = null;
-        currUser = null;
-        SearchInput.Name = "";
-        SearchInput.Email = "";
-    }
-
-    private void ResetFieldsForManage()
-    {
-        updateMessage = null;
-        userUpdateMessage = null;
-        AddUserInput.Name = "";
-        AddUserInput.Email = "";
-        SearchInput.Name = "";
-        SearchInput.Email = "";
+        deleteMessage = null;
     }
 
     private async Task SearchUsers()
     {
-        ResetFieldsForSearch();
+        ResetStrings();
         List<ApplicationUser>? update = new();
         if (SearchInput.Name == "" && SearchInput.Email == "")
         {
-            await OnInitializedAsync();
+            await LoadUsers();
             return;
         } 
         else if (SearchInput.Email == "")
@@ -219,7 +197,7 @@
 
     private async Task AddNewUser()
     {
-        ResetFieldsForAdd();
+        ResetStrings();
         ApplicationUser user = new();
         user.Name = AddUserInput.Name;
         user.Email = AddUserInput.Email;
@@ -235,13 +213,13 @@
         Logger.LogInformation("Admin added a new user with one-time password.");
         updateMessage = $"{AddUserInput.Name} has been added. An email containing a password reset link has been sent.";
         messageType = "success";
-        await OnInitializedAsync();
+        await LoadUsers();
         return;
     }
 
     private async Task ManageUser(string email)
     {
-        ResetFieldsForManage();
+        ResetStrings();
         currUser = await HttpClient.GetFromJsonAsync<ApplicationUser>($"{apiBaseUrl}/api/Snowflake/e={email}");
         lockedStatus = currUser.IsLocked ? "TRUE" : "FALSE";
     }
@@ -250,53 +228,35 @@
     {
         var result = await HttpClient.PutAsJsonAsync($"{apiBaseUrl}/api/Snowflake/{currUser.Email}/Unlock", currUser);
         if (result.IsSuccessStatusCode)
-        {
             userUpdateMessage = "Account successfully unlocked. A password reset link has been sent to their email.";
-            messageType = "success";
-            lockedStatus = "FALSE";
-            await OnInitializedAsync();
-        }
-        else
-        {
-            userUpdateMessage = $"Something went wrong. {result.Content.ReadAsStringAsync()}";
-            messageType = "danger";
-            return;
-        }
+        messageType = "success";
+        lockedStatus = "FALSE";
+        await LoadUsers();
     }
 
     private async Task LockUser()
     {
         var result = await HttpClient.PutAsJsonAsync($"{apiBaseUrl}/api/Snowflake/{currUser.Email}/Lock", currUser);
+        userUpdateMessage = "Account successfully locked.";
         messageType = "danger";
-        if (result.IsSuccessStatusCode)
+        lockedStatus = "TRUE";
+        await LoadUsers();
+    }
+
+    private async Task DeleteUser()
+    {
+        ResetStrings();
+        string confirmMessage = $"Confirm delete user '{currUser.Email}' with email '{currUser.Email}'?";
+        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", confirmMessage);
+        if (confirmed)
         {
-            userUpdateMessage = "Account successfully locked.";
-            lockedStatus = "TRUE";
-            await OnInitializedAsync();
+            await HttpClient.DeleteAsync($"{apiBaseUrl}/api/Snowflake/d={currUser.Email}");
+            messageType = "danger";
+            deleteMessage = $"{currUser.Name} successfully deleted.";
+            currUser = null;
+            await LoadUsers();
         }
-        else
-        {
-            userUpdateMessage = $"Something went wrong. {result.Content.ReadAsStringAsync()}";
-            return;
-        }
-    }
-
-    private void DeleteUser()
-    {
-        isToConfirm = true;
-    }
-
-    private void CancelDelete()
-    {
-        isToConfirm = false;
-    }
-
-    private async Task ConfirmDelete()
-    {
-        await HttpClient.DeleteFromJsonAsync<ApplicationUser>($"{apiBaseUrl}/api/Snowflake/d={currUser.Email}");
-        messageType = "danger";
-        userUpdateMessage = $"{currUser.Name} successfully deleted.";
-        await OnInitializedAsync();
+        return;
     }
 
     private sealed class SearchModel

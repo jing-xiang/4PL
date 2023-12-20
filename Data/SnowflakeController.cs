@@ -2,7 +2,6 @@
 using System.Security.Cryptography;
 using System.Data;
 using Components.Account;
-using Microsoft.AspNetCore.Identity;
 
 namespace _4PL.Data
 {
@@ -308,12 +307,13 @@ namespace _4PL.Data
         }
 
         [HttpDelete("d={userEmail}")]
-        public IActionResult DeleteUser(string userEmail)
+        public async Task<IActionResult> DeleteUser(string userEmail)
         {
             try
             {
                 _dbContext.DeleteUser(userEmail);
-                return Ok("User deleted.");
+                Console.WriteLine("request fulfilled");
+                return Ok();
             }
             catch (Exception ex)
             {

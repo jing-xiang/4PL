@@ -383,9 +383,13 @@ namespace _4PL.Data
             {
                 conn.Open();
                 IDbCommand command = conn.CreateCommand();
+
                 command.CommandText = $"CALL DELETE_USER(:email)";
+
                 command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "email", Value = email, DbType = DbType.String });
+                Console.WriteLine("command created");
                 command.ExecuteScalar();
+                Console.WriteLine("command executed");
             }
         }
 
