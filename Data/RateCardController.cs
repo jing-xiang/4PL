@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
-
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Globalization;
 using System.IO;
@@ -13,31 +14,261 @@ namespace _4PL.Data
     [ApiController]
     public class RateCardController : Controller
     {
-        [HttpGet("")]
-        public ActionResult Get()
-        {
+        private readonly SnowflakeDbContext _dbContext;
 
-            return Ok(new RateCard());
+        public RateCardController(SnowflakeDbContext dbContext)
+        {
+            _dbContext = dbContext;
+        }      
+
+
+        // Create
+        [HttpPost("UploadExcel")]
+        public async Task<ActionResult<IList<UploadResult>>> PostFile(
+            [FromForm] IEnumerable<IFormFile> files
+        )
+        {
+            var maxAllowedFiles = 1;
+            long maxFileSize = 1024 * 1000;
+            var filesProcessed = 0;
+            var resourcePath = new Uri($"{Request.Scheme}://{Request.Host}/");
+            List<UploadResult> uploadResults = new();
+
+            foreach (var file in files)
+            {
+                var uploadResult = new UploadResult();
+                string trustedFileNameForFileStorage;
+                var untrustedFileName = file.FileName;
+                uploadResult.FileName = untrustedFileName;
+                var trustedFileNameForDisplay =
+                    WebUtility.HtmlEncode(untrustedFileName);
+
+                if (filesProcessed < maxAllowedFiles)
+                {
+                    if (file.Length == 0)
+                    {
+                        //logger.LogInformation("{FileName} length is 0 (Err: 1)",
+                        //    trustedFileNameForDisplay);
+                        uploadResult.ErrorCode = 1;
+                    }
+                    else if (file.Length > maxFileSize)
+                    {
+                        //logger.LogInformation("{FileName} of {Length} bytes is " +
+                        //    "larger than the limit of {Limit} bytes (Err: 2)",
+                        //    trustedFileNameForDisplay, file.Length, maxFileSize);
+                        uploadResult.ErrorCode = 2;
+                    }
+                    else
+                    {
+                        try
+                        {
+                            trustedFileNameForFileStorage = Path.GetFileNameWithoutExtension(Path.GetRandomFileName());
+                            //trustedFileNameForFileStorage = "ratecard_excel";
+
+                            //var path = Path.Combine(env.ContentRootPath,
+                            //    env.EnvironmentName, "unsafe_uploads",
+                            //    trustedFileNameForFileStorage);
+                            var path = Path.Combine(Directory.GetCurrentDirectory(),
+                                "FileUploads",
+                                trustedFileNameForFileStorage + ".xlsx");
+
+                            await using FileStream fs = new(path, FileMode.Create);
+                            await file.CopyToAsync(fs);
+
+
+                            //logger.LogInformation("{FileName} saved at {Path}",
+                            //    trustedFileNameForDisplay, path);
+                            uploadResult.Uploaded = true;
+                            uploadResult.StoredFileName = trustedFileNameForFileStorage;
+                            if (!CheckExcelVersion(trustedFileNameForFileStorage))
+                            {
+                                uploadResult.ErrorCode = 3;
+                                uploadResult.ErrorMessage = $"Excel version not supported. Please use the latest version.";
+                                System.IO.File.Delete(path);
+                            }
+                        }
+
+                        catch (IOException ex)
+                        {
+                            //logger.LogError("{FileName} error on upload (Err: 3): {Message}",
+                            //    trustedFileNameForDisplay, ex.Message);
+                            uploadResult.ErrorCode = 3;
+                            uploadResult.ErrorMessage = ex.Message;
+                        }
+
+                    }
+
+                    filesProcessed++;
+                }
+                else
+                {
+                    //logger.LogInformation("{FileName} not uploaded because the " +
+                    //    "request exceeded the allowed {Count} of files (Err: 4)",
+                    //    trustedFileNameForDisplay, maxAllowedFiles);
+                    uploadResult.ErrorCode = 4;
+                }
+
+                uploadResults.Add(uploadResult);
+            }
+
+            return new CreatedResult(resourcePath, uploadResults);
         }
 
-        [HttpGet("{id}")]
-        public ActionResult Get(int id)
+
+        [HttpPost("CreateRcTransaction")]
+        public async Task<ActionResult<string>> CreateRcTransaction([FromBody] string fileNameWithoutExtension)
         {
-            return Ok(new RateCard());
+
+            List<RateCard> ratecards = ReadRatecardExcel(fileNameWithoutExtension);
+            
+            //1.Create transaction
+            string transactionId = await _dbContext.CreateRcTransaction(null, ratecards);
+
+            //For each rate card, ...
+            //foreach (RateCard rc in ratecards)
+            //{
+            //    //2. Create ratecard (reference transactionId)
+            //    string ratecardId = await _dbContext.CreateRatecard(rc, transactionId);
+
+            //    //3. Create charges (reference transactionId and ratecardID)
+            //    List<string> chargeIds = _dbContext.CreateCharges(rc.Charges, transactionId, ratecardId);
+            //    Console.WriteLine(ratecards.Count);
+            //}
+
+            return Ok(transactionId);
         }
 
-        // Read
-        [HttpGet("List")]
-        public ActionResult List()
+
+        //Delete
+        [HttpDelete("DeleteRatecard/{ratecardId}")]
+        public ActionResult DeleteRatecard(string ratecardId)
         {
-            return List("ratecard_excel.xlsx");
+            int numDeleted = _dbContext.DeleteRatecard(ratecardId);
+
+            return Ok(numDeleted > 0 ? true : false);
         }
 
-        // Read
-        [HttpGet("List/{fileNameWithoutExtension}")]
-        public ActionResult List(string fileNameWithoutExtension)
+        [HttpDelete("DeleteCharge/{chargeId}")]
+        public ActionResult DeleteCharge(string chargeId)
         {
+            System.Console.WriteLine($"Deleting charge: {chargeId}");
+            int numDeleted = _dbContext.DeleteCharge(chargeId);
 
+            return Ok(numDeleted > 0 ? true : false);
+        }
+
+        
+
+        //Read
+        [HttpGet("GetTransactionDetails/{transactionId}")]
+        [HttpGet("GetTransactionDetails/{transactionId}/{offset}")]
+        public ActionResult getTransaction(string transactionId, long offset=0L)
+        {
+            List<RateCard> ratecards = _dbContext.GetRatecardsFromTransactionId(transactionId, offset, 50L);
+
+            foreach(RateCard ratecard in ratecards) 
+            {
+                ratecard.Charges = _dbContext.GetChargesFromRatecardId(ratecard.Id.ToString(), offset, 50L);
+            }
+
+            return Ok(ratecards);
+        }
+
+        [HttpGet("GetRateCard/{ratecardId}")]
+        public ActionResult getRatecard(string ratecardId)
+        {
+            RateCard rc = _dbContext.GetRatecard(ratecardId);
+
+            return rc == null ? NotFound() : Ok(rc);
+        }
+
+        [HttpGet("GetChargeIds/{chargeId}")]
+        public ActionResult getChargeIds(string chargeId)
+        {
+            return Ok(_dbContext.GetChargeIds(chargeId));
+        }
+
+        [HttpGet("GetCharge/{chargeId}")]
+        public ActionResult getCharge(string chargeId)
+        {
+            Charge charge = _dbContext.GetCharge(chargeId);
+            
+            return charge == null ? NotFound() : Ok(charge);
+        }
+
+        [HttpGet("Search")]
+        [HttpPost("Search")]
+        public ActionResult search(
+            long limit = 10,
+            long offset = 0,
+            [FromBody] RateCard formInput=null
+            //string Lane_ID = "%", 
+            //string Controlling_Customer_Matchcode = "%", 
+            //string Controlling_Customer_Name = "%",
+            //string Transport_Mode = "%",
+            //string Function = "%",
+            //DateTime Rate_Validity_From = new DateTime(),
+            //DateTime Rate_Validity_To = new DateTime(),
+            //string POL_Name = "%",
+            //string POL_Country = "%",
+            //string POL_Port = "%",
+            //string POD_Name = "%",
+            //string POD_Country = "%",
+            //string POD_Port = "%",
+            //string Creditor_Matchcode = "%",
+            //string Creditor_Name = "%",
+            //string Pickup_Address = "%",
+            //string Delivery_Address = "%",
+            //string Dangerous_Goods = "%",
+            //string Temperature_Controlled = "%",
+            //string Container_Mode = "%",
+            //string Container_Type = "%"
+        )
+        {
+            if (formInput == null)
+            {
+                formInput = new RateCard();
+            }
+
+
+            Console.WriteLine(formInput.Lane_ID);
+
+            System.Console.WriteLine(offset);
+            return Ok(_dbContext.Search(
+                limit,
+                offset,
+                formInput
+                //Lane_ID,
+                //Controlling_Customer_Matchcode,
+                //Controlling_Customer_Name,
+                //Transport_Mode,
+                //Function,
+                //Rate_Validity_From,
+                //Rate_Validity_To,
+                //POL_Name,
+                //POL_Country,
+                //POL_Port,
+                //POD_Name,
+                //POD_Country,
+                //POD_Port,
+                //Creditor_Matchcode,
+                //Creditor_Name,
+                //Pickup_Address,
+                //Delivery_Address,
+                //Dangerous_Goods,
+                //Temperature_Controlled,
+                //Container_Mode,
+                //Container_Type
+            ));
+        }
+
+        /*
+         * Helper methods
+         * 
+         */
+
+        private bool CheckExcelVersion(string fileNameWithoutExtension)
+        {
             /*
              * https://net-informations.com/csharp/excel/csharp-open-excel.htm
              */
@@ -48,14 +279,47 @@ namespace _4PL.Data
             xlApp = new Excel.Application();
 
             //Requires full path
-            //string fpath = Directory.GetCurrentDirectory() + "\\" + "02_Invoice_Audit_Rate_Cards_Template_20231206.xlsx";
-            string fpath = Directory.GetCurrentDirectory() + "\\FileUploads\\" + fileNameWithoutExtension;
+            //string fpath = Directory.GetCurrentDirectory() + "\\FileUploads\\" + fileNameWithoutExtension;
+            string fpath = Path.Combine(Directory.GetCurrentDirectory(), "FileUploads", fileNameWithoutExtension);
+
+            xlWorkBook = xlApp.Workbooks.Open(fpath, 0, true, 5, "", "", true, Microsoft.Office.Interop.Excel.XlPlatform.xlWindows, "\t", false, false, 0, true, 1, 0);
+            xlWorkSheet = (Excel.Worksheet)xlWorkBook.Worksheets.get_Item(4);
+
+            //Check excel version
+            string excelVersion = xlWorkSheet.Cells[2, 2].Value2;
+
+            string latestExcelVersion = _dbContext.GetRatecardExcelVersion();
+
+            xlWorkBook.Close(true, misValue, misValue);
+            xlApp.Quit();
+
+            if (latestExcelVersion != excelVersion)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private List<RateCard> ReadRatecardExcel(string fileNameWithoutExtension)
+        {
+            /*
+             * https://net-informations.com/csharp/excel/csharp-open-excel.htm
+             */
+            Excel.Application xlApp;
+            Excel.Workbook xlWorkBook;
+            Excel.Worksheet xlWorkSheet;
+            object misValue = System.Reflection.Missing.Value;
+            xlApp = new Excel.Application();
+
+            //Requires full path
+            //string fpath = Directory.GetCurrentDirectory() + "\\FileUploads\\" + fileNameWithoutExtension;
+            string fpath = Path.Combine(Directory.GetCurrentDirectory(), "FileUploads", fileNameWithoutExtension);
+
             xlWorkBook = xlApp.Workbooks.Open(fpath, 0, true, 5, "", "", true, Microsoft.Office.Interop.Excel.XlPlatform.xlWindows, "\t", false, false, 0, true, 1, 0);
             xlWorkSheet = (Excel.Worksheet)xlWorkBook.Worksheets.get_Item(1);
-            //String val = xlWorkSheet.get_Range("A1", "A1").Value2.ToString();
-            //String val = xlWorkSheet.Cells[6, 1].Value2;
 
-            List<RateCard> ratecards = new List<RateCard>();
+            List<RateCard> ratecards = [];
 
             //Iterate row (max 1000 rows)
             //First row is for headers
@@ -64,11 +328,10 @@ namespace _4PL.Data
                 Excel.Range cell = xlWorkSheet.Cells[r, 1];
 
                 //Check if first cell of line is empty
-                if (cellIsEmpty(cell)) 
+                if (cellIsEmpty(cell))
                 {
                     break;
                 }
-                
 
                 //Manually iterate through rows
                 RateCard rc = new RateCard();
@@ -87,10 +350,10 @@ namespace _4PL.Data
                 cell = nextCell(xlWorkSheet, cell);
                 rc.Function = cellIsEmpty(cell) ? "-" : cell.Value2;
 
+
                 //Dates
                 cell = nextCell(xlWorkSheet, cell);
                 rc.Rate_Validity_From = cellIsEmpty(cell) ? DateTime.Now : DateTime.ParseExact(cell.Text, "M/d/yyyy", null);
-
 
                 cell = nextCell(xlWorkSheet, cell);
                 rc.Rate_Validity_To = cellIsEmpty(cell) ? DateTime.Now : DateTime.ParseExact(cell.Text, "M/d/yyyy", null);
@@ -138,8 +401,8 @@ namespace _4PL.Data
                 cell = nextCell(xlWorkSheet, cell);
                 rc.Container_Type = cellIsEmpty(cell) ? "-" : cell.Value2;
 
-                cell = nextCell(xlWorkSheet, cell);
-                rc.Local_Currency = cellIsEmpty(cell) ? "-" : cell.Value2;
+                //cell = nextCell(xlWorkSheet, cell);
+                //rc.Local_Currency = cellIsEmpty(cell) ? "-" : cell.Value2;
 
                 //Add charges
                 cell = nextCell(xlWorkSheet, cell);
@@ -152,21 +415,28 @@ namespace _4PL.Data
                     charge.Calculation_Base = cellIsEmpty(cell) ? "-" : cell.Value2;
 
                     cell = nextCell(xlWorkSheet, cell);
-                    charge.Min = cellIsEmpty(cell) ? 0M : (decimal) cell.Value2;
+                    charge.Min = cellIsEmpty(cell) ? 0M : (decimal)cell.Value2;
 
                     cell = nextCell(xlWorkSheet, cell);
-                    charge.Unit_Price = cellIsEmpty(cell) ? 0M : (decimal) cell.Value2;
+                    charge.OS_Unit_Price = cellIsEmpty(cell) ? 0M : (decimal)cell.Value2;
+
+                    cell = nextCell(xlWorkSheet, cell);
+                    charge.OS_Currency = cellIsEmpty(cell) ? "-" : cell.Value2;
+
+                    cell = nextCell(xlWorkSheet, cell);
+                    charge.Unit_Price = cellIsEmpty(cell) ? 0M : (decimal)cell.Value2;
 
                     cell = nextCell(xlWorkSheet, cell);
                     charge.Currency = cellIsEmpty(cell) ? "-" : cell.Value2;
 
                     cell = nextCell(xlWorkSheet, cell);
-                    charge.Per_Percent = cellIsEmpty(cell) ? 0M : (decimal) cell.Value2;
+                    charge.Per_Percent = cellIsEmpty(cell) ? 0M : (decimal)cell.Value2;
 
                     cell = nextCell(xlWorkSheet, cell);
                     charge.Charge_Code = cellIsEmpty(cell) ? "-" : cell.Value2;
 
                     rc.Charges.Add(charge);
+                    cell = nextCell(xlWorkSheet, cell);
                 }
 
                 //Add rc to list
@@ -174,16 +444,13 @@ namespace _4PL.Data
 
             }
 
-
             xlWorkBook.Close(true, misValue, misValue);
             xlApp.Quit();
 
 
-            /*
-             * 
-             */
+            System.IO.File.Delete(fpath + ".xlsx");
 
-            return Ok(ratecards);
+            return ratecards;
         }
 
         private static bool cellIsEmpty(Excel.Range cell)
@@ -197,110 +464,7 @@ namespace _4PL.Data
             return xlWorkSheet.Cells[cell.Row, cell.Column + 1];
             //return cell;
         }
-
-
-        // Create
-        //[HttpPost]
-        //public ActionResult Create(RateCard ratecard)
-        //{
-        //    return Ok(ratecard);
-        //}
-
-        // Update
-        [HttpPut]
-        public ActionResult Update(RateCard ratecard)
-        {
-            return Ok(new RateCard());
-        }
-
-        // Delete
-        [HttpDelete("{id}")]
-        public ActionResult Delete(int id)
-        {
-            return Ok(new RateCard());
-        }
-
-
-        // Create
-        [HttpPost]
-        public async Task<ActionResult<IList<UploadResult>>> PostFile(
-        [FromForm] IEnumerable<IFormFile> files)
-        {
-            var maxAllowedFiles = 1;
-            long maxFileSize = 1024 * 1000;
-            var filesProcessed = 0;
-            var resourcePath = new Uri($"{Request.Scheme}://{Request.Host}/");
-            List<UploadResult> uploadResults = new();
-
-            foreach (var file in files)
-            {
-                var uploadResult = new UploadResult();
-                string trustedFileNameForFileStorage;
-                var untrustedFileName = file.FileName;
-                uploadResult.FileName = untrustedFileName;
-                var trustedFileNameForDisplay =
-                    WebUtility.HtmlEncode(untrustedFileName);
-
-                if (filesProcessed < maxAllowedFiles)
-                {
-                    if (file.Length == 0)
-                    {
-                        //logger.LogInformation("{FileName} length is 0 (Err: 1)",
-                        //    trustedFileNameForDisplay);
-                        //uploadResult.ErrorCode = 1;
-                    }
-                    else if (file.Length > maxFileSize)
-                    {
-                        //logger.LogInformation("{FileName} of {Length} bytes is " +
-                        //    "larger than the limit of {Limit} bytes (Err: 2)",
-                        //    trustedFileNameForDisplay, file.Length, maxFileSize);
-                        //uploadResult.ErrorCode = 2;
-                    }
-                    else
-                    {
-                        try
-                        {
-                            trustedFileNameForFileStorage = Path.GetFileNameWithoutExtension(Path.GetRandomFileName());
-                            //trustedFileNameForFileStorage = "ratecard_excel";
-
-                            //var path = Path.Combine(env.ContentRootPath,
-                            //    env.EnvironmentName, "unsafe_uploads",
-                            //    trustedFileNameForFileStorage);
-                            var path = Path.Combine(Directory.GetCurrentDirectory(),
-                                "FileUploads",
-                                trustedFileNameForFileStorage + ".xlsx");
-
-                            await using FileStream fs = new(path, FileMode.Create);
-                            await file.CopyToAsync(fs);
-
-                            //logger.LogInformation("{FileName} saved at {Path}",
-                            //    trustedFileNameForDisplay, path);
-                            uploadResult.Uploaded = true;
-                            uploadResult.StoredFileName = trustedFileNameForFileStorage;
-                        }
-                        catch (IOException ex)
-                        {
-                            //logger.LogError("{FileName} error on upload (Err: 3): {Message}",
-                            //    trustedFileNameForDisplay, ex.Message);
-                            uploadResult.ErrorCode = 3;
-                        }
-                    }
-
-                    filesProcessed++;
-                }
-                else
-                {
-                    //logger.LogInformation("{FileName} not uploaded because the " +
-                    //    "request exceeded the allowed {Count} of files (Err: 4)",
-                    //    trustedFileNameForDisplay, maxAllowedFiles);
-                    uploadResult.ErrorCode = 4;
-                }
-
-                uploadResults.Add(uploadResult);
-            }
-
-            return new CreatedResult(resourcePath, uploadResults);
-        }
-
     }
+
+
 }

@@ -1,0 +1,84 @@
+﻿@inject HttpClient HttpClient
+@inject IJSRuntime JS
+@inject NavigationManager NavManager
+@inject IConfiguration Configuration
+@rendermode InteractiveServer
+@using _4PL.Data
+@using Microsoft.AspNetCore.Components.Forms
+@using System.ComponentModel.DataAnnotations
+@using System.Diagnostics
+
+@if (charge == null) {}
+
+else
+{
+    <tr>
+        <td>@charge.Id</td>
+        <td>@charge.Charge_Description</td>
+        <td>@charge.Calculation_Base</td>
+        <td>@charge.Min</td>
+        <td>@charge.OS_Unit_Price</td>
+        <td>@charge.OS_Currency</td>
+        <td>@charge.Unit_Price</td>
+        <td>@charge.Currency</td>
+        <td>@charge.Per_Percent</td>
+        <td>@charge.Charge_Code</td>
+        <td>
+            <button class="w-100 btn btn-lg btn-danger" @onclick="() => DeleteCharge(charge.Id.ToString())">Delete</button>
+        </td>
+    </tr>
+
+}
+
+@code {
+    [Parameter]
+    public Charge charge { get; set; } = null;
+    [Parameter]
+    public string chargeId { get; set; } = "";
+    [Parameter]
+    public Func<string, Task<HttpResponseMessage>> deleteChargeMethod { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (chargeId != "")
+        {
+            HttpResponseMessage result = await HttpClient.GetAsync($"{Configuration["ApiBaseUrl"]}/api/RateCard/getCharge/{chargeId}");
+
+            if (result.IsSuccessStatusCode)
+            {
+
+                charge = result.Content.ReadFromJsonAsync<Charge>().Result;
+            }
+
+            // charge = await HttpClient.GetFromJsonAsync<Charge>($"{Configuration["ApiBaseUrl"]}/api/RateCard/getCharge/{chargeId}");
+        }
+    }
+
+    async Task DeleteCharge(string chargeId)
+    {
+
+        bool confirm = await JS.InvokeAsync<bool>("confirm", "Do you want to delete the charge?");
+
+        if (!confirm)
+        {
+            return;
+        }
+
+        Debug.WriteLine($">>> Logging: {chargeId}");
+
+        HttpResponseMessage result = await HttpClient.DeleteAsync($"{Configuration["ApiBaseUrl"]}/api/RateCard/DeleteCharge/{chargeId}");
+
+        // HttpResponseMessage result = await deleteChargeMethod.Invoke(chargeId);
+
+        Debug.WriteLine($"Logging: {result.StatusCode}");
+
+        if (result.Content.ReadAsStringAsync().Result == "true")
+        {
+            charge = null;
+            StateHasChanged();
+        }
+
+
+        // NavManager.Refresh(true);
+    }
+}

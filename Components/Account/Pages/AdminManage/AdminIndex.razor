@@ -1,0 +1,282 @@
+﻿@page "/Admin"
+
+@using System.ComponentModel.DataAnnotations
+@using _4PL.Data
+@using Microsoft.AspNetCore.Components.QuickGrid
+
+@inject ILogger<AddAccount> Logger
+@inject IConfiguration Configuration
+@inject HttpClient HttpClient
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+@rendermode InteractiveServer
+
+<PageTitle>Admin</PageTitle>
+
+<div class="row">
+    <div class="col-md-10 overflow-auto">
+        @if (isLoaded)
+        {
+            <h3>Search User</h3>
+            <hr />
+            <div style="display: flex; align-items:center">
+                <input type="text" class="form-control" style="margin-right:5px" autocomplete="off" @bind="SearchInput.Name" placeholder="Name" />
+                <input type="email" class="form-control" style="margin-right:5px" autocomplete="off" @bind="SearchInput.Email" placeholder="Email" />
+                <button type="submit" @onclick="SearchUsers" class="w-40 btn btn-primary">Search</button>
+            </div>
+            <hr />
+            <h3>Add User</h3>
+            <hr />
+            <EditForm Model="AddUserInput" method="post" OnValidSubmit="AddNewUser" FormName="addUser">
+                <DataAnnotationsValidator />
+                @if (!string.IsNullOrEmpty(updateMessage))
+                {
+                    <div align="center" style="margin-bottom:10px" class="text-@messageType">@updateMessage</div>
+                }
+
+                <div style ="display: flex; align-items:center">
+                    <InputText @bind-Value="AddUserInput.Name" style="margin-right:5px" class="form-control" autocomplete="off" placeholder="Name" />
+                    <InputText @bind-Value="AddUserInput.Email" style="margin-right:5px" class="form-control" autocomplete="off" placeholder="Email" />
+                    <button type="submit" class="w-40 btn btn-secondary">Register</button>
+                </div>
+                <ValidationSummary class="mt-2 text-danger" role="alert" />
+            </EditForm>
+            <hr />
+            <div class="page-size-chooser">
+                Items per page:
+                <select @bind="@pagination.ItemsPerPage">
+                    <option>5</option>
+                    <option>10</option>
+                    <option>20</option>
+                    <option>50</option>
+                </select>
+            </div>
+            <div class="grid" tabindex="-1">
+                <QuickGrid Items="@users" Pagination="@pagination">
+                    <TemplateColumn Title="">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary" @onclick="() => ManageUser(context.Email)">
+                            Edit
+                        </button>
+                    </TemplateColumn>
+                    <PropertyColumn Property="@(u => u.Name)" Class="name" Sortable="true" />
+                    <PropertyColumn Property="@(u => u.Email)" Class="email" Sortable="true" />
+                    <PropertyColumn Title="Attempts" Property="@(u => u.FailedAttempts)" Sortable="true" Align="Align.End" />
+                    <PropertyColumn Title="Locked" Property="@(u => u.IsLocked)" Sortable="true" Align="Align.End" />
+                    <TemplateColumn Title="Last Reset" SortBy="@userResetSort" Align="Align.End">
+                        @context.LastReset.ToShortDateString()
+                    </TemplateColumn>
+                </QuickGrid>
+            </div>
+            <Paginator State="@pagination" />
+            @if (!string.IsNullOrEmpty(deleteMessage))
+            {
+                <div align="center" style="margin-bottom:10px" class="alert alert-danger">@deleteMessage</div>
+            }
+            
+            @if (currUser != null)
+            {
+                <hr />
+                <h3>Manage User</h3>
+                <hr />
+                <div class="row">
+                    @if (!string.IsNullOrEmpty(userUpdateMessage))
+                    {
+                        <div align="center" style="margin-bottom:10px" class="alert alert-@messageType">@userUpdateMessage</div>
+                    }
+                    <div class="col-md-6">
+                        <p>
+                            <strong>Name</strong>
+                            <input class="form-control" type="text" readonly value="@currUser.Name" />
+                        </p>
+                        <p>
+                            <strong>Email</strong>
+                            <input class="form-control" type="text" readonly value="@currUser.Email" />
+                        </p>
+                        @if (lockedStatus == "TRUE")
+                        {
+                            <button @onclick="UnlockUser" class="w-100 btn btn-lg btn-outline-success">Unlock Account</button>
+                        }
+                        else
+                        {
+                            <button @onclick="LockUser" class="w-100 btn btn-lg btn-outline-danger">Lock Account</button>
+                        }
+                    </div>
+                    <div class="col-md-6">
+                        <p>
+                            <strong>Locked Status</strong>
+                            <input class="form-control" type="text" readonly value="@lockedStatus" />
+                        </p>
+                        <p>
+                            <strong>Failed Attempts</strong>
+                            <input class="form-control" type="text" readonly value="@currUser.FailedAttempts" />
+                        </p>
+                        <p>
+                            <strong>Last Password Reset Date</strong>
+                            <input class="form-control" type="text" readonly value="@currUser.LastReset" />
+                        </p>
+                    </div>
+                </div>
+                <hr />
+                <button @onclick="DeleteUser" class="w-100 btn btn-lg btn-danger">Delete Account</button>
+                <hr />
+            }
+        }
+        else {
+            <p>Loading...</p>
+        }
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    private SearchModel SearchInput { get; set; } = new();
+    private AddUserModel AddUserInput { get; set; } = new();
+
+    private string? updateMessage;
+    private string? userUpdateMessage;
+    private string? deleteMessage;
+    private string? messageType;
+    private string? apiBaseUrl;
+    private string? lockedStatus;
+    private bool isLoaded;
+    private bool isToConfirm;
+
+    QuickGrid<ApplicationUser>? grid;
+    IQueryable<ApplicationUser>? users;
+    GridSort<ApplicationUser> userResetSort = GridSort<ApplicationUser>.ByAscending(x => x.LastReset);
+    PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
+    ApplicationUser? currUser;
+
+    protected override async Task OnInitializedAsync()
+    {
+        apiBaseUrl = Configuration["ApiBaseUrl"];
+        await LoadUsers();
+        isLoaded = true;
+    }
+
+    private async Task LoadUsers()
+    {
+        var result = await HttpClient.GetFromJsonAsync<List<ApplicationUser>>($"{apiBaseUrl}/api/Snowflake/GetAllUsers");
+        users = result.AsQueryable();
+    }
+
+    private void ResetStrings()
+    {
+        updateMessage = null;
+        userUpdateMessage = null;
+        deleteMessage = null;
+    }
+
+    private async Task SearchUsers()
+    {
+        ResetStrings();
+        List<ApplicationUser>? update = new();
+        if (SearchInput.Name == "" && SearchInput.Email == "")
+        {
+            await LoadUsers();
+            return;
+        } 
+        else if (SearchInput.Email == "")
+        {
+            update = await HttpClient.GetFromJsonAsync<List<ApplicationUser>>($"{apiBaseUrl}/api/Snowflake/f=name/v={SearchInput.Name}");
+        } 
+        else if (SearchInput.Name == "")
+        {
+            update = await HttpClient.GetFromJsonAsync<List<ApplicationUser>>($"{apiBaseUrl}/api/Snowflake/f=email/v={SearchInput.Email}");
+        } 
+        else
+        {
+            update = await HttpClient.GetFromJsonAsync<List<ApplicationUser>>($"{apiBaseUrl}/api/Snowflake/n={SearchInput.Name}/e={SearchInput.Email}");
+        }
+
+        users = update.AsQueryable();
+        return;
+    }
+
+    private async Task AddNewUser()
+    {
+        ResetStrings();
+        ApplicationUser user = new();
+        user.Name = AddUserInput.Name;
+        user.Email = AddUserInput.Email;
+
+        var response = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/Snowflake/RegisterUser", user);
+        if (!response.IsSuccessStatusCode)
+        {
+            updateMessage = await response.Content.ReadAsStringAsync();
+            messageType = "danger";
+            return;
+        }
+
+        Logger.LogInformation("Admin added a new user with one-time password.");
+        updateMessage = $"{AddUserInput.Name} has been added. An email containing a password reset link has been sent.";
+        messageType = "success";
+        await LoadUsers();
+        return;
+    }
+
+    private async Task ManageUser(string email)
+    {
+        ResetStrings();
+        currUser = await HttpClient.GetFromJsonAsync<ApplicationUser>($"{apiBaseUrl}/api/Snowflake/e={email}");
+        lockedStatus = currUser.IsLocked ? "TRUE" : "FALSE";
+    }
+
+    private async Task UnlockUser()
+    {
+        var result = await HttpClient.PutAsJsonAsync($"{apiBaseUrl}/api/Snowflake/{currUser.Email}/Unlock", currUser);
+        if (result.IsSuccessStatusCode)
+            userUpdateMessage = "Account successfully unlocked. A password reset link has been sent to their email.";
+        messageType = "success";
+        lockedStatus = "FALSE";
+        await LoadUsers();
+    }
+
+    private async Task LockUser()
+    {
+        var result = await HttpClient.PutAsJsonAsync($"{apiBaseUrl}/api/Snowflake/{currUser.Email}/Lock", currUser);
+        userUpdateMessage = "Account successfully locked.";
+        messageType = "danger";
+        lockedStatus = "TRUE";
+        await LoadUsers();
+    }
+
+    private async Task DeleteUser()
+    {
+        ResetStrings();
+        string confirmMessage = $"Confirm delete user '{currUser.Email}' with email '{currUser.Email}'?";
+        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", confirmMessage);
+        if (confirmed)
+        {
+            await HttpClient.DeleteAsync($"{apiBaseUrl}/api/Snowflake/d={currUser.Email}");
+            messageType = "danger";
+            deleteMessage = $"{currUser.Name} successfully deleted.";
+            currUser = null;
+            await LoadUsers();
+        }
+        return;
+    }
+
+    private sealed class SearchModel
+    {
+        public string Name { get; set; } = "";
+
+        [EmailAddress]
+        [Display(Name = "Email")]
+        public string Email { get; set; } = "";
+    }
+
+    private sealed class AddUserModel
+    {
+        [Required]
+        public string Name { get; set; } = "";
+
+        [Required]
+        [EmailAddress]
+        [Display(Name = "Email")]
+        public string Email { get; set; } = "";
+    }
+}

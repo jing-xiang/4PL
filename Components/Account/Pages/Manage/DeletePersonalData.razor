@@ -4,9 +4,9 @@
 @using Microsoft.AspNetCore.Identity
 @using _4PL.Data
 
-@inject UserManager<ApplicationUser> UserManager
+@* @inject UserManager<ApplicationUser> UserManager
 @inject SignInManager<ApplicationUser> SignInManager
-@inject IdentityUserAccessor UserAccessor
+@inject IdentityUserAccessor UserAccessor *@
 @inject IdentityRedirectManager RedirectManager
 @inject ILogger<DeletePersonalData> Logger
 
@@ -51,31 +51,31 @@
 
     protected override async Task OnInitializedAsync()
     {
-        Input ??= new();
-        user = await UserAccessor.GetRequiredUserAsync(HttpContext);
-        requirePassword = await UserManager.HasPasswordAsync(user);
+        // Input ??= new();
+        // user = await UserAccessor.GetRequiredUserAsync(HttpContext);
+        // requirePassword = await UserManager.HasPasswordAsync(user);
     }
 
     private async Task OnValidSubmitAsync()
     {
-        if (requirePassword && !await UserManager.CheckPasswordAsync(user, Input.Password))
-        {
-            message = "Error: Incorrect password.";
-            return;
-        }
+        // if (requirePassword && !await UserManager.CheckPasswordAsync(user, Input.Password))
+        // {
+        //     message = "Error: Incorrect password.";
+        //     return;
+        // }
 
-        var result = await UserManager.DeleteAsync(user);
-        if (!result.Succeeded)
-        {
-            throw new InvalidOperationException("Unexpected error occurred deleting user.");
-        }
+        // var result = await UserManager.DeleteAsync(user);
+        // if (!result.Succeeded)
+        // {
+        //     throw new InvalidOperationException("Unexpected error occurred deleting user.");
+        // }
 
-        await SignInManager.SignOutAsync();
+        // await SignInManager.SignOutAsync();
 
-        var userId = await UserManager.GetUserIdAsync(user);
-        Logger.LogInformation("User with ID '{UserId}' deleted themselves.", userId);
+        // var userId = await UserManager.GetUserIdAsync(user);
+        // Logger.LogInformation("User with ID '{UserId}' deleted themselves.", userId);
 
-        RedirectManager.RedirectToCurrentPage();
+        // RedirectManager.RedirectToCurrentPage();
     }
 
     private sealed class InputModel

@@ -1,0 +1,361 @@
+﻿@page "/ratecard/search"
+
+@inject HttpClient HttpClient
+@inject IJSRuntime JS
+@inject NavigationManager NavManager
+@inject IConfiguration Configuration
+@rendermode InteractiveServer
+@using Newtonsoft.Json
+@using _4PL.Data
+@using Microsoft.AspNetCore.Components.Forms
+@using System.ComponentModel.DataAnnotations
+@using System.Diagnostics
+@using System.Collections.Generic
+
+
+<h3>Search Ratecard</h3>
+
+<EditForm Model="NextInputFrom" OnSubmit="HandleFormSubmit" Enhance>
+    
+    <ValidationSummary />
+
+
+
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">Lane ID</span>
+            </div>
+            <InputText class="form-control" @bind-Value="NextInputFrom.Lane_ID" />
+            <ValidationMessage For="() => NextInputFrom.Lane_ID" />
+        </div>
+
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">Controlling Customer Matchcode</span>
+            </div>
+            <InputText class="form-control" @bind-Value="NextInputFrom.Controlling_Customer_Matchcode" />
+            <ValidationMessage For="() => NextInputFrom.Controlling_Customer_Matchcode" />
+        </div>
+
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">Controlling Customer Name</span>
+            </div>
+            <InputText class="form-control"  @bind-Value="NextInputFrom.Controlling_Customer_Name" />
+            <ValidationMessage For="() => NextInputFrom.Controlling_Customer_Name" />
+        </div>
+
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">Transport Mode</span>
+            </div>
+            <InputText class="form-control" @bind-Value="NextInputFrom.Transport_Mode" />
+            <ValidationMessage For="() => NextInputFrom.Transport_Mode" />
+        </div>
+    
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">Function</span>
+            </div>
+            <InputText class="form-control" @bind-Value="NextInputFrom.Function" />
+            <ValidationMessage For="() => NextInputFrom.Function" />
+        </div>
+
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">Rate Validity From</span>
+            </div>
+            <InputDate class="form-control" @bind-Value=NextInputFrom.Rate_Validity_From ParsingErrorMessage="Must be a date" />
+            <ValidationMessage For="() => NextInputFrom.Rate_Validity_From" />
+        </div>
+
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">Rate Validity To</span>
+            </div>
+            <InputDate class="form-control" @bind-Value=NextInputFrom.Rate_Validity_To ParsingErrorMessage="Must be a date" />
+            <ValidationMessage For="() => NextInputFrom.Rate_Validity_To" />
+        </div>
+
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">POL_Name</span>
+            </div>
+            <InputText class="form-control" @bind-Value="NextInputFrom.POL_Name" />
+            <ValidationMessage For="() => NextInputFrom.POL_Name" />
+        </div>
+
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">POL_Country</span>
+            </div>
+            <InputText class="form-control" @bind-Value="NextInputFrom.POL_Country" />
+            <ValidationMessage For="() => NextInputFrom.POL_Country" />
+        </div>
+
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">POL_Port</span>
+            </div>
+            <InputText class="form-control" @bind-Value="NextInputFrom.POL_Port" />
+            <ValidationMessage For="() => NextInputFrom.POL_Port" />
+        </div>
+
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">POD_Name</span>
+            </div>
+            <InputText class="form-control" @bind-Value="NextInputFrom.POD_Name" />
+            <ValidationMessage For="() => NextInputFrom.POD_Name" />
+        </div>
+
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">POD_Country</span>
+            </div>
+            <InputText class="form-control" @bind-Value="NextInputFrom.POD_Country" />
+            <ValidationMessage For="() => NextInputFrom.POD_Country" />
+        </div>
+
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">POL_Name</span>
+            </div>
+            <InputText class="form-control" @bind-Value="NextInputFrom.POD_Port" />
+            <ValidationMessage For="() => NextInputFrom.POD_Port" />
+        </div>
+
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">Creditor_Matchcode</span>
+            </div>
+            <InputText class="form-control" @bind-Value="NextInputFrom.Creditor_Matchcode" />
+            <ValidationMessage For="() => NextInputFrom.Creditor_Matchcode" />
+        </div>
+
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">Creditor_Name</span>
+            </div>
+            <InputText class="form-control" @bind-Value="NextInputFrom.Creditor_Name" />
+            <ValidationMessage For="() => NextInputFrom.Creditor_Name" />
+        </div>
+
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">Pickup_Address</span>
+            </div>
+            <InputText class="form-control" @bind-Value="NextInputFrom.Pickup_Address" />
+            <ValidationMessage For="() => NextInputFrom.Pickup_Address" />
+        </div>
+
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">Delivery_Address</span>
+            </div>
+            <InputText class="form-control" @bind-Value="NextInputFrom.Delivery_Address" />
+            <ValidationMessage For="() => NextInputFrom.Delivery_Address" />
+        </div>
+
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">Dangerous_Goods</span>
+            </div>
+            <InputText class="form-control" @bind-Value="NextInputFrom.Dangerous_Goods" />
+            <ValidationMessage For="() => NextInputFrom.Dangerous_Goods" />
+        </div>
+
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">Temperature_Controlled</span>
+            </div>
+            <InputText class="form-control"  @bind-Value="NextInputFrom.Temperature_Controlled" />
+            <ValidationMessage For="() => NextInputFrom.Temperature_Controlled" />
+        </div>
+
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">Container_Mode</span>
+            </div>
+            <InputText class="form-control" @bind-Value="NextInputFrom.Container_Mode" />
+            <ValidationMessage For="() => NextInputFrom.Container_Mode" />
+        </div>
+
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">Container_Type</span>
+            </div>
+            <InputText class="form-control" @bind-Value="NextInputFrom.Container_Type" />
+            <ValidationMessage For="() => NextInputFrom.Container_Type" />
+        </div>
+
+
+        <button class="w-100 btn btn-lg btn-primary">Submit</button>
+
+</EditForm>
+
+<div>
+    <nav class="btn-group" role="group" aria-label="Page navigation">
+        <ul class="pagination">
+            <li class="page-item">
+                <button class="w-100 btn btn-outline-primary" @onclick="Prev">
+                    <span aria-hidden="true">&laquo;</span>
+                    <span class="sr-only">Previous</span>
+                </button>
+            </li>
+            <li class="page-item">
+                <button class="w-100 btn btn-outline-primary" @onclick="Next">
+                    <span class="sr-only">Next</span>
+                    <span aria-hidden="true">&raquo;</span>
+                </button>
+            </li>
+        </ul>
+    </nav>
+</div>
+
+<p>Currently showing: @offset to @(offset + ratecardIds.Count)</p>
+
+@if (isLoading)
+{
+    <p>Fetching data...</p>
+}
+
+else if (ratecardIds.Count == 0)
+{
+    <p>No ratecards mathcing the search criteria</p>
+}
+else 
+{
+    <RateCardDetails ratecardIds="@ratecardIds"></RateCardDetails>
+}
+
+@code {
+    [SupplyParameterFromForm]
+    public RateCard NextInputFrom { get; set; } = new();
+    public RateCard CurrInputForm { get; set; } = new();
+
+    public List<RateCard> ratecards = new();
+    [Parameter]
+    public List<string> ratecardIds { get; set; } = new();
+    [Parameter]
+    public int offset { get; set; } = 0;
+    public bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // ratecards = await HttpClient.GetFromJsonAsync<List<RateCard>>($"{NavManager.BaseUri}api/RateCard/GetTransactionDetails/{"%"}/{0}");
+
+        CurrInputForm.Lane_ID = string.IsNullOrEmpty(NextInputFrom.Lane_ID) ? "%" : NextInputFrom.Lane_ID;
+        CurrInputForm.Controlling_Customer_Matchcode = string.IsNullOrEmpty(NextInputFrom.Controlling_Customer_Matchcode) ? "%" : NextInputFrom.Controlling_Customer_Matchcode;
+        CurrInputForm.Controlling_Customer_Name = string.IsNullOrEmpty(NextInputFrom.Controlling_Customer_Name) ? "%" : NextInputFrom.Controlling_Customer_Name;
+        CurrInputForm.Transport_Mode = string.IsNullOrEmpty(NextInputFrom.Transport_Mode) ? "%" : NextInputFrom.Transport_Mode;
+        CurrInputForm.Function = string.IsNullOrEmpty(NextInputFrom.Function) ? "%" : NextInputFrom.Function;
+
+        CurrInputForm.Rate_Validity_From = DateTime.MinValue;
+        CurrInputForm.Rate_Validity_To = DateTime.MaxValue;
+
+        CurrInputForm.POL_Name = string.IsNullOrEmpty(NextInputFrom.POL_Name) ? "%" : NextInputFrom.POL_Name;
+        CurrInputForm.POL_Country = string.IsNullOrEmpty(NextInputFrom.POL_Country) ? "%" : NextInputFrom.POL_Country;
+        CurrInputForm.POL_Port = string.IsNullOrEmpty(NextInputFrom.POL_Port) ? "%" : NextInputFrom.POL_Port;
+        CurrInputForm.POD_Name = string.IsNullOrEmpty(NextInputFrom.POD_Name) ? "%" : NextInputFrom.POD_Name;
+        CurrInputForm.POD_Country = string.IsNullOrEmpty(NextInputFrom.POD_Country) ? "%" : NextInputFrom.POD_Country;
+        CurrInputForm.POD_Port = string.IsNullOrEmpty(NextInputFrom.POD_Port) ? "%" : NextInputFrom.POD_Port;
+        CurrInputForm.Creditor_Matchcode = string.IsNullOrEmpty(NextInputFrom.Creditor_Matchcode) ? "%" : NextInputFrom.Creditor_Matchcode;
+        CurrInputForm.Creditor_Name = string.IsNullOrEmpty(NextInputFrom.Creditor_Name) ? "%" : NextInputFrom.Creditor_Name;
+        CurrInputForm.Pickup_Address = string.IsNullOrEmpty(NextInputFrom.Pickup_Address) ? "%" : NextInputFrom.Pickup_Address;
+        CurrInputForm.Delivery_Address = string.IsNullOrEmpty(NextInputFrom.Delivery_Address) ? "%" : NextInputFrom.Delivery_Address;
+        CurrInputForm.Dangerous_Goods = string.IsNullOrEmpty(NextInputFrom.Dangerous_Goods) ? "%" : NextInputFrom.Dangerous_Goods;
+        CurrInputForm.Temperature_Controlled = string.IsNullOrEmpty(NextInputFrom.Temperature_Controlled) ? "%" : NextInputFrom.Temperature_Controlled;
+        CurrInputForm.Container_Mode = string.IsNullOrEmpty(NextInputFrom.Container_Mode) ? "%" : NextInputFrom.Container_Mode;
+        CurrInputForm.Container_Type = string.IsNullOrEmpty(NextInputFrom.Container_Type) ? "%" : NextInputFrom.Container_Type;
+
+        ratecardIds = await FetchRatecardIds();
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    // protected override 
+
+    public async void HandleFormSubmit()
+    {
+        offset = 0;
+        // CurrInputForm = NextInputFrom;
+
+        CurrInputForm.Lane_ID = string.IsNullOrEmpty(NextInputFrom.Lane_ID) ? "%" : NextInputFrom.Lane_ID;
+        CurrInputForm.Controlling_Customer_Matchcode = string.IsNullOrEmpty(NextInputFrom.Controlling_Customer_Matchcode) ? "%" : NextInputFrom.Controlling_Customer_Matchcode;
+        CurrInputForm.Controlling_Customer_Name = string.IsNullOrEmpty(NextInputFrom.Controlling_Customer_Name) ? "%" : NextInputFrom.Controlling_Customer_Name;
+        CurrInputForm.Transport_Mode = string.IsNullOrEmpty(NextInputFrom.Transport_Mode) ? "%" : NextInputFrom.Transport_Mode;
+        CurrInputForm.Function = string.IsNullOrEmpty(NextInputFrom.Function) ? "%" : NextInputFrom.Function;
+
+        CurrInputForm.Rate_Validity_From = NextInputFrom.Rate_Validity_From;
+        CurrInputForm.Rate_Validity_To = NextInputFrom.Rate_Validity_To;
+
+        CurrInputForm.POL_Name = string.IsNullOrEmpty(NextInputFrom.POL_Name) ? "%" : NextInputFrom.POL_Name;
+        CurrInputForm.POL_Country = string.IsNullOrEmpty(NextInputFrom.POL_Country) ? "%" : NextInputFrom.POL_Country;
+        CurrInputForm.POL_Port = string.IsNullOrEmpty(NextInputFrom.POL_Port) ? "%" : NextInputFrom.POL_Port;
+        CurrInputForm.POD_Name = string.IsNullOrEmpty(NextInputFrom.POD_Name) ? "%" : NextInputFrom.POD_Name;
+        CurrInputForm.POD_Country = string.IsNullOrEmpty(NextInputFrom.POD_Country) ? "%" : NextInputFrom.POD_Country;
+        CurrInputForm.POD_Port = string.IsNullOrEmpty(NextInputFrom.POD_Port) ? "%" : NextInputFrom.POD_Port;
+        CurrInputForm.Creditor_Matchcode = string.IsNullOrEmpty(NextInputFrom.Creditor_Matchcode) ? "%" : NextInputFrom.Creditor_Matchcode;
+        CurrInputForm.Creditor_Name = string.IsNullOrEmpty(NextInputFrom.Creditor_Name) ? "%" : NextInputFrom.Creditor_Name;
+        CurrInputForm.Pickup_Address = string.IsNullOrEmpty(NextInputFrom.Pickup_Address) ? "%" : NextInputFrom.Pickup_Address;
+        CurrInputForm.Delivery_Address = string.IsNullOrEmpty(NextInputFrom.Delivery_Address) ? "%" : NextInputFrom.Delivery_Address;
+        CurrInputForm.Dangerous_Goods = string.IsNullOrEmpty(NextInputFrom.Dangerous_Goods) ? "%" : NextInputFrom.Dangerous_Goods;
+        CurrInputForm.Temperature_Controlled = string.IsNullOrEmpty(NextInputFrom.Temperature_Controlled) ? "%" : NextInputFrom.Temperature_Controlled;
+        CurrInputForm.Container_Mode = string.IsNullOrEmpty(NextInputFrom.Container_Mode) ? "%" : NextInputFrom.Container_Mode;
+        CurrInputForm.Container_Type = string.IsNullOrEmpty(NextInputFrom.Container_Type) ? "%" : NextInputFrom.Container_Type;
+
+
+        isLoading = true;
+        ratecardIds = await FetchRatecardIds();
+
+        foreach (string id in ratecardIds)
+        {
+
+            Debug.WriteLine($">>> Logging: {id}");
+        }
+
+        // await JS.InvokeVoidAsync("alert", "Form submitted!");
+        isLoading = false;
+        StateHasChanged();
+
+    }
+
+    public async void Next()
+    {
+        if (ratecardIds.Count == 0)
+        {
+            return;    
+        }
+
+        isLoading = true;
+        offset += 10;
+        ratecardIds.Clear();
+        ratecardIds = await FetchRatecardIds();
+
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    public async void Prev()
+    {
+        isLoading = true;
+        offset = (offset >= 10) ? offset - 10 : 0;
+        ratecardIds.Clear();
+        ratecardIds = await FetchRatecardIds();
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    public async Task<List<string>> FetchRatecardIds()
+    {
+        // return await HttpClient.GetFromJsonAsync<List<string>>(@$"{Configuration["ApiBaseUrl"]}/api/RateCard/Search?limit=10&offset={offset}");
+        HttpResponseMessage response = await HttpClient.PostAsJsonAsync<RateCard>(@$"{Configuration["ApiBaseUrl"]}/api/RateCard/Search?limit=10&offset={offset}", CurrInputForm);
+
+        var responseContent = await response.Content.ReadAsStringAsync();
+
+        List<string> result = JsonConvert.DeserializeObject<List<string>>(responseContent);
+
+        return result;
+    }
+}

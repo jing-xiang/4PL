@@ -1,0 +1,34 @@
+﻿@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Components.QuickGrid
+
+@inject HttpClient HttpClient
+@inject IJSRuntime JS
+@inject NavigationManager NavManager
+@inject IConfiguration Configuration
+@using _4PL.Data
+@using Microsoft.AspNetCore.Components.Forms
+@using System.ComponentModel.DataAnnotations
+@using System.Diagnostics
+
+<h3>RatecardDetailsQT</h3>
+
+<QuickGrid Items="@ratecards">
+    <PropertyColumn Property="@(p => p.Id)" Sortable="true" />
+    <PropertyColumn Property="@(p => p.Controlling_Customer_Matchcode)" Sortable="true" />
+    <PropertyColumn Property="@(p => p.Rate_Validity_From)" Format="dd/MM/yyyy" Sortable="true" />
+</QuickGrid>
+
+@code {
+    @code {
+        // private record Person(int PersonId, string Name, DateOnly PromotionDate);
+        [SupplyParameterFromForm]
+        RateCard ratecard { get; set; } = new();
+
+        private IQueryable<RateCard> ratecards = new[]
+        {
+            new RateCard(),
+            new RateCard(),
+            new RateCard()
+        }.AsQueryable();
+    }
+}

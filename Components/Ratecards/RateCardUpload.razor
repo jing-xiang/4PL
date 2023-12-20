@@ -1,5 +1,6 @@
-﻿@page "/ratecardupload"
-@page "/ratecard"
+﻿@page "/ratecard"
+@page "/ratecard/upload"
+
 @rendermode InteractiveServer
 @using System.Net.Http.Headers
 @using System.Text.Json
@@ -8,6 +9,11 @@
 
 @inject NavigationManager NavManager
 @inject IHttpClientFactory ClientFactory
+@inject HttpClient HttpClient
+@inject IConfiguration Configuration
+@inject IJSRuntime JS
+
+<PageTitle>Ratecard</PageTitle>
 
 <h1>Upload Files</h1>
 
@@ -30,15 +36,17 @@
 
                         @if (FileUpload(uploadResults, file.Name, out var result))
                         {
-                            <span>
-                                Stored File Name: @result.StoredFileName
+                            <span class="text-success">
+                                Upload successful!
                             </span>
                         }
                         else
                         {
-                            <span>
+                            <span class="text-danger">
                                 There was an error uploading the file
-                                (Error: @result.ErrorCode).
+                                (ErrorCode: @result.ErrorCode).
+                                @result.ErrorMessage
+                                Please try again.
                             </span>
                         }
                     </li>
@@ -52,6 +60,13 @@
     @message
 </p>
 
+@if (isLoading)
+{
+    <p>Uploading file...</p>
+}
+
+<RateCardSearch></RateCardSearch>
+
 @code {
     private List<File> files = new();
     private List<UploadResult> uploadResults = new();
@@ -59,10 +74,15 @@
     private bool shouldRender;
     private string? message;
 
+    public bool isLoading = false;
+
     protected override bool ShouldRender() => shouldRender;
 
     private async Task OnInputFileChange(InputFileChangeEventArgs e)
     {
+        shouldRender = true;
+        isLoading = true;
+        StateHasChanged();
         shouldRender = false;
         long maxFileSize = 1024 * 1000;
         var upload = false;
@@ -125,7 +145,7 @@
             var client = ClientFactory.CreateClient();
 
             var response =
-                await client.PostAsync($"{NavManager.BaseUri}api/RateCard", content);
+                await client.PostAsync($"{Configuration["ApiBaseUrl"]}/api/RateCard/UploadExcel", content);
 
             if (response.IsSuccessStatusCode)
             {
@@ -141,17 +161,30 @@
                 var newUploadResults = await JsonSerializer
                     .DeserializeAsync<IList<UploadResult>>(responseStream, options);
 
+
+
                 if (newUploadResults is not null)
                 {
+                    
                     uploadResults = uploadResults.Concat(newUploadResults).ToList();
 
-                    NavManager.NavigateTo("/ratecard/" + uploadResults[0].StoredFileName);
+                    // await client.PostAsync($"/api/ratecard/CreateRcTransaction/" + uploadResults[0].StoredFileName, null);
+                    HttpResponseMessage result = await HttpClient.PostAsJsonAsync($"{Configuration["ApiBaseUrl"]}/api/ratecard/CreateRcTransaction/", uploadResults[0].StoredFileName);
+                    // JS.InvokeVoidAsync("alert", files.Count);
+                    // JS.InvokeVoidAsync("alert", files.Count);
+                    string transactionId = result.Content.ReadAsStringAsync().Result;
+                    // NavManager.NavigateTo("/ratecard/" + transactionId + "/0");
+
+
                 }
 
             }
         }
-
+        isLoading = false;
+        StateHasChanged();
         shouldRender = true;
+
+        
     }
 
     private static bool FileUpload(IList<UploadResult> uploadResults,

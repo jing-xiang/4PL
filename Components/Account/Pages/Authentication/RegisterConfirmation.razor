@@ -1,0 +1,41 @@
+﻿@page "/Account/RegisterConfirmation"
+
+@using System.Text
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.WebUtilities
+@using _4PL.Data
+
+@inject NavigationManager NavigationManager
+@inject IdentityRedirectManager RedirectManager
+
+<PageTitle>Register confirmation</PageTitle>
+
+<h1>Register confirmation</h1>
+<hr />
+
+<StatusMessage Message="@statusMessage" />
+
+<div style="margin:10px">
+    <a href="@(NavigationManager.GetUriWithQueryParameters("Account/Login", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))">Click here to login</a>
+</div>
+
+<div style="margin:10px">
+    <a href="@(NavigationManager.GetUriWithQueryParameters("Account/ResetPassword", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))">Reset password for testing purposes</a>
+</div>
+
+
+@code {
+    private string? statusMessage;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        HttpContext.Response.StatusCode = StatusCodes.Status201Created;
+        statusMessage = "A password reset link has been sent to your email for confirmation.";
+    }
+}

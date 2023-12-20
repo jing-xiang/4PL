@@ -1,0 +1,164 @@
+﻿@page "/Account/Login"
+
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.Cookies
+@using System.Security.Claims
+@using _4PL.Data
+
+@inject ILogger<Login> Logger
+@inject NavigationManager NavigationManager
+@inject IdentityRedirectManager RedirectManager
+@inject HttpClient HttpClient
+@inject IConfiguration Configuration
+
+<PageTitle>Login</PageTitle>
+
+<div align="center" style="margin:50px">
+    <div class="col-md-4">
+        <section>
+            <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login">
+                <DataAnnotationsValidator />
+                <h1>4PL</h1>
+                <hr />
+                <ValidationSummary class="text-danger" role="alert" />
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div style="margin-bottom:10px" class="text-danger">@errorMessage</div>
+                }
+                <div class="form-floating mb-3">
+                    <InputText @bind-Value="Input.Email" class="form-control" autocomplete="email" aria-required="true" placeholder="name@example.com" />
+                    <label for="email" class="form-label">Email</label>
+                </div>
+                <div class="form-floating mb-3">
+                    <InputText type="password" @bind-Value="Input.Password" class="form-control" aria-required="true" placeholder="password" />
+                    <label for="password" class="form-label">Password</label>
+                </div>
+                <div class="checkbox mb-3">
+                    <label class="form-label">
+                        <InputCheckbox @bind-Value="Input.RememberMe" class="darker-border-checkbox form-check-input" />
+                        Remember me
+                    </label>
+                </div>
+                <div>
+                    <button type="submit" class="w-100 btn btn-lg btn-primary" style="margin-top:-5px">Log in</button>
+                </div>
+                <div>
+                    <a class="w-100 btn btn-lg btn-outline-secondary" style="margin-top:5px" href="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))">Don't have an account?</a>
+                </div>
+                <div style="margin:10px">
+                    <a href="Account/ForgotPassword">Forgot your password?</a>
+                </div>
+            </EditForm>
+        </section>
+    </div>
+</div>
+
+@code {
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = new();
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    private string? errorMessage;
+
+    private string? apiBaseUrl;
+
+    protected override async Task OnInitializedAsync()
+    {
+        apiBaseUrl = Configuration["ApiBaseUrl"];
+
+        if (HttpMethods.IsGet(HttpContext.Request.Method))
+        {
+            // Clear the existing external cookie to ensure a clean login process
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        }
+    }
+
+    public async Task LoginUser()
+    {
+        ApplicationUser? user = new();
+
+        try {
+            user = await HttpClient.GetFromJsonAsync<ApplicationUser>($"{apiBaseUrl}/api/Snowflake/e={Input.Email}");
+        } 
+        catch (HttpRequestException ex)
+        {
+            Logger.LogInformation("User not found.");
+            errorMessage = "User does not exist.";
+            return;
+        }
+
+        user.Password = Input.Password;
+
+        if (user.IsLocked)
+        {
+            Logger.LogWarning("User account locked out.");
+            RedirectManager.RedirectTo("Account/Lockout");
+        }
+        else
+        {
+            var validate = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/Snowflake/ValidatePassword", user);
+            if (!validate.IsSuccessStatusCode)
+            {
+                var update = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/Snowflake/UpdateAttempts", user);
+                int remaining = Convert.ToInt32(await update.Content.ReadAsStringAsync());
+                if (remaining == 0)
+                {
+                    RedirectManager.RedirectTo("Account/Lockout");
+                }
+                errorMessage = $"Invalid Password. Number of attempts remaining: {remaining}";
+                return;
+            }
+
+            else
+            {
+                Logger.LogWarning("User logged in.");
+                await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/Snowflake/ResetAttempts", user);
+                await HttpSignInAsync(user);
+                RedirectManager.RedirectTo(ReturnUrl);
+            }
+        }
+    }
+
+    private async Task HttpSignInAsync(ApplicationUser user)
+    {
+        var claims = new List<Claim>
+                    {
+                        new Claim(ClaimTypes.Email, user.Email),
+                        new Claim(ClaimTypes.Name, user.Name),
+                        new Claim(ClaimTypes.Role, "User"),
+                    };
+
+        var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        var authProperties = new AuthenticationProperties
+            {
+                AllowRefresh = true,
+                IsPersistent = false,
+            };
+
+        await HttpContext.SignInAsync(
+            CookieAuthenticationDefaults.AuthenticationScheme,
+            new ClaimsPrincipal(claimsIdentity),
+            authProperties);
+    }
+
+    private sealed class InputModel
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = "";
+
+        [Required]
+        [DataType(DataType.Password)]
+        public string Password { get; set; } = "";
+
+        [Display(Name = "Remember me?")]
+        public bool RememberMe { get; set; }
+    }
+}

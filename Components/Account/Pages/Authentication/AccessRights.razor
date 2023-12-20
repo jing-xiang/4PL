@@ -1,0 +1,486 @@
+﻿@page "/Account/AccessRights"
+
+@using System.ComponentModel.DataAnnotations;
+@using System.Text;
+@using System.Text.Encodings.Web;
+@using Microsoft.AspNetCore.Identity;
+@using Microsoft.AspNetCore.WebUtilities;
+@using _4PL.Data;
+@using Snowflake.Data;
+@using Newtonsoft.Json;
+
+@inject NavigationManager NavigationManager
+@inject IdentityRedirectManager RedirectManager
+@inject IConfiguration Configuration
+@inject HttpClient HttpClient
+@inject SnowflakeDbContext DbContext
+@inject ILogger<AccessRights> Logger
+@inject IJSRuntime JSRuntime
+@rendermode InteractiveServer
+
+<PageTitle>Access Rights</PageTitle>
+
+<h3>Manage Access Rights</h3>
+
+<div align="center">
+    <div class="col-md-4">
+        <!-- display all avaiable accounts-->
+<h2>Available Accounts</h2>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Accounts</th>
+                </tr>
+            </thead>
+                @if (availableAccounts != null)
+                {
+                <tbody>
+                        @foreach (var account in availableAccounts)
+                        {
+                        <tr>
+                            <td>
+                                <a onclick="navigator.clipboard.writeText('@account')" href="javascript:void(0);">@account</a>
+                            </td>
+                        </tr>
+                        }
+                </tbody>
+                }
+        </table>
+    </div>
+</div>
+
+<div align="center">
+    <div class="col-md-4">
+        <EditForm Model="Input" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="FetchAccessRights" FormName="fetchaccessrights">
+            <DataAnnotationsValidator />
+            <hr />
+            <ValidationSummary class="text-danger" />
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div style="margin-bottom:10px" class="text-danger">@errorMessage</div>
+            }
+
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+                <label for="email">Email</label>
+            </div>
+            <button type="submit" class="w-100 btn btn-lg btn-primary">View Access Rights</button>
+        </EditForm>
+    </div>
+</div>
+
+
+@if (!string.IsNullOrEmpty(accessRightsString))
+{
+    <div>
+        <h2>@Input.Email</h2>
+    </div>
+    <div align="right">
+    <button class="btn btn-sm btn-light" type="checkbox" @onclick="() =>ResetAccessRights()">Reset</button>
+    <button class="btn btn-sm btn-light" type="checkbox" @onclick="() =>ToggleAllAccessRights()">Toggle All</button>
+    </div>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Access Type</th>
+                <th>Permission</th>
+                <th>Select</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var accessRight in Rights)
+            {
+                <tr>
+                    <td>
+                        @accessRight.Heading.Replace("[", "").ToUpper()
+                    </td>
+                    <td>
+                        @if (accessRight.AccessRight.ToString().ToLower().Contains("false"))
+                        {
+                            <span class="text-danger">No</span>
+                        }
+                        else if (accessRight.AccessRight.ToString().ToLower().Contains("true"))
+                        {
+                            <span class="text-success">Yes</span>
+                        }
+                        else
+                        {
+                            <span class="text-danger">@accessRight.AccessRight</span>
+                        }
+                    </td>
+                    <link href="_content/Syncfusion.Blazor.Themes/bootstrap5.css" rel="stylesheet" />
+                    <label for="checked" style="padding: 10px 10px 10px 0"></label>
+
+                    <SfSwitch @bind-Checked="@accessRight.IsChecked" OnLabel="Yes" OffLabel="No"></SfSwitch>
+
+                    @code {
+                private bool isChecked = true;
+            }
+                </tr>
+            }
+        </tbody>
+        <button type="button" class="btn btn-sm btn-success" @onclick="() => SaveAccessRights()">Save Access Rights</button>
+        <h2> Remove Access Rights</h2>
+        @if (isDeleteSuccessful)
+        {
+            <div class="alert alert-success">
+                @deleteSuccessMessage
+            </div>
+        }
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Access Type</th>
+                    <th>Permission</th>
+                    <th>Delete</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var accessRight in Rights)
+                {
+                    <tr>
+                        <td>
+                            @accessRight.Heading.Replace("[", "").ToUpper()
+                        </td>
+                        <td>
+                            @if (accessRight.AccessRight.ToString().ToLower().Contains("false"))
+                            {
+                                <span class="text-danger">No</span>
+                            }
+                            else if (accessRight.AccessRight.ToString().ToLower().Contains("true"))
+                            {
+                                <span class="text-success">Yes</span>
+                            }
+                            else
+                            {
+                                <span class="text-danger">@accessRight.AccessRight</span>
+                            }
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-danger" value="@accessRight" @onclick="() => DeleteAccessRights(accessRight.Heading)">Delete</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </table>
+    <div>
+        <h2>Copy Access Rights to another user?</h2>
+    </div>
+    <div align="center">
+        <div class="col-md-4">
+            @if (isCopySuccessful)
+            {
+                <div class="alert alert-success">
+                    @copySuccessMessage
+                </div>
+            }
+            <EditForm Model="InputTarget" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="CopyAccessRights" FormName="copyaccessrights">
+                <DataAnnotationsValidator />
+                <hr />
+                <ValidationSummary class="text-danger" />
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div style="margin-bottom:10px" class="text-danger">@errorMessage</div>
+                }
+                <div class="form-floating mb-3">
+                    <InputText @bind-Value="InputTarget.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+                    <label for="email">Email</label>
+                </div>
+                @if (InputTarget.Email == Input.Email)
+                {
+                    <div style="margin-bottom:10px" class="text-danger">Cannot copy access rights to the same user.</div>
+                }
+                <button type="submit" class="w-100 btn btn-lg btn-primary">Copy Access Rights</button>
+            </EditForm>
+        </div>
+    </div>
+}
+else
+{
+    <p align="center">No access rights found for the provided email.</p>
+}
+
+
+@code {
+    [SupplyParameterFromForm]
+    private UserRegisterModel Input { get; set; } = new();
+    private TargetUserRegisterModel InputTarget { get; set; } = new();
+
+    public AccessRightsModel[] Rights { get; set; } = new AccessRightsModel[16];
+    public AddNewAccessRightsModel[] AddNewRights { get; set; } = new AddNewAccessRightsModel[16];
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    private string? errorMessage;
+
+    private string? apiBaseUrl;
+    private string? accessRightsString;
+    private string? accessRightsHeadingsString;
+    private string[]? accessRights;
+    private string[]? accessRightsHeadings;
+    private string? accountString;
+    private string[]? availableAccounts;
+    private bool isCopySuccessful = false;
+    private string? copySuccessMessage;
+    private bool isDeleteSuccessful = false;
+    private string deleteSuccessMessage = string.Empty;
+    private int flag = 0;
+
+
+    protected async override void OnInitialized()
+    {
+        apiBaseUrl = Configuration["ApiBaseUrl"];  
+    }
+
+    public async Task ToggleAllAccessRights()
+    {
+
+        if (flag ==0)
+        {
+            for (int i = 0; i < Rights.Length; i++)
+            {
+                Rights[i].IsChecked = true;
+            }
+            flag = 1;
+        }
+        else
+        {
+            for (int i = 0; i < Rights.Length; i++)
+            {
+                Rights[i].IsChecked = false;
+            }
+            flag = 0;
+        }
+
+    }
+
+    public async Task ResetAccessRights()
+    {
+        for (int i = 0; i < Rights.Length; i++)
+        {
+            Rights[i].IsChecked = accessRightsString.Split(',')[i].ToLower().Contains("true") ? true : false;
+        }
+    }
+
+    public async Task<string[]> FetchAccessRights(EditContext editContext)
+    {
+        var response = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/AccessRights/FetchAccessRights", Input.Email);
+        var response1 = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/AccessRights/FetchAccessRightsHeadings", Input.Email);
+        await FetchAvailableAccounts();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            errorMessage = await response.Content.ReadAsStringAsync();
+            return [""];
+        }
+        else
+        {
+            accessRightsString = response.Content.ReadAsStringAsync().Result;
+            Logger.LogInformation("User access rights found.");
+            accessRightsHeadingsString = response1.Content.ReadAsStringAsync().Result;
+            accessRightsHeadings = accessRightsHeadingsString.Split(',');
+            for (int i = 0; i < accessRightsHeadings.Length; i++)
+            {
+                accessRightsHeadings[i] = accessRightsHeadings[i].Replace("[", "");
+                accessRightsHeadings[i] = accessRightsHeadings[i].Replace("]", "");
+                accessRightsHeadings[i] = accessRightsHeadings[i].Replace("\"", "");
+                accessRightsHeadings[i] = accessRightsHeadings[i].Replace("_", ", ");
+                Rights[i] = new AccessRightsModel
+                    {
+                        Heading = accessRightsHeadings[i],
+                        AccessRight = accessRightsString.Split(',')[i],
+                        IsChecked = accessRightsString.Split(',')[i].ToLower().Contains("true") ? true : false
+
+                    };
+            }
+
+            return accessRights = accessRightsString.Split(',');
+        }
+    }
+
+    public async Task CopyAccessRights(EditContext editContext)
+    {
+        if (InputTarget.Email == Input.Email)
+        {
+            return; // Don't proceed if copying to the same user
+        }
+
+        string confirmMessage = $"Are you sure you want to copy all access rights from '{Input.Email}' to '{InputTarget.Email}'?";
+        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", confirmMessage);
+        if (!confirmed)
+        {
+            return; // Don't proceed if user cancels
+        }
+
+        List<string> emailList = new List<string>();
+        emailList.Add(Input.Email);
+        emailList.Add(InputTarget.Email);
+        var response = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/AccessRights/CopyAccessRights", emailList);
+        if (!response.IsSuccessStatusCode)
+        {
+            errorMessage = await response.Content.ReadAsStringAsync();
+        }
+        else
+        {
+            Logger.LogInformation("Successfully copied.");
+            isCopySuccessful = true; // Set flag for successful copy
+            copySuccessMessage = "Access rights copied successfully!"; // Set success message
+        }
+    }
+
+
+    public async Task FetchAvailableAccounts()
+    {
+        var response = await HttpClient.GetAsync($"{apiBaseUrl}/api/AccessRights/FetchAvailableAccounts");
+        Logger.LogInformation(response.Content.ReadAsStringAsync().Result);
+        if (!response.IsSuccessStatusCode)
+        {
+            errorMessage = await response.Content.ReadAsStringAsync();
+        }
+        else
+        {
+            Logger.LogInformation("Successfully fetched.");
+            Logger.LogInformation(response.Content.ReadAsStringAsync().Result);
+            accountString = response.Content.ReadAsStringAsync().Result;
+            availableAccounts = accountString.Split(',');
+            for (int i = 0; i < availableAccounts.Length; i++)
+            {
+                availableAccounts[i] = availableAccounts[i].Replace("[", "");
+                availableAccounts[i] = availableAccounts[i].Replace("]", "");
+                availableAccounts[i] = availableAccounts[i].Replace("\"", "");
+            }
+            StateHasChanged();
+        }
+    }
+
+    public async Task SaveAccessRights()
+    {
+        Console.WriteLine("saving access rights...");
+        string confirmMessage = $"Are you sure you want save your changes?";
+        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", confirmMessage);
+        if (!confirmed)
+        {
+            return; // Don't proceed if user cancels
+        }
+        List<string> parameterList = new List<string>();
+        parameterList.Add(Input.Email);
+        for (int i = 0; i < Rights.Length; i++)
+        {
+            parameterList.Add(Rights[i].IsChecked.ToString());
+        }
+        var response = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/AccessRights/SaveAccessRights", parameterList);
+        Logger.LogInformation(response.Content.ReadAsStringAsync().Result);
+        if (response.IsSuccessStatusCode)
+        {
+            var response1 = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/AccessRights/FetchAccessRights", Input.Email);
+            var response2 = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/AccessRights/FetchAccessRightsHeadings", Input.Email);
+
+            if (response1.IsSuccessStatusCode && response2.IsSuccessStatusCode)
+            {
+                accessRightsString = response1.Content.ReadAsStringAsync().Result;
+                accessRightsHeadingsString = response2.Content.ReadAsStringAsync().Result;
+                accessRightsHeadings = accessRightsHeadingsString.Split(',');
+                Rights = new AccessRightsModel[accessRightsHeadings.Length];
+
+                for (int i = 0; i < accessRightsHeadings.Length; i++)
+                {
+                    accessRightsHeadings[i] = accessRightsHeadings[i].Replace("[", "");
+                    accessRightsHeadings[i] = accessRightsHeadings[i].Replace("]", "");
+                    accessRightsHeadings[i] = accessRightsHeadings[i].Replace("\"", "");
+                    accessRightsHeadings[i] = accessRightsHeadings[i].Replace("_", ", ");
+                    Rights[i] = new AccessRightsModel
+                        {
+                            Heading = accessRightsHeadings[i],
+                            AccessRight = accessRightsString.Split(',')[i],
+                            IsChecked = accessRightsString.Split(',')[i].ToLower().Contains("true") ? true : false
+                        };
+                }
+                StateHasChanged();
+                }
+        }
+    }
+
+    public async Task DeleteAccessRights(string accessRight)
+    {
+        accessRight = accessRight.ToLower().Replace(", ", "_");
+        string confirmMessage = $"Are you sure you want to delete the access right '{accessRight}'?";
+        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", confirmMessage);
+        if (confirmed)
+        {
+            List<string> parameterList = new List<string>();
+            parameterList.Add(Input.Email);
+            parameterList.Add(accessRight);
+            var response = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/AccessRights/DeleteAccessRights", parameterList);
+            Logger.LogInformation(response.Content.ReadAsStringAsync().Result);
+            if (response.IsSuccessStatusCode)
+            {
+                isDeleteSuccessful = true;
+                deleteSuccessMessage = $"Access right for \"{accessRight}\" deleted successfully!";
+                StateHasChanged();
+            }
+
+            var response1 = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/AccessRights/FetchAccessRights", Input.Email);
+            var response2 = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/AccessRights/FetchAccessRightsHeadings", Input.Email);
+
+            if (response1.IsSuccessStatusCode && response2.IsSuccessStatusCode)
+            {
+                accessRightsString = response1.Content.ReadAsStringAsync().Result;
+                accessRightsHeadingsString = response2.Content.ReadAsStringAsync().Result;
+                accessRightsHeadings = accessRightsHeadingsString.Split(',');
+                Rights = new AccessRightsModel[accessRightsHeadings.Length];
+
+                for (int i = 0; i < accessRightsHeadings.Length; i++)
+                {
+                    accessRightsHeadings[i] = accessRightsHeadings[i].Replace("[", "");
+                    accessRightsHeadings[i] = accessRightsHeadings[i].Replace("]", "");
+                    accessRightsHeadings[i] = accessRightsHeadings[i].Replace("\"", "");
+                    accessRightsHeadings[i] = accessRightsHeadings[i].Replace("_", ", ");
+                    Rights[i] = new AccessRightsModel
+                        {
+                            Heading = accessRightsHeadings[i],
+                            AccessRight = accessRightsString.Split(',')[i],
+                            IsChecked = accessRightsString.Split(',')[i].ToLower().Contains("true") ? true : false
+                        };
+                }
+                StateHasChanged();
+            }
+        }
+    }
+
+    private sealed class UserRegisterModel
+    {
+        public string Name { get; set; } = "";
+
+        [Required]
+        [EmailAddress]
+        [Display(Name = "Email")]
+        public string Email { get; set; } = "";
+
+    }
+
+    private sealed class TargetUserRegisterModel
+    {
+        public string Name { get; set; } = "";
+
+        [Required]
+        [EmailAddress]
+        [Display(Name = "Email")]
+        public string Email { get; set; } = "";
+
+    }
+
+    public class AccessRightsModel 
+    {
+        public string Heading { get; set; } = "";
+        public string AccessRight { get; set; } = "";
+        public bool IsChecked { get; set; } = false;
+    }
+
+    public class AddNewAccessRightsModel
+    {
+        public string Heading { get; set; } = "";
+        public string AccessRight { get; set; } = "";
+    }
+}
