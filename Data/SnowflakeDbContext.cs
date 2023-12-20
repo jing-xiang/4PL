@@ -352,6 +352,29 @@ namespace _4PL.Data
             }
         }
 
+        public HashSet<string> fetchAllShipments()
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                HashSet<string> result = new HashSet<string>();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = @$"SELECT JOB_NO FROM DEV_RL_DB.HWL_4PL.SHIPMENT";
+
+                    IDataReader reader = command.ExecuteReader();
+
+                    //Read result
+                    while (reader.Read())
+                    {
+                        string Job_No = reader.GetString(reader.GetOrdinal("JOB_NO"));
+                        result.Add(Job_No);
+                    }
+                }
+                return result;
+            }
+        }
+
         public List<Shipment> fetchShipments(string Job_No, string Master_BL_No, string Place_Of_Loading_Name, string Place_Of_Discharge_Name, string Vessel_Name, string Voyage_No, string Container_No, string Container_Type,
              DateTime ETD_Date_From, DateTime ETD_Date_To, DateTime ETA_Date_From, DateTime ETA_Date_To)
         {
@@ -485,9 +508,9 @@ namespace _4PL.Data
                 using (IDbCommand command = conn.CreateCommand())
                 {
                     //command.CommandText = "CALL GET_CONTAINER (:Shipment_Job_No)";
-                    command.CommandText = @$"SELECT * FROM DEV_RL_DB.HWL_4PL.SHIPMENT_CONTAINER WHERE SHIPMENT_JOB_NO = '{Shipment_Job_No}'";
+                    command.CommandText = @$"SELECT * FROM DEV_RL_DB.HWL_4PL.SHIPMENT_CONTAINER WHERE SHIPMENT_JOB_NO = :Shipment_Job_No";
 
-                    //command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Shipment_Job_No", Value = Shipment_Job_No, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Shipment_Job_No", Value = Shipment_Job_No, DbType = DbType.String });
                     IDataReader reader = command.ExecuteReader();
 
                     //Read result
