@@ -1,17 +1,18 @@
 ﻿@page "/shipment"
-@rendermode InteractiveServer
+
 @using System.Net.Http.Headers
 @using System.Text.Json
-
 @using _4PL.Data
 
 @inject NavigationManager NavManager
 @inject IHttpClientFactory ClientFactory
 @inject HttpClient HttpClient
 
-<h1>Shipments</h1>
+@rendermode InteractiveServer
 
-<p>
+<h3>Shipments</h3>
+
+<p >
     <label>
         Upload up to @maxAllowedFiles files:
         <InputFile OnChange="@OnInputFileChange" multiple />
@@ -37,12 +38,12 @@
 
                         @if (@numShipments == "0")
                         {
-                            <div> All shipments already exist!</div>
+                            <div class="text-danger"> All shipments already exist!</div>
                         }
 
                         else if (FileUpload(uploadResults, file.Name, out var result))
                         {
-                            <div>
+                            <div class="text-success">
                                 @numShipments New Shipments Uploaded
                             </div>
                         }
@@ -64,11 +65,15 @@
     @message
 </p>
 
-<button @onclick="navigate">
+<button class="btn btn-sm btn-success" @onclick="navigate">
     Add New Shipment
 </button>
 
-<SearchShipment />
+<div class="search-container" >
+    <SearchShipment />
+</div>
+
+
 
 @code {
     private List<File> files = new();
@@ -82,6 +87,7 @@
 
     private async Task OnInputFileChange(InputFileChangeEventArgs e)
     {
+        shouldRender = true;
         isLoading = true;
         StateHasChanged();
         shouldRender = false;

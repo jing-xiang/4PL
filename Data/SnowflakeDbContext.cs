@@ -352,7 +352,8 @@ namespace _4PL.Data
             }
         }
 
-        public List<Shipment> fetchShipments(string Job_No, string Master_BL_No, string Place_Of_Loading_Name, string Place_Of_Discharge_Name, string Vessel_Name, string Voyage_No, string Container_No, string Container_Type)
+        public List<Shipment> fetchShipments(string Job_No, string Master_BL_No, string Place_Of_Loading_Name, string Place_Of_Discharge_Name, string Vessel_Name, string Voyage_No, string Container_No, string Container_Type,
+             DateTime ETD_Date_From, DateTime ETD_Date_To, DateTime ETA_Date_From, DateTime ETA_Date_To)
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
@@ -360,17 +361,35 @@ namespace _4PL.Data
                 List<Shipment> result = new List<Shipment>();
                 using (IDbCommand command = conn.CreateCommand())
                 {
-                    command.CommandText = @$"SELECT s.* 
+                    command.CommandText = @$"SELECT DISTINCT s.* 
                         FROM DEV_RL_DB.HWL_4PL.SHIPMENT s
                         JOIN  DEV_RL_DB.HWL_4PL.SHIPMENT_CONTAINER c ON s.JOB_NO = c.SHIPMENT_JOB_NO
-                        WHERE s.JOB_NO ILIKE '{Job_No}' 
-                        AND s.MASTER_BL_NO ILIKE '{Master_BL_No}' 
-                        AND s.PLACE_OF_LOADING_NAME ILIKE '{Place_Of_Loading_Name}' 
-                        AND s.PLACE_OF_DISCHARGE_NAME ILIKE '{Place_Of_Discharge_Name}' 
-                        AND s.VESSEL_NAME ILIKE '{Vessel_Name}' 
-                        AND s.VOYAGE_NO ILIKE '{Voyage_No}'
-                        AND c.CONTAINER_NO ILIKE '{Container_No}'
-                        AND c.CONTAINER_TYPE ILIKE '{Container_Type}'";
+                        WHERE s.JOB_NO ILIKE :Job_No 
+                        AND s.MASTER_BL_NO ILIKE :Master_BL_No
+                        AND s.PLACE_OF_LOADING_NAME ILIKE :Place_Of_Loading_Name
+                        AND s.PLACE_OF_DISCHARGE_NAME ILIKE :Place_Of_Discharge_Name 
+                        AND s.VESSEL_NAME ILIKE :Vessel_Name
+                        AND s.VOYAGE_NO ILIKE :Voyage_No
+                        AND c.CONTAINER_NO ILIKE :Container_No
+                        AND c.CONTAINER_TYPE ILIKE :Container_Type
+                        AND :ETD_Date_From <= s.ETD_DATE
+                        AND s.ETD_Date <= :ETD_Date_To
+                        AND :ETA_Date_From <= s.ETA_Date
+                        AND s.ETA_Date <= :ETA_Date_To";
+
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Job_No", Value = Job_No, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Master_BL_No", Value = Master_BL_No, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Place_Of_Loading_Name", Value = Place_Of_Loading_Name, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Place_Of_Discharge_Name", Value = Place_Of_Discharge_Name, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Vessel_Name", Value = Vessel_Name, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Voyage_No", Value = Voyage_No, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Container_No", Value = Container_No, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Container_Type", Value = Container_Type, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "ETD_Date_From", Value = ETD_Date_From, DbType = DbType.Date });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "ETD_Date_To", Value = ETD_Date_To, DbType = DbType.Date });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "ETA_Date_From", Value = ETA_Date_From, DbType = DbType.Date });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "ETA_Date_To", Value = ETA_Date_To, DbType = DbType.Date });
+
                     IDataReader reader = command.ExecuteReader();
 
                     //Read result

@@ -162,9 +162,12 @@ namespace _4PL.Data
         }
 
         [HttpGet("Search")]
-        public IActionResult Search(string Job_No, string Master_BL_No, string Place_Of_Loading_Name, string Place_Of_Discharge_Name, string Vessel_Name, string Voyage_No, string Container_No, string Container_Type)
+        public IActionResult Search(string Job_No, string Master_BL_No, string Place_Of_Loading_Name, string Place_Of_Discharge_Name, string Vessel_Name, string Voyage_No, string Container_No, string Container_Type, 
+            DateTime ETD_Date_From, DateTime ETD_Date_To, DateTime ETA_Date_From, DateTime ETA_Date_To)
         {
-            List<Shipment> shipments = _dbcontext.fetchShipments(Job_No, Master_BL_No, Place_Of_Loading_Name, Place_Of_Discharge_Name, Vessel_Name, Voyage_No, Container_No, Container_Type);
+            Console.WriteLine($"DATE FORMAT: {ETD_Date_From.Date.ToShortDateString()}");
+            List<Shipment> shipments = _dbcontext.fetchShipments(Job_No, Master_BL_No, Place_Of_Loading_Name, Place_Of_Discharge_Name, Vessel_Name, Voyage_No, Container_No, Container_Type, 
+                ETD_Date_From, ETD_Date_To, ETA_Date_From, ETA_Date_To);
             return Ok(shipments);
         }
 
