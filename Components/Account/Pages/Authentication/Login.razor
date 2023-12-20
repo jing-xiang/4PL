@@ -27,11 +27,11 @@
                     <div style="margin-bottom:10px" class="text-danger">@errorMessage</div>
                 }
                 <div class="form-floating mb-3">
-                    <InputText @bind-Value="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+                    <InputText @bind-Value="Input.Email" class="form-control" autocomplete="email" aria-required="true" placeholder="name@example.com" />
                     <label for="email" class="form-label">Email</label>
                 </div>
                 <div class="form-floating mb-3">
-                    <InputText type="password" @bind-Value="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="password" />
+                    <InputText type="password" @bind-Value="Input.Password" class="form-control" aria-required="true" placeholder="password" />
                     <label for="password" class="form-label">Password</label>
                 </div>
                 <div class="checkbox mb-3">
