@@ -65,28 +65,30 @@ namespace _4PL.Data
         public RateCard()
         {
             Id = Guid.NewGuid();
-            this.Lane_ID = "empty";
-            this.Controlling_Customer_Matchcode = "empty";
-            this.Controlling_Customer_Name = "empty";
-            this.Transport_Mode = "empty";
-            this.Function = "empty";
+            this.Lane_ID = "";
+            this.Controlling_Customer_Matchcode = "";
+            this.Controlling_Customer_Name = "";
+            this.Transport_Mode = "";
+            this.Function = "";
             this.Rate_Validity_From = DateTime.Now;
             this.Rate_Validity_To = DateTime.Now;
-            this.POL_Name = "empty";
-            this.POL_Country = "empty";
-            this.POL_Port = "empty";
-            this.POD_Name = "empty";
-            this.POD_Country = "empty";
-            this.POD_Port = "empty";
-            this.Creditor_Matchcode = "empty";
-            this.Creditor_Name = "empty";
-            this.Pickup_Address = "empty";
-            this.Delivery_Address = "empty";
-            this.Dangerous_Goods = "empty";
-            this.Temperature_Controlled = "empty";
-            this.Container_Mode = "empty";
-            this.Container_Type = "empty";
-            //this.Local_Currency = "empty";
+            //this.Rate_Validity_From = DateTime.MinValue;
+            //this.Rate_Validity_To = DateTime.MaxValue;
+            this.POL_Name = "";
+            this.POL_Country = "";
+            this.POL_Port = "";
+            this.POD_Name = "";
+            this.POD_Country = "";
+            this.POD_Port = "";
+            this.Creditor_Matchcode = "";
+            this.Creditor_Name = "";
+            this.Pickup_Address = "";
+            this.Delivery_Address = "";
+            this.Dangerous_Goods = "";
+            this.Temperature_Controlled = "";
+            this.Container_Mode = "";
+            this.Container_Type = "";
+            //this.Local_Currency = "";
             this.Charges = new List<Charge>();
         }
     }

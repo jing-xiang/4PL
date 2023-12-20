@@ -408,11 +408,13 @@ namespace _4PL.Data
             {
                 conn.Open();
                 IDbCommand command = conn.CreateCommand();
+
                 command.CommandText = $"CALL DELETE_USER(:email)";
+
                 command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "email", Value = email, DbType = DbType.String });
+                Console.WriteLine("command created");
                 command.ExecuteScalar();
-                command.CommandText = $"DELETE FROM access_control WHERE email = '{email}'";
-                command.ExecuteScalar();
+                Console.WriteLine("command executed");
             }
         }
 
@@ -1380,7 +1382,32 @@ namespace _4PL.Data
             }
         }
 
-        public List<string> Search(long limit=10, long offset=0)
+        public List<string> Search(
+            long limit = 10,
+            long offset = 0,
+            RateCard formInput = null
+            //string Lane_ID = "%",
+            //string Controlling_Customer_Matchcode = "%",
+            //string Controlling_Customer_Name = "%",
+            //string Transport_Mode = "%",
+            //string Function = "%",
+            //DateTime Rate_Validity_From = new DateTime(),
+            //DateTime Rate_Validity_To = new DateTime(),
+            //string POL_Name = "%",
+            //string POL_Country = "%",
+            //string POL_Port = "%",
+            //string POD_Name = "%",
+            //string POD_Country = "%",
+            //string POD_Port = "%",
+            //string Creditor_Matchcode = "%",
+            //string Creditor_Name = "%",
+            //string Pickup_Address = "%",
+            //string Delivery_Address = "%",
+            //string Dangerous_Goods = "%",
+            //string Temperature_Controlled = "%",
+            //string Container_Mode = "%",
+            //string Container_Type = "%"
+        )
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
@@ -1410,12 +1437,64 @@ namespace _4PL.Data
                 {
 
                     command.CommandText = @$"SELECT * FROM DEV_RL_DB.HWL_4PL.RATECARDS
+                        WHERE LANE_ID ILIKE :Lane_ID
+                            AND CONTROLLING_CUSTOMER_MATCHCODE ILIKE :Controlling_Customer_Matchcode
+                            AND CONTROLLING_CUSTOMER_NAME ILIKE :Controlling_Customer_Name
+                            AND TRANSPORT_MODE ILIKE :Transport_Mode
+                            AND FUNC ILIKE :Function
+                            AND RATE_VALIDITY_FROM >= :Rate_Validity_From
+                            AND RATE_VALIDITY_TO <= :Rate_Validity_To
+                            AND POL_NAME ILIKE :POL_Name
+                            AND POL_COUNTRY ILIKE :POL_Country
+                            AND POL_PORT ILIKE :POL_Port
+                            AND POD_NAME ILIKE :POD_Name
+                            AND POD_COUNTRY ILIKE :POD_Country
+                            AND POD_PORT ILIKE :POD_Port
+                            AND CREDITOR_MATCHCODE ILIKE :Creditor_Matchcode
+                            AND CREDITOR_NAME ILIKE :Creditor_Name
+                            AND PICKUP_ADDRESS_NAME ILIKE :Pickup_Address
+                            AND DELIVERY_ADDRESS_NAME ILIKE :Delivery_Address
+                            AND DANGEROUS_GOODS ILIKE :Dangerous_Goods
+                            AND TEMPERATURE_CONTROLLED ILIKE :Temperature_Controlled
+                            AND CONTAINER_MODE ILIKE :Container_Mode
+                            AND CONTAINER_TYPE ILIKE :Container_Type
+
                         LIMIT :limit
                         OFFSET :offset
                         
-                    ";
+                    ;";
+
+                    Console.WriteLine(formInput.Rate_Validity_From);
+                    Console.WriteLine(formInput.Rate_Validity_To);
+
 
                     //command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "ratecard_id", Value = ratecardId, DbType = DbType.Guid });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Lane_ID", Value = formInput.Lane_ID, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Controlling_Customer_Matchcode", Value = formInput.Controlling_Customer_Matchcode, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Controlling_Customer_Name", Value = formInput.Controlling_Customer_Name, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Transport_Mode", Value = formInput.Transport_Mode, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Function", Value = formInput.Function, DbType = DbType.String });
+                    //command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Rate_Validity_From", Value = (formInput.Rate_Validity_From.Equals(DateTime.MinValue) ? "%" : formInput.Rate_Validity_From.ToString()), DbType = DbType.String });
+                    //command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Rate_Validity_To", Value = (formInput.Rate_Validity_To.Equals(DateTime.MinValue) ? "%" : formInput.Rate_Validity_To.ToString()), DbType = DbType.String });
+
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Rate_Validity_From", Value = formInput.Rate_Validity_From, DbType = DbType.Date });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Rate_Validity_To", Value = formInput.Rate_Validity_To, DbType = DbType.Date });
+
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "POL_Name", Value = formInput.POL_Name, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "POL_Country", Value = formInput.POL_Country, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "POL_Port", Value = formInput.POL_Port, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "POD_Name", Value = formInput.POD_Name, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "POD_Country", Value = formInput.POD_Country, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "POD_Port", Value = formInput.POD_Port, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Creditor_Matchcode", Value = formInput.Creditor_Matchcode, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Creditor_Name", Value = formInput.Creditor_Name, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Pickup_Address", Value = formInput.Pickup_Address, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Delivery_Address", Value = formInput.Delivery_Address, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Dangerous_Goods", Value = formInput.Dangerous_Goods, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Temperature_Controlled", Value = formInput.Temperature_Controlled, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Container_Mode", Value = formInput.Container_Mode, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Container_Type", Value = formInput.Container_Type, DbType = DbType.String });
+
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "limit", Value = limit, DbType = DbType.Int64 });
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "offset", Value = offset, DbType = DbType.Int64 });
 
@@ -1490,6 +1569,347 @@ namespace _4PL.Data
 
             return res;
         }
-    }
+      
+        public string InsertShipment(Shipment shipment)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                string uploadMessage = "Error";
 
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = @$"CALL CREATE_SHIPMENT (:Job_No, :Master_BL_No, :Container_Mode, :Place_Of_Loading_ID, :Place_Of_Loading_Name, :Place_Of_Discharge_ID, " +
+                        ":Place_Of_Discharge_Name, :Vessel_Name, :Voyage_No, :ETD_Date, :ETA_Date, :Carrier_Matchcode, :Carrier_Name, :Carrier_Contract_No, :Carrier_Booking_Reference_No, :Inco_Terms, " +
+                        ":Controlling_Customer_Name, :Shipper_Name,  :Consignee_Name, :Total_No_Of_Pieces, :Package_Type,  :Total_No_Of_Volume_Weight_MTQ, :Total_No_Of_Gross_Weight_KGM, :Description, :Shipment_Note)";
+
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Job_No", Value = shipment.Job_No, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Master_BL_No", Value = shipment.Master_BL_No, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Container_Mode", Value = shipment.Container_Mode, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Place_Of_Loading_ID", Value = shipment.Place_Of_Loading_ID, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Place_Of_Loading_Name", Value = shipment.Place_Of_Loading_Name, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Place_Of_Discharge_ID", Value = shipment.Place_Of_Discharge_ID, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Place_Of_Discharge_Name", Value = shipment.Place_Of_Discharge_Name, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Vessel_Name", Value = shipment.Vessel_Name, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Voyage_No", Value = shipment.Voyage_No, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "ETD_Date", Value = shipment.ETD_Date, DbType = DbType.Date });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "ETA_Date", Value = shipment.ETA_Date, DbType = DbType.Date });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Carrier_Matchcode", Value = shipment.Carrier_Matchcode, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Carrier_Name", Value = shipment.Carrier_Name, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Carrier_Contract_No", Value = shipment.Carrier_Contract_No, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Carrier_Booking_Reference_No", Value = shipment.Carrier_Booking_Reference_No, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Inco_Terms", Value = shipment.Inco_Terms, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Controlling_Customer_Name", Value = shipment.Controlling_Customer_Name, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Shipper_Name", Value = shipment.Shipper_Name, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Consignee_Name", Value = shipment.Consignee_Name, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Total_No_Of_Pieces", Value = shipment.Total_No_Of_Pieces, DbType = DbType.Int64 });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Package_Type", Value = shipment.Package_Type, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Total_No_Of_Volume_Weight_MTQ", Value = shipment.Total_No_Of_Volume_Weight_MTQ, DbType = DbType.Double });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Total_No_Of_Gross_Weight_KGM", Value = shipment.Total_No_Of_Gross_Weight_KGM, DbType = DbType.Double });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Description", Value = shipment.Description, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Shipment_Note", Value = shipment.Shipment_Note, DbType = DbType.String });
+
+                    uploadMessage = command.ExecuteScalar().ToString();
+                }
+                return uploadMessage;
+            }
+        }
+
+
+        public void UpdateShipment(Shipment shipment)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = @$"CALL UPDATE_SHIPMENT (:Job_No, :Master_BL_No, :Container_Mode, :Place_Of_Loading_ID, :Place_Of_Loading_Name, :Place_Of_Discharge_ID, " +
+                        ":Place_Of_Discharge_Name, :Vessel_Name, :Voyage_No, :ETD_Date, :ETA_Date, :Carrier_Matchcode, :Carrier_Name, :Carrier_Contract_No, :Carrier_Booking_Reference_No, :Inco_Terms, " +
+                        ":Controlling_Customer_Name, :Shipper_Name,  :Consignee_Name, :Total_No_Of_Pieces, :Package_Type,  :Total_No_Of_Volume_Weight_MTQ, :Total_No_Of_Gross_Weight_KGM, :Description, :Shipment_Note)";
+
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Job_No", Value = shipment.Job_No, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Master_BL_No", Value = shipment.Master_BL_No, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Container_Mode", Value = shipment.Container_Mode, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Place_Of_Loading_ID", Value = shipment.Place_Of_Loading_ID, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Place_Of_Loading_Name", Value = shipment.Place_Of_Loading_Name, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Place_Of_Discharge_ID", Value = shipment.Place_Of_Discharge_ID, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Place_Of_Discharge_Name", Value = shipment.Place_Of_Discharge_Name, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Vessel_Name", Value = shipment.Vessel_Name, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Voyage_No", Value = shipment.Voyage_No, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "ETD_Date", Value = shipment.ETD_Date, DbType = DbType.Date });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "ETA_Date", Value = shipment.ETA_Date, DbType = DbType.Date });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Carrier_Matchcode", Value = shipment.Carrier_Matchcode, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Carrier_Name", Value = shipment.Carrier_Name, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Carrier_Contract_No", Value = shipment.Carrier_Contract_No, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Carrier_Booking_Reference_No", Value = shipment.Carrier_Booking_Reference_No, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Inco_Terms", Value = shipment.Inco_Terms, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Controlling_Customer_Name", Value = shipment.Controlling_Customer_Name, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Shipper_Name", Value = shipment.Shipper_Name, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Consignee_Name", Value = shipment.Consignee_Name, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Total_No_Of_Pieces", Value = shipment.Total_No_Of_Pieces, DbType = DbType.Int64 });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Package_Type", Value = shipment.Package_Type, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Total_No_Of_Volume_Weight_MTQ", Value = shipment.Total_No_Of_Volume_Weight_MTQ, DbType = DbType.Double });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Total_No_Of_Gross_Weight_KGM", Value = shipment.Total_No_Of_Gross_Weight_KGM, DbType = DbType.Double });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Description", Value = shipment.Description, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Shipment_Note", Value = shipment.Shipment_Note, DbType = DbType.String });
+
+                    command.ExecuteNonQuery();
+                }
+            }
+        }
+
+        public void InsertContainer(Container container)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = @$"CALL CREATE_CONTAINER (:Shipment_Job_No, :Container_No, :Container_Type, :Seal_No_1, :Seal_No_2)";
+
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Shipment_Job_No", Value = container.Shipment_Job_No, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Container_No", Value = container.Container_No, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Container_Type", Value = container.Container_Type, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Seal_No_1", Value = container.Seal_No_1, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Seal_No_2", Value = container.Seal_No_2, DbType = DbType.String });
+
+                    command.ExecuteNonQuery();
+
+                }
+            }
+        }
+
+        public int DeleteShipment(string Shipment_Job_No)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = $@"CALL DEV_RL_DB.HWL_4PL.DELETE_SHIPMENT(
+                        :Shipment_Job_No
+                    )";
+
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Shipment_Job_No", Value = Shipment_Job_No, DbType = DbType.String });
+
+                    var result = command.ExecuteScalar();
+                    if (result != DBNull.Value)
+                    {
+                        return Int32.Parse(result.ToString());
+                    }
+                    else
+                    {
+                        throw new Exception($"Failed to delete Shipment (Job_No: {Shipment_Job_No})");
+                    }
+                }
+            }
+        }
+
+        public int DeleteContainer(string Shipment_Job_No, string Container_No)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = $@"CALL DEV_RL_DB.HWL_4PL.DELETE_CONTAINER(:Shipment_Job_No, :Container_No)";
+
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Shipment_Job_No", Value = Shipment_Job_No, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Container_No", Value = Container_No, DbType = DbType.String });
+
+                    var result = command.ExecuteScalar();
+                    if (result != DBNull.Value)
+                    {
+                        return Int32.Parse(result.ToString());
+                    }
+                    else
+                    {
+                        throw new Exception($"Failed to delete container (Job_No: {Shipment_Job_No}, Container_No: {Container_No})");
+                    }
+                }
+            }
+        }
+
+        public HashSet<string> fetchAllShipments()
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                HashSet<string> result = new HashSet<string>();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = @$"SELECT JOB_NO FROM DEV_RL_DB.HWL_4PL.SHIPMENT";
+
+                    IDataReader reader = command.ExecuteReader();
+
+                    //Read result
+                    while (reader.Read())
+                    {
+                        string Job_No = reader.GetString(reader.GetOrdinal("JOB_NO"));
+                        result.Add(Job_No);
+                    }
+                }
+                return result;
+            }
+        }
+
+        public List<Shipment> fetchShipments(string Job_No, string Master_BL_No, string Place_Of_Loading_Name, string Place_Of_Discharge_Name, string Vessel_Name, string Voyage_No, string Container_No, string Container_Type,
+             DateTime ETD_Date_From, DateTime ETD_Date_To, DateTime ETA_Date_From, DateTime ETA_Date_To)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                List<Shipment> result = new List<Shipment>();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = @$"SELECT DISTINCT s.* 
+                        FROM DEV_RL_DB.HWL_4PL.SHIPMENT s
+                        JOIN  DEV_RL_DB.HWL_4PL.SHIPMENT_CONTAINER c ON s.JOB_NO = c.SHIPMENT_JOB_NO
+                        WHERE s.JOB_NO ILIKE :Job_No 
+                        AND s.MASTER_BL_NO ILIKE :Master_BL_No
+                        AND s.PLACE_OF_LOADING_NAME ILIKE :Place_Of_Loading_Name
+                        AND s.PLACE_OF_DISCHARGE_NAME ILIKE :Place_Of_Discharge_Name 
+                        AND s.VESSEL_NAME ILIKE :Vessel_Name
+                        AND s.VOYAGE_NO ILIKE :Voyage_No
+                        AND c.CONTAINER_NO ILIKE :Container_No
+                        AND c.CONTAINER_TYPE ILIKE :Container_Type
+                        AND :ETD_Date_From <= s.ETD_DATE
+                        AND s.ETD_Date <= :ETD_Date_To
+                        AND :ETA_Date_From <= s.ETA_Date
+                        AND s.ETA_Date <= :ETA_Date_To";
+
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Job_No", Value = Job_No, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Master_BL_No", Value = Master_BL_No, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Place_Of_Loading_Name", Value = Place_Of_Loading_Name, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Place_Of_Discharge_Name", Value = Place_Of_Discharge_Name, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Vessel_Name", Value = Vessel_Name, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Voyage_No", Value = Voyage_No, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Container_No", Value = Container_No, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Container_Type", Value = Container_Type, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "ETD_Date_From", Value = ETD_Date_From, DbType = DbType.Date });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "ETD_Date_To", Value = ETD_Date_To, DbType = DbType.Date });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "ETA_Date_From", Value = ETA_Date_From, DbType = DbType.Date });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "ETA_Date_To", Value = ETA_Date_To, DbType = DbType.Date });
+
+                    IDataReader reader = command.ExecuteReader();
+
+                    //Read result
+                    while (reader.Read())
+                    {
+                        //Split column of array
+                        //Array is represented as string literal. Requires manual parsing
+                        Shipment s = new Shipment();
+                        s.Job_No = reader.GetString(reader.GetOrdinal("JOB_NO"));
+                        s.Master_BL_No = reader.GetString(reader.GetOrdinal("MASTER_BL_NO"));
+                        s.Container_Mode = reader.GetString(reader.GetOrdinal("CONTAINER_MODE"));
+                        s.Place_Of_Loading_ID = reader.GetString(reader.GetOrdinal("PLACE_OF_LOADING_ID"));
+                        s.Place_Of_Loading_Name = reader.GetString(reader.GetOrdinal("PLACE_OF_LOADING_ID"));
+                        s.Place_Of_Discharge_ID = reader.GetString(reader.GetOrdinal("PLACE_OF_DISCHARGE_ID"));
+                        s.Place_Of_Discharge_Name = reader.GetString(reader.GetOrdinal("PLACE_OF_DISCHARGE_NAME"));
+                        s.Vessel_Name = reader.GetString(reader.GetOrdinal("VESSEL_NAME"));
+                        s.Voyage_No = reader.GetString(reader.GetOrdinal("VOYAGE_NO"));
+                        s.ETD_Date = reader.GetDateTime(reader.GetOrdinal("ETD_DATE"));
+                        s.ETA_Date = reader.GetDateTime(reader.GetOrdinal("ETA_DATE"));
+                        s.Carrier_Matchcode = reader.GetString(reader.GetOrdinal("CARRIER_MATCHCODE"));
+                        s.Carrier_Name = reader.GetString(reader.GetOrdinal("CARRIER_NAME"));
+                        s.Carrier_Contract_No = reader.GetString(reader.GetOrdinal("CARRIER_CONTRACT_NO"));
+                        s.Carrier_Booking_Reference_No = reader.GetString(reader.GetOrdinal("CARRIER_BOOKING_REFERENCE_NO"));
+                        s.Inco_Terms = reader.GetString(reader.GetOrdinal("INCO_TERMS"));
+                        s.Controlling_Customer_Name = reader.GetString(reader.GetOrdinal("CONTROLLING_CUSTOMER_NAME"));
+                        s.Shipper_Name = reader.GetString(reader.GetOrdinal("SHIPPER_NAME"));
+                        s.Consignee_Name = reader.GetString(reader.GetOrdinal("CONSIGNEE_NAME"));
+                        s.Total_No_Of_Pieces = reader.GetInt16(reader.GetOrdinal("TOTAL_NO_OF_PIECES"));
+                        s.Package_Type = reader.GetString(reader.GetOrdinal("PACKAGE_TYPE"));
+                        s.Total_No_Of_Volume_Weight_MTQ = reader.GetDouble(reader.GetOrdinal("TOTAL_NO_OF_VOLUME_WEIGHT_MTQ"));
+                        s.Total_No_Of_Gross_Weight_KGM = reader.GetDouble(reader.GetOrdinal("TOTAL_NO_OF_GROSS_WEIGHT_KGM"));
+                        s.Description = reader.GetString(reader.GetOrdinal("DESCRIPTION"));
+                        s.Shipment_Note = reader.GetString(reader.GetOrdinal("SHIPMENT_NOTE"));
+
+                        result.Add(s);
+                    }
+                }
+                return result;
+            }
+        }
+
+        public Shipment fetchShipment(string Shipment_Job_No)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                Shipment s = new();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = @$"SELECT * FROM DEV_RL_DB.HWL_4PL.SHIPMENT WHERE JOB_NO = '{Shipment_Job_No}'";
+                    IDataReader reader = command.ExecuteReader();
+
+                    //Read result
+                    while (reader.Read())
+                    {
+                        s.Job_No = reader.GetString(reader.GetOrdinal("JOB_NO"));
+                        s.Master_BL_No = reader.GetString(reader.GetOrdinal("MASTER_BL_NO"));
+                        s.Container_Mode = reader.GetString(reader.GetOrdinal("CONTAINER_MODE"));
+                        s.Place_Of_Loading_ID = reader.GetString(reader.GetOrdinal("PLACE_OF_LOADING_ID"));
+                        s.Place_Of_Loading_Name = reader.GetString(reader.GetOrdinal("PLACE_OF_LOADING_ID"));
+                        s.Place_Of_Discharge_ID = reader.GetString(reader.GetOrdinal("PLACE_OF_DISCHARGE_ID"));
+                        s.Place_Of_Discharge_Name = reader.GetString(reader.GetOrdinal("PLACE_OF_DISCHARGE_NAME"));
+                        s.Vessel_Name = reader.GetString(reader.GetOrdinal("VESSEL_NAME"));
+                        s.Voyage_No = reader.GetString(reader.GetOrdinal("VOYAGE_NO"));
+                        s.ETD_Date = reader.GetDateTime(reader.GetOrdinal("ETD_DATE"));
+                        s.ETA_Date = reader.GetDateTime(reader.GetOrdinal("ETA_DATE"));
+                        s.Carrier_Matchcode = reader.GetString(reader.GetOrdinal("CARRIER_MATCHCODE"));
+                        s.Carrier_Name = reader.GetString(reader.GetOrdinal("CARRIER_NAME"));
+                        s.Carrier_Contract_No = reader.GetString(reader.GetOrdinal("CARRIER_CONTRACT_NO"));
+                        s.Carrier_Booking_Reference_No = reader.GetString(reader.GetOrdinal("CARRIER_BOOKING_REFERENCE_NO"));
+                        s.Inco_Terms = reader.GetString(reader.GetOrdinal("INCO_TERMS"));
+                        s.Controlling_Customer_Name = reader.GetString(reader.GetOrdinal("CONTROLLING_CUSTOMER_NAME"));
+                        s.Shipper_Name = reader.GetString(reader.GetOrdinal("SHIPPER_NAME"));
+                        s.Consignee_Name = reader.GetString(reader.GetOrdinal("CONSIGNEE_NAME"));
+                        s.Total_No_Of_Pieces = reader.GetInt16(reader.GetOrdinal("TOTAL_NO_OF_PIECES"));
+                        s.Package_Type = reader.GetString(reader.GetOrdinal("PACKAGE_TYPE"));
+                        s.Total_No_Of_Volume_Weight_MTQ = reader.GetDouble(reader.GetOrdinal("TOTAL_NO_OF_VOLUME_WEIGHT_MTQ"));
+                        s.Total_No_Of_Gross_Weight_KGM = reader.GetDouble(reader.GetOrdinal("TOTAL_NO_OF_GROSS_WEIGHT_KGM"));
+                        s.Description = reader.GetString(reader.GetOrdinal("DESCRIPTION"));
+                        s.Shipment_Note = reader.GetString(reader.GetOrdinal("SHIPMENT_NOTE"));
+                    }
+                }
+                return s;
+            }
+        }
+
+        public List<Container> fetchContainers(string Shipment_Job_No)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                List<Container> result = new List<Container>();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    //command.CommandText = "CALL GET_CONTAINER (:Shipment_Job_No)";
+                    command.CommandText = @$"SELECT * FROM DEV_RL_DB.HWL_4PL.SHIPMENT_CONTAINER WHERE SHIPMENT_JOB_NO = :Shipment_Job_No";
+
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Shipment_Job_No", Value = Shipment_Job_No, DbType = DbType.String });
+                    IDataReader reader = command.ExecuteReader();
+
+                    //Read result
+                    while (reader.Read())
+                    {
+                        Container c = new Container();
+                        c.Id = reader.GetString(reader.GetOrdinal("ID"));
+                        c.Shipment_Job_No = reader.GetString(reader.GetOrdinal("SHIPMENT_JOB_NO"));
+                        c.Container_No = reader.GetString(reader.GetOrdinal("CONTAINER_NO"));
+                        c.Container_Type = reader.GetString(reader.GetOrdinal("CONTAINER_TYPE"));
+                        c.Seal_No_1 = reader.GetString(reader.GetOrdinal("SEAL_NO_1"));
+                        c.Seal_No_2 = reader.GetString(reader.GetOrdinal("SEAL_NO_2"));
+
+                        result.Add(c);
+                    }
+                }
+                return result;
+            }
+        }
+    }
+    
 }

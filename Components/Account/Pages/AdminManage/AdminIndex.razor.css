@@ -13,14 +13,14 @@
 }
 
 ::deep thead .email {
-    width: 100%;
-    word-wrap:anywhere;
+    width: 800px;
+    overflow-wrap: initial;
     border-bottom: 1px solid;
     background-color: rgb(240, 240, 240);
 }
 
 ::deep thead .name {
-    width: 50%;
+    width: 800px;
     flex-wrap: wrap;
     border-bottom: 1px solid;
     background-color: rgb(240, 240, 240);

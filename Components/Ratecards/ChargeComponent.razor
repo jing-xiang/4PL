@@ -12,7 +12,6 @@
 
 else
 {
-
     <tr>
         <td>@charge.Id</td>
         <td>@charge.Charge_Description</td>
@@ -36,6 +35,8 @@ else
     public Charge charge { get; set; } = null;
     [Parameter]
     public string chargeId { get; set; } = "";
+    [Parameter]
+    public Func<string, Task<HttpResponseMessage>> deleteChargeMethod { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -45,7 +46,7 @@ else
 
             if (result.IsSuccessStatusCode)
             {
-                
+
                 charge = result.Content.ReadFromJsonAsync<Charge>().Result;
             }
 
@@ -56,15 +57,25 @@ else
     async Task DeleteCharge(string chargeId)
     {
 
+        bool confirm = await JS.InvokeAsync<bool>("confirm", "Do you want to delete the charge?");
+
+        if (!confirm)
+        {
+            return;
+        }
+
         Debug.WriteLine($">>> Logging: {chargeId}");
 
         HttpResponseMessage result = await HttpClient.DeleteAsync($"{Configuration["ApiBaseUrl"]}/api/RateCard/DeleteCharge/{chargeId}");
+
+        // HttpResponseMessage result = await deleteChargeMethod.Invoke(chargeId);
 
         Debug.WriteLine($"Logging: {result.StatusCode}");
 
         if (result.Content.ReadAsStringAsync().Result == "true")
         {
             charge = null;
+            StateHasChanged();
         }
 
 

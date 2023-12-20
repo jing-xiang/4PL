@@ -1,0 +1,189 @@
+﻿@page "/shipment/form"
+@inject HttpClient HttpClient
+@using _4PL.Data
+@rendermode InteractiveServer
+@inject IJSRuntime JS
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
+@inject ProtectedSessionStorage storage
+
+@inject NavigationManager NavManager
+
+<h3>Add Shipment</h3>
+<EditForm Model="shipment" OnSubmit="InsertShipment" Enhance>
+    <div>
+        <label>Job No</label>
+        <InputText @bind-Value="shipment.Job_No" @oninput="UpdateAndSaveToStorage"/>
+    </div>
+
+    <div>
+        <label>Master BL No</label>
+        <InputText @bind-Value="shipment.Master_BL_No" @oninput="UpdateAndSaveToStorage" />
+    </div>
+        
+    <div>
+        <label>Container Mode</label>
+        <InputText @bind-Value="shipment.Container_Mode" @oninput="UpdateAndSaveToStorage" />
+    </div>
+
+    <div>
+        <label>Place Of Loading ID</label>
+        <InputText @bind-Value="shipment.Place_Of_Loading_ID" @oninput="UpdateAndSaveToStorage" />
+    </div>
+
+
+    <div>
+        <label>Place Of Loading Name</label>
+        <InputText @bind-Value="shipment.Place_Of_Loading_Name" @oninput="UpdateAndSaveToStorage" />
+    </div>
+
+    <div>
+        <label>Place Of Discharge ID</label>
+        <InputText @bind-Value="shipment.Place_Of_Discharge_ID" @oninput="UpdateAndSaveToStorage" />
+    </div>
+
+    <div>
+        <label>Place Of Discharge Name</label>
+        <InputText @bind-Value="shipment.Place_Of_Discharge_Name" @oninput="UpdateAndSaveToStorage" />
+    </div>
+
+    <div>
+        <label>Vessel Name</label>
+        <InputText @bind-Value="shipment.Vessel_Name" @oninput="UpdateAndSaveToStorage" />
+    </div>
+
+    <div>
+        <label>Voyage No</label>
+        <InputText @bind-Value="shipment.Voyage_No" @oninput="UpdateAndSaveToStorage" />
+    </div>
+
+    <div>
+        <label>ETD</label>
+        <InputDate @bind-Value="shipment.ETD_Date" @oninput="UpdateAndSaveToStorage" />
+    </div>
+
+    <div>
+        <label>ETA</label>
+        <InputDate @bind-Value="shipment.ETA_Date" @oninput="UpdateAndSaveToStorage" />
+    </div>
+
+    <div>
+        <label>Carrier Matchcode</label>
+        <InputText @bind-Value="shipment.Carrier_Matchcode" @oninput="UpdateAndSaveToStorage" />
+    </div>
+
+    <div>
+        <label>Carrier Name</label>
+        <InputText @bind-Value="shipment.Carrier_Name" @oninput="UpdateAndSaveToStorage" />
+    </div>
+
+    <div>
+        <label>Carrier Contract No </label>
+        <InputText @bind-Value="shipment.Carrier_Contract_No" @oninput="UpdateAndSaveToStorage" />
+    </div>
+
+    <div>
+        <label>Carrier Booking Reference No </label>
+        <InputText @bind-Value="shipment.Carrier_Booking_Reference_No" @oninput="UpdateAndSaveToStorage" />
+    </div>
+
+    <div>
+        <label>Inco Terms </label>
+        <InputText @bind-Value="shipment.Inco_Terms" @oninput="UpdateAndSaveToStorage" />
+    </div>
+
+    <div>
+        <label>Controlling Customer Name </label>
+        <InputText @bind-Value="shipment.Controlling_Customer_Name" @oninput="UpdateAndSaveToStorage" />
+    </div>
+
+    <div>
+        <label>Shipper Name </label>
+        <InputText @bind-Value="shipment.Shipper_Name" @oninput="UpdateAndSaveToStorage" />
+    </div>
+
+    <div>
+        <label>Consignee Name </label>
+        <InputText @bind-Value="shipment.Consignee_Name" @oninput="UpdateAndSaveToStorage" />
+    </div>
+
+    <div>
+        <label>Total No Of Pieces </label>
+        <InputNumber @bind-Value="shipment.Total_No_Of_Pieces" @oninput="UpdateAndSaveToStorage" />
+    </div>
+
+    <div>
+        <label>Package Type </label>
+        <InputText @bind-Value="shipment.Package_Type" @oninput="UpdateAndSaveToStorage" />
+    </div>
+
+    <div>
+        <label>Total No Of Volume Weight MTQ </label>
+        <InputNumber @bind-Value="shipment.Total_No_Of_Volume_Weight_MTQ" @oninput="UpdateAndSaveToStorage" />
+    </div>
+
+        <div>
+        <label>Total No Of Gross Weight KGM </label>
+        <InputNumber @bind-Value="shipment.Total_No_Of_Gross_Weight_KGM" @oninput="UpdateAndSaveToStorage" />
+    </div>
+
+        <div>
+        <label>Description </label>
+        <InputText @bind-Value="shipment.Description" @oninput="UpdateAndSaveToStorage" />
+    </div>
+
+    <div>
+        <label>Shipment Note </label>
+        <InputText @bind-Value="shipment.Shipment_Note" @oninput="UpdateAndSaveToStorage" />
+    </div>
+
+    <button type="button" @onclick="navigate">Cancel</button>
+    <button type="submit">Save</button>
+</EditForm>
+
+@code {
+
+    [SupplyParameterFromForm]
+    Shipment shipment { get; set; } = new();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var result = await storage.GetAsync<Shipment>("shipmentData");
+            if (result.Success)
+            {
+                shipment = result.Value;
+                StateHasChanged();
+            }
+        }
+    }
+
+    async Task UpdateAndSaveToStorage(ChangeEventArgs e)
+    {
+        var propertyName = e?.Value?.ToString();
+        var propertyInfo = typeof(Shipment).GetProperty(propertyName);
+        if (propertyInfo != null)
+        {
+            propertyInfo.SetValue(shipment, e.Value);
+        }
+        await storage.SetAsync("shipmentData", shipment);
+    }
+
+    async Task InsertShipment()
+    {
+        var response = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/Shipment/CreateShipment/", shipment);
+        await JS.InvokeVoidAsync("alert", "Successfully Added");
+
+        //Delete shipment data in the local storage
+        await storage.DeleteAsync("shipmentData");
+
+        NavManager.NavigateTo("/shipment");
+    }
+
+    async Task navigate()
+    {
+        await storage.DeleteAsync("shipmentData");
+        NavManager.NavigateTo("/shipment");
+    }
+
+}

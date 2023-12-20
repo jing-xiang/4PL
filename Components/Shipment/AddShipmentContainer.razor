@@ -1,0 +1,268 @@
+﻿@page "/shipment/add"
+
+@using _4PL.Data
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using Microsoft.AspNetCore.WebUtilities
+
+@inject IJSRuntime JS
+@inject NavigationManager NavManager
+@inject HttpClient HttpClient
+
+@rendermode InteractiveServer
+
+<style>
+    table {
+        font-family: arial, sans-serif;
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    td, th {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+    }
+
+    tr:nth-child(even) {
+        background-color: #dddddd;
+    }
+</style>
+
+<h4>Adding Shipment Container</h4>
+
+<div class="tab mb-4">
+    <button @onclick="(x => DisplayTab(1))">Shipment</button>
+    <button @onclick="(x => DisplayTab(2))">Container</button>
+</div>
+
+@if(tab1)
+{
+    <div style="max-width:40vw">
+    <EditForm Model="shipment" OnSubmit="InsertShipment" Enhance >
+    <div style="display: flex;">
+
+         <!-- Left Column -->
+         <div style="flex: 1; padding-right: 20px;">
+             <div class="w"><label>Job No</label></div>
+             <InputText @bind-Value="shipment.Job_No" />
+
+             <div><label>Master BL No</label></div>
+             <InputText @bind-Value="shipment.Master_BL_No" />
+
+             <div><label>Container Mode</label></div>
+             <InputText @bind-Value="shipment.Container_Mode" />
+
+             <div><label>Place Of Loading ID</label></div>
+             <InputText @bind-Value="shipment.Place_Of_Loading_ID" />
+
+             <div><label>Place Of Loading Name</label></div>
+             <InputText @bind-Value="shipment.Place_Of_Loading_Name" />
+
+             <div><label>Place Of Discharge ID</label></div>
+             <InputText @bind-Value="shipment.Place_Of_Discharge_ID" />
+
+             <div><label>Place Of Discharge Name</label></div>
+             <InputText @bind-Value="shipment.Place_Of_Discharge_Name" />
+
+             <div><label>Vessel Name</label></div>
+             <InputText @bind-Value="shipment.Vessel_Name" />
+
+             <div><label>Voyage No</label></div>
+             <InputText @bind-Value="shipment.Voyage_No" />
+
+             <div><label>ETD</label></div>
+             <InputDate @bind-Value="shipment.ETD_Date" />
+
+             <div><label>ETA</label></div>
+             <InputDate @bind-Value="shipment.ETA_Date" />
+
+             <div><label>Carrier Matchcode</label></div>
+             <InputText @bind-Value="shipment.Carrier_Matchcode" />
+
+             <div><label>Carrier Name</label></div>
+             <InputText @bind-Value="shipment.Carrier_Name" />
+
+         </div>
+
+         <!-- Right Column -->
+         <div style="flex: 1;">
+             <div><label>Carrier Contract No</label></div>
+             <InputText @bind-Value="shipment.Carrier_Contract_No" />
+
+             <div><label>Carrier Booking Reference No</label></div>
+             <InputText @bind-Value="shipment.Carrier_Booking_Reference_No" />
+
+             <div><label>Inco Terms</label></div>
+             <InputText @bind-Value="shipment.Inco_Terms" />
+
+             <div><label>Controlling Customer Name</label></div>
+             <InputText @bind-Value="shipment.Controlling_Customer_Name" />
+
+             <div><label>Shipper Name</label></div>
+             <InputText @bind-Value="shipment.Shipper_Name" />
+
+             <div><label>Consignee Name</label></div>
+             <InputText @bind-Value="shipment.Consignee_Name" />
+
+             <div><label>Total No Of Pieces</label></div>
+             <InputNumber @bind-Value="shipment.Total_No_Of_Pieces" />
+
+             <div><label>Package Type</label></div>
+             <InputText @bind-Value="shipment.Package_Type" />
+
+             <div><label>Total No Of Volume Weight MTQ</label></div>
+             <InputNumber @bind-Value="shipment.Total_No_Of_Volume_Weight_MTQ" />
+
+             <div><label>Total No Of Gross Weight KGM</label></div>
+             <InputNumber @bind-Value="shipment.Total_No_Of_Gross_Weight_KGM" />
+
+             <div><label>Description</label></div>
+             <InputText @bind-Value="shipment.Description" />
+
+             <div><label>Shipment Note</label></div>
+             <InputText @bind-Value="shipment.Shipment_Note" />
+         </div>
+     </div>
+
+     <div style="margin-top: 20px;">
+         <button class="btn btn-outline-dark" type="button" @onclick="navigate">Cancel</button>
+         <button class="btn btn-primary" type="submit">Save</button>
+    </div>
+    </EditForm>
+    </div>
+} 
+@if(tab2) {
+ <EditForm Model="container" OnSubmit="InsertContainer" Enhance>
+     <label>Container No</label>
+     <InputText @bind-Value="container.Container_No" />
+
+     <label>Container Type</label>
+     <InputText @bind-Value="container.Container_Type" />
+
+     <label>Seal No 1</label>
+     <InputText @bind-Value="container.Seal_No_1" />
+
+     <label>Seal No 2</label>
+     <InputText @bind-Value="container.Seal_No_2" />
+     <button class="btn btn-primary" type="submit">Save</button>
+ </EditForm>
+
+<div class="py-4">
+    <QuickGrid Items="@containers">
+        <PropertyColumn Title="Container No" Property="@(c => c.Container_No)" Sortable="true" />
+        <PropertyColumn Title="Container Type" Property="@(c => c.Container_Type)" Sortable="true" />
+        <PropertyColumn Title="Seal No 1" Property="@(c => c.Seal_No_1)" Sortable="true" />
+        <PropertyColumn Title="Seal No 2" Property="@(c => c.Seal_No_2)" Sortable="true" />
+        <TemplateColumn Title="Actions">
+            <button class="btn btn-sm btn-danger" @onclick="() => DeleteContainer(context.Shipment_Job_No, context.Container_No)">Delete</button>
+        </TemplateColumn>
+    </QuickGrid>
+</div>
+}
+
+@code {
+    //tab display
+    private bool tab1 = true;
+    private bool tab2 = false;
+
+    public void DisplayTab(int tabNumber)
+    {
+        if (tabNumber == 1)
+        {
+            this.tab1 = true;
+            this.tab2 = false;
+        } 
+        if (tabNumber == 2)
+        {
+            this.tab1 = false;
+            this.tab2 = true;
+        }
+    }
+
+    //posting form input
+    [SupplyParameterFromForm]
+    Shipment shipment { get; set; } = new();
+    Container container { get; set; } = new();
+
+    async Task InsertShipment()
+    {
+        if (shipment.Job_No == "")
+        {
+            await JS.InvokeVoidAsync("alert", "Please fill in the Shipment Job No");
+        } else
+        {
+            HttpResponseMessage result = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/Shipment/CreateShipment/", shipment);
+            string response = result.Content.ReadAsStringAsync().Result;
+            if (response.Equals("Error"))
+            {
+                await JS.InvokeVoidAsync("alert", "Shipment already exists");
+            } else
+            {
+                await JS.InvokeVoidAsync("alert", "Successfully Added");
+                NavManager.NavigateTo("/shipment");
+            }
+        }
+    }
+
+    async Task InsertContainer()
+    {
+        if (shipment.Job_No == "")
+        {
+            await JS.InvokeVoidAsync("alert", "Please fill in the Shipment Job No");
+        }
+        else if (container.Container_No == "")
+        {
+            await JS.InvokeVoidAsync("alert", "Please fill in the Container No");
+        }
+        else {
+            container.Shipment_Job_No = shipment.Job_No;
+            var response = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/Shipment/CreateContainer/", container);
+            await JS.InvokeVoidAsync("alert", "Successfully Added");
+            var result = await getContainerData();
+            containers = result.AsQueryable();
+            StateHasChanged();
+        }
+    }
+
+    async Task navigate()
+    {
+        NavManager.NavigateTo("/shipment");
+    }
+
+    async Task DeleteContainer(string Shipment_Job_No, string Container_No)
+    {
+        var response = await HttpClient.DeleteAsync($"{NavManager.BaseUri}api/shipment/DeleteContainer/{Shipment_Job_No}/{Container_No}");
+        if (response.IsSuccessStatusCode)
+        {
+            var result = await getContainerData();
+            containers = result.AsQueryable();
+            StateHasChanged();
+            await JS.InvokeVoidAsync("alert", $"Container {Container_No} has been deleted");
+            StateHasChanged();
+        }
+        else
+        {
+            Console.WriteLine("Error deleting container");
+        }
+    }
+
+    //fetching containers data
+    IQueryable<Container> containers = Enumerable.Empty<Container>().AsQueryable();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await getContainerData();
+        containers = result.AsQueryable();
+        StateHasChanged();
+    }
+
+    async Task<List<Container>> getContainerData()
+    {
+        string jobno = shipment.Job_No;
+        if (jobno != "") 
+        {
+            return await HttpClient.GetFromJsonAsync<List<Container>>($"{NavManager.BaseUri}api/shipment/ContainerData/" + jobno);
+        }
+        return new();
+    }
+}
