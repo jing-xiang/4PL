@@ -238,7 +238,7 @@ else
     private UserRegisterModel Input { get; set; } = new();
     private TargetUserRegisterModel InputTarget { get; set; } = new();
 
-    public AccessRightsModel[] Rights { get; set; } = new AccessRightsModel[16];
+    public List<AccessRightsModel> Rights { get; set; } = new List<AccessRightsModel>();
     public AddNewAccessRightsModel NewAccessRights { get; set; } = new();
 
     [SupplyParameterFromQuery]
@@ -271,7 +271,7 @@ else
 
         if (flag ==0)
         {
-            for (int i = 0; i < Rights.Length; i++)
+            for (int i = 0; i < Rights.Count; i++)
             {
                 Rights[i].IsChecked = true;
             }
@@ -279,7 +279,7 @@ else
         }
         else
         {
-            for (int i = 0; i < Rights.Length; i++)
+            for (int i = 0; i < Rights.Count; i++)
             {
                 Rights[i].IsChecked = false;
             }
@@ -290,7 +290,7 @@ else
 
     public async Task ResetAccessRights()
     {
-        for (int i = 0; i < Rights.Length; i++)
+        for (int i = 0; i < Rights.Count; i++)
         {
             Rights[i].IsChecked = accessRightsString.Split(',')[i].ToLower().Contains("true") ? true : false;
         }
@@ -313,19 +313,21 @@ else
             Logger.LogInformation("User access rights found.");
             accessRightsHeadingsString = response1.Content.ReadAsStringAsync().Result;
             accessRightsHeadings = accessRightsHeadingsString.Split(',');
+            Rights = new List<AccessRightsModel>();
             for (int i = 0; i < accessRightsHeadings.Length; i++)
             {
                 accessRightsHeadings[i] = accessRightsHeadings[i].Replace("[", "");
                 accessRightsHeadings[i] = accessRightsHeadings[i].Replace("]", "");
                 accessRightsHeadings[i] = accessRightsHeadings[i].Replace("\"", "");
                 accessRightsHeadings[i] = accessRightsHeadings[i].Replace("_", ", ");
-                Rights[i] = new AccessRightsModel
+                var right = new AccessRightsModel
                     {
                         Heading = accessRightsHeadings[i],
                         AccessRight = accessRightsString.Split(',')[i],
                         IsChecked = accessRightsString.Split(',')[i].ToLower().Contains("true") ? true : false
 
                     };
+                Rights.Add(right);
             }
 
             return accessRights = accessRightsString.Split(',');
@@ -398,7 +400,7 @@ else
         }
         List<string> parameterList = new List<string>();
         parameterList.Add(Input.Email);
-        for (int i = 0; i < Rights.Length; i++)
+        for (int i = 0; i < Rights.Count; i++)
         {
             parameterList.Add(Rights[i].IsChecked.ToString());
         }
@@ -414,7 +416,7 @@ else
                 accessRightsString = response1.Content.ReadAsStringAsync().Result;
                 accessRightsHeadingsString = response2.Content.ReadAsStringAsync().Result;
                 accessRightsHeadings = accessRightsHeadingsString.Split(',');
-                Rights = new AccessRightsModel[accessRightsHeadings.Length];
+                Rights = new List<AccessRightsModel>();
 
                 for (int i = 0; i < accessRightsHeadings.Length; i++)
                 {
@@ -422,12 +424,14 @@ else
                     accessRightsHeadings[i] = accessRightsHeadings[i].Replace("]", "");
                     accessRightsHeadings[i] = accessRightsHeadings[i].Replace("\"", "");
                     accessRightsHeadings[i] = accessRightsHeadings[i].Replace("_", ", ");
-                    Rights[i] = new AccessRightsModel
+                    var right = new AccessRightsModel
                         {
                             Heading = accessRightsHeadings[i],
                             AccessRight = accessRightsString.Split(',')[i],
                             IsChecked = accessRightsString.Split(',')[i].ToLower().Contains("true") ? true : false
+
                         };
+                    Rights.Add(right);
                 }
                 StateHasChanged();
             }
@@ -461,7 +465,7 @@ else
                 accessRightsString = response1.Content.ReadAsStringAsync().Result;
                 accessRightsHeadingsString = response2.Content.ReadAsStringAsync().Result;
                 accessRightsHeadings = accessRightsHeadingsString.Split(',');
-                Rights = new AccessRightsModel[accessRightsHeadings.Length];
+                Rights = new List<AccessRightsModel>();
 
                 for (int i = 0; i < accessRightsHeadings.Length; i++)
                 {
@@ -469,12 +473,14 @@ else
                     accessRightsHeadings[i] = accessRightsHeadings[i].Replace("]", "");
                     accessRightsHeadings[i] = accessRightsHeadings[i].Replace("\"", "");
                     accessRightsHeadings[i] = accessRightsHeadings[i].Replace("_", ", ");
-                    Rights[i] = new AccessRightsModel
+                    var right = new AccessRightsModel
                         {
                             Heading = accessRightsHeadings[i],
                             AccessRight = accessRightsString.Split(',')[i],
                             IsChecked = accessRightsString.Split(',')[i].ToLower().Contains("true") ? true : false
+
                         };
+                    Rights.Add(right);
                 }
                 StateHasChanged();
             }
