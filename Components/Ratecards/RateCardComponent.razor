@@ -86,31 +86,7 @@ else
 
             else
             {
-                <table class="table table-bordered table-bordered">
-                    <thead class="thead-light">
-                        <tr>
-                            <th>Charge Id</th>
-                            <th>Charge Description</th>
-                            <th>Calculation Base</th>
-                            <th>Min</th>
-                            <th>OS Unit Price</th>
-                            <th>OS Currency</th>
-                            <th>Unit Price</th>
-                            <th>Currency</th>
-                            <th>Per Percent</th>
-                            <th>Charge Code</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        @foreach (string chargeId in chargeIds)
-                        {
-                            <ChargeComponent chargeId="@chargeId" deleteChargeMethod="@deleteChargeMethod"></ChargeComponent>
-                        }
-                    </tbody>
-
-                </table>
+                <ChargesComponent ratecardId="@ratecardId"></ChargesComponent>
             }
 
         </div>
