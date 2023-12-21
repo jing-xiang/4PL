@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using _4PL.Components.Account.Pages.Manage;
-//using BootstrapBlazor.Components;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace _4PL.Data
 {
@@ -31,6 +31,7 @@ namespace _4PL.Data
             {
                 conn.Open();
                 bool isDuplicate = false;
+                List<string> access_types = new List<string>();
 
                 using (IDbCommand command = conn.CreateCommand())
                 {
@@ -47,13 +48,36 @@ namespace _4PL.Data
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "token", Value = user.Token, DbType = DbType.String });
 
                     isDuplicate = Convert.ToBoolean(command.ExecuteScalar());
-                }
 
+                }
                 if (isDuplicate)
                 {
                     throw new DuplicateNameException("Account already exists.");
                 }
+                using (IDbCommand command1 = conn.CreateCommand())
+                {
+                    command1.CommandText = $"SELECT * FROM access_model";
+                    using (var reader = command1.ExecuteReader())
+                    {
+
+                        while (reader.Read())
+                        {
+                            //fetch access rights
+                            var accesstype = reader.GetString(0);
+                            //append to array
+                            access_types.Add(accesstype);
+                            Console.WriteLine(accesstype);
+                        }
+                    }
+                }
+                    for (int i = 0; i < access_types.Count; i++)
+                        {
+                            IDbCommand command2 = conn.CreateCommand();
+                            command2.CommandText = $"INSERT INTO access_control (email, access_type, is_accessible) VALUES ('{user.Email}', '{access_types[i]}', false)";
+                            command2.ExecuteScalar();
+                        }
             }
+        
         }
 
         public async Task<IDataReader> GetEmailSettings()
@@ -391,6 +415,8 @@ namespace _4PL.Data
                 Console.WriteLine("command created");
                 command.ExecuteScalar();
                 Console.WriteLine("command executed");
+                command.CommandText = $"DELETE FROM access_control WHERE email = '{email}'";
+                command.ExecuteScalar();
             }
         }
 
@@ -525,7 +551,37 @@ namespace _4PL.Data
                 }
             }
         }
-        
+
+        public async Task AddAccessRights(string access_type, string description, string[] accounts)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = $"UPDATE access_model SET description = '{description}' WHERE access_type = '{access_type}'";
+                    int rowsAffected = command.ExecuteNonQuery();
+
+                    if (rowsAffected == 0)
+                    {
+                        command.CommandText = $"INSERT INTO access_model (access_type, description) VALUES ('{access_type}', '{description}')";
+                        command.ExecuteScalar();
+                        for (int i = 0; i < accounts.Length; i++)
+                        {
+                            command.CommandText = $"INSERT INTO access_control (email, access_type, is_accessible) VALUES ('{accounts[i]}', '{access_type}', false)";
+                            command.ExecuteScalar();
+                        }
+                        Console.WriteLine("access rights added");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Access type '{access_type}' description updated.");
+                    }
+                }
+            }
+        }
+
+
 
         /*
          * Ratecard

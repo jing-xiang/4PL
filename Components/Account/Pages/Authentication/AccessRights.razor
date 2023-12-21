@@ -195,6 +195,37 @@
             </EditForm>
         </div>
     </div>
+    <div>
+        <h2>Add New Access Type</h2>
+        @if(isAddedSuccessful)
+        {
+            <div class="alert alert-success">
+                Access type added successfully! All new users will now have this access type by default.
+            </div>
+        }
+        <EditForm Model="NewAccessRights" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="AddNewAccessRight" FormName="copyaccessrights">
+            <DataAnnotationsValidator />
+            <hr />
+            <ValidationSummary class="text-danger" />
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div style="margin-bottom:10px" class="text-danger">@errorMessage</div>
+            }
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="NewAccessRights.Heading" class="form-control" autocomplete="username" aria-required="true" placeholder="ratecard_read" />
+                <label for="access type">Access Type</label>
+            </div>
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="NewAccessRights.Description" class="form-control" autocomplete="username" aria-required="true" placeholder="Reading the rate card." />
+                <label for="description">Description</label>
+            </div>
+            <div>
+                <InputCheckbox placeholder="Update for all users" @bind-Value="NewAccessRights.UpdateForAllUsers" />
+                <label for="updateForAllUsers">Update for all users?</label>
+            </div>
+            <button type="submit" class="w-100 btn btn-lg btn-primary">Add Access Type</button>
+        </EditForm>
+    </div>
 }
 else
 {
@@ -207,8 +238,8 @@ else
     private UserRegisterModel Input { get; set; } = new();
     private TargetUserRegisterModel InputTarget { get; set; } = new();
 
-    public AccessRightsModel[] Rights { get; set; } = new AccessRightsModel[16];
-    public AddNewAccessRightsModel[] AddNewRights { get; set; } = new AddNewAccessRightsModel[16];
+    public List<AccessRightsModel> Rights { get; set; } = new List<AccessRightsModel>();
+    public AddNewAccessRightsModel NewAccessRights { get; set; } = new();
 
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
@@ -225,6 +256,7 @@ else
     private bool isCopySuccessful = false;
     private string? copySuccessMessage;
     private bool isDeleteSuccessful = false;
+    private bool isAddedSuccessful = false;
     private string deleteSuccessMessage = string.Empty;
     private int flag = 0;
 
@@ -239,7 +271,7 @@ else
 
         if (flag ==0)
         {
-            for (int i = 0; i < Rights.Length; i++)
+            for (int i = 0; i < Rights.Count; i++)
             {
                 Rights[i].IsChecked = true;
             }
@@ -247,7 +279,7 @@ else
         }
         else
         {
-            for (int i = 0; i < Rights.Length; i++)
+            for (int i = 0; i < Rights.Count; i++)
             {
                 Rights[i].IsChecked = false;
             }
@@ -258,7 +290,7 @@ else
 
     public async Task ResetAccessRights()
     {
-        for (int i = 0; i < Rights.Length; i++)
+        for (int i = 0; i < Rights.Count; i++)
         {
             Rights[i].IsChecked = accessRightsString.Split(',')[i].ToLower().Contains("true") ? true : false;
         }
@@ -281,19 +313,21 @@ else
             Logger.LogInformation("User access rights found.");
             accessRightsHeadingsString = response1.Content.ReadAsStringAsync().Result;
             accessRightsHeadings = accessRightsHeadingsString.Split(',');
+            Rights = new List<AccessRightsModel>();
             for (int i = 0; i < accessRightsHeadings.Length; i++)
             {
                 accessRightsHeadings[i] = accessRightsHeadings[i].Replace("[", "");
                 accessRightsHeadings[i] = accessRightsHeadings[i].Replace("]", "");
                 accessRightsHeadings[i] = accessRightsHeadings[i].Replace("\"", "");
                 accessRightsHeadings[i] = accessRightsHeadings[i].Replace("_", ", ");
-                Rights[i] = new AccessRightsModel
+                var right = new AccessRightsModel
                     {
                         Heading = accessRightsHeadings[i],
                         AccessRight = accessRightsString.Split(',')[i],
                         IsChecked = accessRightsString.Split(',')[i].ToLower().Contains("true") ? true : false
 
                     };
+                Rights.Add(right);
             }
 
             return accessRights = accessRightsString.Split(',');
@@ -366,7 +400,7 @@ else
         }
         List<string> parameterList = new List<string>();
         parameterList.Add(Input.Email);
-        for (int i = 0; i < Rights.Length; i++)
+        for (int i = 0; i < Rights.Count; i++)
         {
             parameterList.Add(Rights[i].IsChecked.ToString());
         }
@@ -382,7 +416,7 @@ else
                 accessRightsString = response1.Content.ReadAsStringAsync().Result;
                 accessRightsHeadingsString = response2.Content.ReadAsStringAsync().Result;
                 accessRightsHeadings = accessRightsHeadingsString.Split(',');
-                Rights = new AccessRightsModel[accessRightsHeadings.Length];
+                Rights = new List<AccessRightsModel>();
 
                 for (int i = 0; i < accessRightsHeadings.Length; i++)
                 {
@@ -390,15 +424,17 @@ else
                     accessRightsHeadings[i] = accessRightsHeadings[i].Replace("]", "");
                     accessRightsHeadings[i] = accessRightsHeadings[i].Replace("\"", "");
                     accessRightsHeadings[i] = accessRightsHeadings[i].Replace("_", ", ");
-                    Rights[i] = new AccessRightsModel
+                    var right = new AccessRightsModel
                         {
                             Heading = accessRightsHeadings[i],
                             AccessRight = accessRightsString.Split(',')[i],
                             IsChecked = accessRightsString.Split(',')[i].ToLower().Contains("true") ? true : false
+
                         };
+                    Rights.Add(right);
                 }
                 StateHasChanged();
-                }
+            }
         }
     }
 
@@ -429,7 +465,7 @@ else
                 accessRightsString = response1.Content.ReadAsStringAsync().Result;
                 accessRightsHeadingsString = response2.Content.ReadAsStringAsync().Result;
                 accessRightsHeadings = accessRightsHeadingsString.Split(',');
-                Rights = new AccessRightsModel[accessRightsHeadings.Length];
+                Rights = new List<AccessRightsModel>();
 
                 for (int i = 0; i < accessRightsHeadings.Length; i++)
                 {
@@ -437,13 +473,36 @@ else
                     accessRightsHeadings[i] = accessRightsHeadings[i].Replace("]", "");
                     accessRightsHeadings[i] = accessRightsHeadings[i].Replace("\"", "");
                     accessRightsHeadings[i] = accessRightsHeadings[i].Replace("_", ", ");
-                    Rights[i] = new AccessRightsModel
+                    var right = new AccessRightsModel
                         {
                             Heading = accessRightsHeadings[i],
                             AccessRight = accessRightsString.Split(',')[i],
                             IsChecked = accessRightsString.Split(',')[i].ToLower().Contains("true") ? true : false
+
                         };
+                    Rights.Add(right);
                 }
+                StateHasChanged();
+            }
+        }
+    }
+
+    public async Task AddNewAccessRight (EditContext editContext)
+    {
+        string confirmMessage = $"Are you sure you want to add the access right '{NewAccessRights.Heading}'?";
+        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", confirmMessage);
+        if (confirmed)
+        {
+            List<string> parameterList = new List<string>();
+            parameterList.Add(NewAccessRights.Heading);
+            parameterList.Add(NewAccessRights.Description);
+            parameterList.Add(NewAccessRights.UpdateForAllUsers.ToString());
+            var response = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/AccessRights/AddAccessRights", parameterList);
+            Logger.LogInformation(response.Content.ReadAsStringAsync().Result);
+            Console.WriteLine(NewAccessRights.UpdateForAllUsers);
+            if (response.IsSuccessStatusCode)
+            {
+                isAddedSuccessful = true;
                 StateHasChanged();
             }
         }
@@ -481,6 +540,7 @@ else
     public class AddNewAccessRightsModel
     {
         public string Heading { get; set; } = "";
-        public string AccessRight { get; set; } = "";
+        public string Description { get; set; } = "";
+        public bool UpdateForAllUsers { get; set; } = false;
     }
 }
