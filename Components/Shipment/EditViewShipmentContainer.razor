@@ -1,6 +1,7 @@
 ﻿@page "/shipment/edit"
 @page "/shipment/view"
 
+@using Newtonsoft.Json
 @using _4PL.Data
 @using Microsoft.AspNetCore.Components.QuickGrid
 @using Microsoft.AspNetCore.WebUtilities
@@ -39,6 +40,7 @@
 <div class="tab mb-4">
     <button @onclick="(x => DisplayTab(1))">Shipment</button>
     <button @onclick="(x => DisplayTab(2))">Container</button>
+    <button @onclick="(x => DisplayTab(3))">Accrual Cost</button>
 </div>
 
 @if (tab1)
@@ -168,10 +170,30 @@
     </div>
 }
 
+@if (tab3)
+{
+    <button @onclick="HandleAutoRating">AutoRating</button>
+    <QuickGrid Items="@charges">
+        <PropertyColumn Title="Charge Code" Property="@(c => c.Charge_Code)" Sortable="true" />
+        <PropertyColumn Title="Charge Name" Property="@(c => c.Charge_Name)" Sortable="true" />
+        <PropertyColumn Title="Creditor Name" Property="@(c => c.Creditor_Name)" Sortable="true" />
+        <PropertyColumn Title="OS Charge Currency" Property="@(c => c.OS_Charge_Currency)" Sortable="true" />
+        <PropertyColumn Title="Charge Currency" Property="@(c => c.Charge_Currency)" Sortable="true" />
+        <PropertyColumn Title="Charge Ex Rate" Property="@(c => c.Charge_Ex_Rate)" Sortable="true" />
+        <PropertyColumn Title="VAT Code" Property="@(c => c.VAT_Code)" Sortable="true" />
+        <PropertyColumn Title="Charge Est Cost Net OS Amount" Property="@(c => c.Charge_Est_Cost_Net_OS_Amount)" Sortable="true" />
+        <PropertyColumn Title="Charge Est Cost Net Amount" Property="@(c => c.Charge_Est_Cost_Net_Amount)" Sortable="true" />
+        <PropertyColumn Title="Lane ID" Property="@(c => c.Lane_ID)" Sortable="true" />
+        <PropertyColumn Title="Remarks" Property="@(c => c.Remarks)" Sortable="true" />
+    </QuickGrid>
+    <button class="btn btn-primary" @onclick="InsertShipmentCharge">Save</button>
+}
+
 @code {
     //tab display
     private bool tab1 = true;
     private bool tab2 = false;
+    private bool tab3 = false;
 
     public void DisplayTab(int tabNumber)
     {
@@ -179,11 +201,20 @@
         {
             this.tab1 = true;
             this.tab2 = false;
+            this.tab3 = false;
         }
         if (tabNumber == 2)
         {
             this.tab1 = false;
             this.tab2 = true;
+            this.tab3 = false;
+        }
+
+        if (tabNumber == 3)
+        {
+            this.tab1 = false;
+            this.tab2 = false;
+            this.tab3 = true;
         }
     }
 
@@ -191,6 +222,9 @@
     [SupplyParameterFromForm]
     Shipment shipment { get; set; } = new();
     Container container { get; set; } = new();
+
+    List<ShipmentCharge> chargesTemp = new();
+    IQueryable<ShipmentCharge> charges = Enumerable.Empty<ShipmentCharge>().AsQueryable();
 
     async Task UpdateShipment()
     {
@@ -238,12 +272,39 @@
         }
     }
 
+    async Task HandleAutoRating()
+    {
+        chargesTemp = await getShipmentCharges();      
+        if (!chargesTemp.Any())
+        {
+            await JS.InvokeVoidAsync("alert", $"No charges found for shipment {shipment.Job_No}");
+        } else
+        {
+            charges = chargesTemp.AsQueryable();
+            StateHasChanged();
+        }
+    }
+
+    async Task InsertShipmentCharge()
+    {
+        if (!chargesTemp.Any())
+        {
+            await JS.InvokeVoidAsync("alert", $"No charges to be saved for shipment {shipment.Job_No}, Please click the Auto Rating button to find all relevant charges");
+        }
+        foreach (ShipmentCharge sc in chargesTemp)
+        {
+            sc.Shipment_Job_No = shipment.Job_No;
+        }
+        var response = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/Shipment/CreateShipmentCharges/", chargesTemp);
+        await JS.InvokeVoidAsync("alert", $"All charges of shipment {shipment.Job_No} have been saved");
+    }
 
     //fetching shipment and containers data
     [Parameter]
     public string Shipment_Job_No { get; set; }
-    IQueryable<Container> containers = Enumerable.Empty<Container>().AsQueryable();
     bool isView = false;
+
+    IQueryable<Container> containers = Enumerable.Empty<Container>().AsQueryable();
 
     protected override async Task OnInitializedAsync()
     {
@@ -276,5 +337,15 @@
             return await HttpClient.GetFromJsonAsync<Shipment>($"{NavManager.BaseUri}api/shipment/ShipmentData/{Shipment_Job_No}");
         }
         return new();
+    }
+
+    async Task<List<ShipmentCharge>> getShipmentCharges()
+    {
+        Console.WriteLine("shipment");
+        Console.WriteLine(shipment == null);
+        HttpResponseMessage response = await HttpClient.PostAsJsonAsync<Shipment>($"{NavManager.BaseUri}api/shipment/ShipmentCharges", shipment);
+        var responseContent = await response.Content.ReadAsStringAsync();
+        List<ShipmentCharge> result = JsonConvert.DeserializeObject<List<ShipmentCharge>>(responseContent);
+        return result;
     }
 }

@@ -181,7 +181,6 @@ namespace _4PL.Data
         public IActionResult Search(string Job_No, string Master_BL_No, string Place_Of_Loading_Name, string Place_Of_Discharge_Name, string Vessel_Name, string Voyage_No, string Container_No, string Container_Type, 
             DateTime ETD_Date_From, DateTime ETD_Date_To, DateTime ETA_Date_From, DateTime ETA_Date_To)
         {
-            Console.WriteLine($"DATE FORMAT: {ETD_Date_From.Date.ToShortDateString()}");
             List<Shipment> shipments = _dbcontext.fetchShipments(Job_No, Master_BL_No, Place_Of_Loading_Name, Place_Of_Discharge_Name, Vessel_Name, Voyage_No, Container_No, Container_Type, 
                 ETD_Date_From, ETD_Date_To, ETA_Date_From, ETA_Date_To);
             return Ok(shipments);
@@ -207,9 +206,98 @@ namespace _4PL.Data
             return Ok(containers);
         }
 
+        [HttpPost("ShipmentCharges")]
+        public IActionResult fetchShipmentCharges([FromBody] Shipment s) 
+        {
+            //Container Type : # of Containers with the same container type
+            Dictionary<string, int> containerTypeCounterMap = new Dictionary<string, int>();
+            List<Container> containers = _dbcontext.fetchContainers(s.Job_No); 
+            foreach (Container c in containers)
+            {
+                if (containerTypeCounterMap.ContainsKey(c.Container_Type))
+                {
+                    containerTypeCounterMap[c.Container_Type]++;
+                } else
+                {
+                    containerTypeCounterMap[c.Container_Type] = 1;
+                }
+            }
 
+            //Charge description : Total cost
+            Dictionary<string, ShipmentCharge> chargeCostMap = new Dictionary<string, ShipmentCharge>();
+            List<RateCard> ratecards = _dbcontext.GetShipmentRatecards(s.Place_Of_Loading_ID, s.Place_Of_Discharge_ID, s.Carrier_Matchcode, s.Container_Mode);
 
-        private Dictionary<string, Tuple<Shipment , List<Container>>> ReadExcelFile(string fileNameWithoutExtension)
+            //for loop the ratecard ids, multiply by # of containers for each charge, add to dictionary accordingly
+            foreach (RateCard r in ratecards)
+            {
+                int containerCount = 0;
+                if (containerTypeCounterMap.ContainsKey(r.Container_Type))
+                {
+                    containerCount = containerTypeCounterMap[r.Container_Type];
+                }
+                List<Charge> charges = _dbcontext.GetChargesFromRatecardId(r.Id.ToString(), 0, 100);
+                foreach (Charge c in charges)
+                {
+                    if (chargeCostMap.ContainsKey(c.Charge_Description))
+                    {
+                        ShipmentCharge temp = chargeCostMap[c.Charge_Description];
+                        if (string.Equals(c.Calculation_Base, "Per Container", StringComparison.CurrentCultureIgnoreCase))
+                        {
+                            
+                            temp.Charge_Est_Cost_Net_OS_Amount += c.OS_Unit_Price * containerCount;
+                            temp.Charge_Est_Cost_Net_Amount += c.Unit_Price * containerCount;
+                        } else
+                        {
+                            temp.Charge_Est_Cost_Net_OS_Amount += c.OS_Unit_Price;
+                            temp.Charge_Est_Cost_Net_Amount += c.Unit_Price;
+                        }
+                        chargeCostMap[c.Charge_Description] = temp;
+                    } else
+                    {
+                        ShipmentCharge newCharge = new();
+                        newCharge.Charge_Name = c.Charge_Description;
+                        newCharge.Charge_Code = c.Charge_Code;
+                        newCharge.OS_Charge_Currency = c.OS_Currency;
+                        newCharge.Charge_Currency = c.Currency;
+                        newCharge.Creditor_Name = r.Creditor_Name;
+                        newCharge.Lane_ID = r.Lane_ID;
+                        if (string.Equals(c.Calculation_Base, "Per Container", StringComparison.CurrentCultureIgnoreCase))
+                        {
+                            newCharge.Charge_Est_Cost_Net_OS_Amount += c.OS_Unit_Price * containerCount;
+                            newCharge.Charge_Est_Cost_Net_Amount += c.Unit_Price * containerCount;
+                        }
+                        else
+                        {
+                            newCharge.Charge_Est_Cost_Net_OS_Amount += c.OS_Unit_Price;
+                            newCharge.Charge_Est_Cost_Net_Amount += c.Unit_Price;
+                        }
+                        chargeCostMap[c.Charge_Description] = newCharge;
+                    }
+                }
+
+            }
+            Console.WriteLine("charge cost map");
+            Console.WriteLine(chargeCostMap);
+
+            List<ShipmentCharge> shipmentCharges = new();
+            foreach (var kvp in chargeCostMap)
+            {
+                shipmentCharges.Add(kvp.Value);
+            }
+            return Ok(shipmentCharges);
+        }
+
+        [HttpPost("CreateShipmentCharges")]
+        public IActionResult CreateShipmentCharges([FromBody] List<ShipmentCharge> shipmentcharges)
+        { 
+            foreach (ShipmentCharge sc in shipmentcharges)
+            {
+                _dbcontext.InsertShipmentCharge(sc);
+            }
+            return Ok();
+        }
+
+            private Dictionary<string, Tuple<Shipment , List<Container>>> ReadExcelFile(string fileNameWithoutExtension)
         {
             Dictionary<string, Tuple<Shipment, List<Container>>> shipmentData = new Dictionary<string, Tuple<Shipment, List<Container>>>();
 
