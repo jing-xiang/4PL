@@ -1024,7 +1024,7 @@ namespace _4PL.Data
          * Retrieves charges from ratecard ID
          * 
          */
-        public List<Charge> GetChargesFromRatecardId(string ratecardId, long offset, long limit)
+        public List<Charge> GetChargesFromRatecardId(string ratecardId, long offset=0, long limit=1000)
         {
             List<Charge> charges = new List<Charge>();
 
@@ -1081,7 +1081,7 @@ namespace _4PL.Data
                         charge.Unit_Price = reader.GetDecimal(reader.GetOrdinal("UNIT_PRICE"));
                         charge.Currency = reader.GetString(reader.GetOrdinal("CURRENCY"));
                         charge.Per_Percent = reader.GetDecimal(reader.GetOrdinal("PER_PERCENT"));
-                        charge.Charge_Code = reader.GetString(reader.GetOrdinal("PER_PERCENT"));
+                        charge.Charge_Code = reader.GetString(reader.GetOrdinal("CHARGE_CODE"));
 
                         charges.Add(charge);
 
@@ -1397,27 +1397,6 @@ namespace _4PL.Data
             long limit = 10,
             long offset = 0,
             RateCard formInput = null
-            //string Lane_ID = "%",
-            //string Controlling_Customer_Matchcode = "%",
-            //string Controlling_Customer_Name = "%",
-            //string Transport_Mode = "%",
-            //string Function = "%",
-            //DateTime Rate_Validity_From = new DateTime(),
-            //DateTime Rate_Validity_To = new DateTime(),
-            //string POL_Name = "%",
-            //string POL_Country = "%",
-            //string POL_Port = "%",
-            //string POD_Name = "%",
-            //string POD_Country = "%",
-            //string POD_Port = "%",
-            //string Creditor_Matchcode = "%",
-            //string Creditor_Name = "%",
-            //string Pickup_Address = "%",
-            //string Delivery_Address = "%",
-            //string Dangerous_Goods = "%",
-            //string Temperature_Controlled = "%",
-            //string Container_Mode = "%",
-            //string Container_Type = "%"
         )
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
