@@ -76,6 +76,7 @@ else
         {
             charge = null;
             StateHasChanged();
+            await JS.InvokeVoidAsync("alert", "Charge deleted");
         }
 
 

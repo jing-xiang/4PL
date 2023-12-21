@@ -4,7 +4,6 @@
 @rendermode InteractiveServer
 @using System.Net.Http.Headers
 @using System.Text.Json
-
 @using _4PL.Data
 
 @inject NavigationManager NavManager
@@ -171,8 +170,15 @@
                     // await client.PostAsync($"/api/ratecard/CreateRcTransaction/" + uploadResults[0].StoredFileName, null);
                     HttpResponseMessage result = await HttpClient.PostAsJsonAsync($"{Configuration["ApiBaseUrl"]}/api/ratecard/CreateRcTransaction/", uploadResults[0].StoredFileName);
                     // JS.InvokeVoidAsync("alert", files.Count);
-                    // JS.InvokeVoidAsync("alert", files.Count);
-                    string transactionId = result.Content.ReadAsStringAsync().Result;
+
+                    // string transactionId = result.Content.ReadAsStringAsync().Result;
+                    List<string> ratecardIds = await JsonSerializer
+                        .DeserializeAsync<List<string>>(await result.Content.ReadAsStreamAsync(), options);
+                    
+
+                    JS.InvokeVoidAsync("alert", $"Number of rows updated: {ratecardIds.Count}");
+
+
                     // NavManager.NavigateTo("/ratecard/" + transactionId + "/0");
 
 

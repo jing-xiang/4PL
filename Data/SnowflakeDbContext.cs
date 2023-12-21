@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using _4PL.Components.Account.Pages.Manage;
+//using BootstrapBlazor.Components;
 
 namespace _4PL.Data
 {
@@ -535,7 +536,7 @@ namespace _4PL.Data
          * 2. Creates ratecard (references transactionId)
          * 3. Creates individual charges (references transactionId and ratecardId)
          */
-        public async Task<string> CreateRcTransaction(ApplicationUser user, List<RateCard> ratecards)
+        public async Task<List<string>> CreateRcTransaction(ApplicationUser user, List<RateCard> ratecards)
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
@@ -562,8 +563,15 @@ namespace _4PL.Data
                 }
 
                 //2. Creates ratecard (references transactionId)
+                List<string> ratecardIds = new List<string>();
                 foreach (RateCard ratecard in ratecards)
                 {
+                    //Validate
+                    if (Search(100, 0, ratecard).Count > 0)
+                    {
+                        continue;
+                    }
+
                     string ratecardId;
                     using (IDbCommand command = conn.CreateCommand())
                     {
@@ -620,6 +628,7 @@ namespace _4PL.Data
                         if (result != DBNull.Value)
                         {
                             ratecardId = result.ToString();
+                            ratecardIds.Add(ratecardId);
                             //return result.ToString();
                         }
                         else
@@ -726,7 +735,8 @@ namespace _4PL.Data
                     Console.WriteLine(ratecards.Count);
                 }
 
-                return transactionId;
+                //return transactionId;
+                return ratecardIds;
 
             }
         }

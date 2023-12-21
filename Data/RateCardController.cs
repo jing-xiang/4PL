@@ -120,9 +120,10 @@ namespace _4PL.Data
         {
 
             List<RateCard> ratecards = ReadRatecardExcel(fileNameWithoutExtension);
-            
+
             //1.Create transaction
-            string transactionId = await _dbContext.CreateRcTransaction(null, ratecards);
+            //string transactionId = await _dbContext.CreateRcTransaction(null, ratecards);
+            List<string> ratecardIds = await _dbContext.CreateRcTransaction(null, ratecards);
 
             //For each rate card, ...
             //foreach (RateCard rc in ratecards)
@@ -135,7 +136,8 @@ namespace _4PL.Data
             //    Console.WriteLine(ratecards.Count);
             //}
 
-            return Ok(transactionId);
+            //return Ok(transactionId);
+            return Ok(ratecardIds);
         }
 
 
