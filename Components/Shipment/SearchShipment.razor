@@ -111,6 +111,7 @@
             <button class="btn btn-sm btn-danger" @onclick="() => DeleteShipment(context.Job_No)">Delete</button>
         </TemplateColumn>
     </QuickGrid>
+    <Paginator State="@pagination" />
 </div>
 
 <style>
