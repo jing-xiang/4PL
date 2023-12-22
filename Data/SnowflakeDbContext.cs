@@ -1858,7 +1858,7 @@ namespace _4PL.Data
         }
 
 
-        public List<RateCard> GetShipmentRatecards(string Place_Of_Loading_ID, string Place_Of_Discharge_ID, string Carrier_Matchcode, string Container_Mode)
+        public List<RateCard> GetShipmentRatecards(Shipment s)
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
@@ -1873,13 +1873,16 @@ namespace _4PL.Data
                         WHERE POL_PORT ILIKE :Place_Of_Loading_ID
                         AND POD_PORT ILIKE :Place_Of_Discharge_ID
                         AND CREDITOR_MATCHCODE ILIKE :Carrier_Matchcode
-                        AND CONTAINER_MODE ILIKE :Container_Mode;
+                        AND CONTAINER_MODE ILIKE :Container_Mode
+                        AND :ETD >= RATE_VALIDITY_FROM
+                        AND :ETD <= RATE_VALIDITY_TO
                     ";
 
-                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Place_Of_Loading_ID", Value = Place_Of_Loading_ID, DbType = DbType.String });
-                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Place_Of_Discharge_ID", Value = Place_Of_Discharge_ID, DbType = DbType.String });
-                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Carrier_Matchcode", Value = Carrier_Matchcode, DbType = DbType.String });
-                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Container_Mode", Value = Container_Mode, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Place_Of_Loading_ID", Value = s.Place_Of_Loading_ID, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Place_Of_Discharge_ID", Value = s.Place_Of_Discharge_ID, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Carrier_Matchcode", Value = s.Carrier_Matchcode, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Container_Mode", Value = s.Container_Mode, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "ETD", Value = s.ETD_Date, DbType = DbType.Date });
 
                     IDataReader reader = command.ExecuteReader();
 
@@ -1985,6 +1988,32 @@ namespace _4PL.Data
                     }
                 }
                 return result;
+            }
+        }
+
+        public int DeleteShipmentCharge(string Shipment_Job_No, string Charge_Name)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    Console.Write(Charge_Name);
+                    command.CommandText = $@"CALL DEV_RL_DB.HWL_4PL.DELETE_SHIPMENT_CHARGE(:Shipment_Job_No, :Charge_Name)";
+
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Shipment_Job_No", Value = Shipment_Job_No, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Charge_Name", Value = Charge_Name, DbType = DbType.String });
+
+                    var result = command.ExecuteScalar();
+                    if (result != DBNull.Value)
+                    {
+                        return Int32.Parse(result.ToString());
+                    }
+                    else
+                    {
+                        throw new Exception($"Failed to delete shipment charge (Job_No: {Shipment_Job_No}, Container_No: {Charge_Name})");
+                    }
+                }
             }
         }
 

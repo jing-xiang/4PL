@@ -17,6 +17,7 @@
         font-family: arial, sans-serif;
         border-collapse: collapse;
         width: 100%;
+        font-size: 14px;
     }
 
     td, th {
@@ -45,94 +46,94 @@
 
 @if (tab1)
 {
-     <div style="max-width:40vw">
+    <div style="max-width:40vw">
     <EditForm Model="shipment" OnSubmit="UpdateShipment" Enhance>
-     <div style="display: flex;">
+    <div style="display: flex;">
 
-         <!-- Left Column -->
-         <div style="flex: 1; padding-right: 20px;">
-             <div><label>Job No</label></div>
-             <InputText @bind-Value="shipment.Job_No" disabled="true" />
+        <!-- Left Column -->
+        <div style="flex: 1; padding-right: 20px;">
+            <div><label>Job No</label></div>
+            <InputText @bind-Value="shipment.Job_No" disabled="true" style="width:30vw"/>
 
-             <div><label>Master BL No</label></div>
-             <InputText @bind-Value="shipment.Master_BL_No" disabled=@isView />
+            <div><label>Master BL No</label></div>
+            <InputText @bind-Value="shipment.Master_BL_No" disabled=@isView style="width:30vw" />
 
-             <div><label>Container Mode</label></div>
-             <InputText @bind-Value="shipment.Container_Mode" disabled=@isView />
+            <div><label>Container Mode</label></div>
+            <InputText @bind-Value="shipment.Container_Mode" disabled=@isView style="width:30vw" />
 
-             <div><label>Place Of Loading ID</label></div>
-             <InputText @bind-Value="shipment.Place_Of_Loading_ID" disabled=@isView />
+            <div><label>Place Of Loading ID</label></div>
+            <InputText @bind-Value="shipment.Place_Of_Loading_ID" disabled=@isView style="width:30vw" />
 
-             <div><label>Place Of Loading Name</label></div>
-             <InputText @bind-Value="shipment.Place_Of_Loading_Name" disabled=@isView />
+            <div><label>Place Of Loading Name</label></div>
+            <InputText @bind-Value="shipment.Place_Of_Loading_Name" disabled=@isView style="width:30vw" />
 
-             <div><label>Place Of Discharge ID</label></div>
-             <InputText @bind-Value="shipment.Place_Of_Discharge_ID" disabled=@isView />
+            <div><label>Place Of Discharge ID</label></div>
+            <InputText @bind-Value="shipment.Place_Of_Discharge_ID" disabled=@isView style="width:30vw" />
 
-             <div><label>Place Of Discharge Name</label></div>
-             <InputText @bind-Value="shipment.Place_Of_Discharge_Name" disabled=@isView />
+            <div><label>Place Of Discharge Name</label></div>
+            <InputText @bind-Value="shipment.Place_Of_Discharge_Name" disabled=@isView style="width:30vw" />
 
-             <div><label>Vessel Name</label></div>
-             <InputText @bind-Value="shipment.Vessel_Name" disabled=@isView />
+            <div><label>Vessel Name</label></div>
+            <InputText @bind-Value="shipment.Vessel_Name" disabled=@isView style="width:30vw" />
 
-             <div><label>Voyage No</label></div>
-             <InputText @bind-Value="shipment.Voyage_No" disabled=@isView />
+            <div><label>Voyage No</label></div>
+            <InputText @bind-Value="shipment.Voyage_No" disabled=@isView style="width:30vw" />
 
-             <div><label>ETD</label></div>
-             <InputDate @bind-Value="shipment.ETD_Date" disabled=@isView />
+            <div><label>ETD</label></div>
+            <InputDate @bind-Value="shipment.ETD_Date" disabled=@isView style="width:30vw" />
 
-             <div><label>ETA</label></div>
-             <InputDate @bind-Value="shipment.ETA_Date" disabled=@isView />
+            <div><label>ETA</label></div>
+            <InputDate @bind-Value="shipment.ETA_Date" disabled=@isView style="width:30vw" />
 
-             <div><label>Carrier Matchcode</label></div>
-             <InputText @bind-Value="shipment.Carrier_Matchcode" disabled=@isView />
+            <div><label>Carrier Matchcode</label></div>
+            <InputText @bind-Value="shipment.Carrier_Matchcode" disabled=@isView style="width:30vw" />
 
-             <div><label>Carrier Name</label></div>
-             <InputText @bind-Value="shipment.Carrier_Name" disabled=@isView />
+            <div><label>Carrier Name</label></div>
+            <InputText @bind-Value="shipment.Carrier_Name" disabled=@isView style="width:30vw" />
 
-         </div>
+        </div>
 
-         <!-- Right Column -->
-         <div style="flex: 1;">
-             <div><label>Carrier Contract No</label></div>
-             <InputText @bind-Value="shipment.Carrier_Contract_No" disabled=@isView />
+        <!-- Right Column -->
+        <div style="flex: 1;">
+            <div><label>Carrier Contract No</label></div>
+            <InputText @bind-Value="shipment.Carrier_Contract_No" disabled=@isView style="width:30vw"/>
 
-             <div><label>Carrier Booking Reference No</label></div>
-             <InputText @bind-Value="shipment.Carrier_Booking_Reference_No" disabled=@isView />
+            <div><label>Carrier Booking Reference No</label></div>
+            <InputText @bind-Value="shipment.Carrier_Booking_Reference_No" disabled=@isView style="width:30vw" />
 
-             <div><label>Inco Terms</label></div>
-             <InputText @bind-Value="shipment.Inco_Terms" disabled=@isView />
+            <div><label>Inco Terms</label></div>
+            <InputText @bind-Value="shipment.Inco_Terms" disabled=@isView style="width:30vw" />
 
-             <div><label>Controlling Customer Name</label></div>
-             <InputText @bind-Value="shipment.Controlling_Customer_Name" disabled=@isView />
+            <div><label>Controlling Customer Name</label></div>
+            <InputText @bind-Value="shipment.Controlling_Customer_Name" disabled=@isView style="width:30vw" />
 
-             <div><label>Shipper Name</label></div>
-             <InputText @bind-Value="shipment.Shipper_Name" disabled=@isView />
+            <div><label>Shipper Name</label></div>
+            <InputText @bind-Value="shipment.Shipper_Name" disabled=@isView style="width:30vw" />
 
-             <div><label>Consignee Name</label></div>
-             <InputText @bind-Value="shipment.Consignee_Name" disabled=@isView />
+            <div><label>Consignee Name</label></div>
+            <InputText @bind-Value="shipment.Consignee_Name" disabled=@isView style="width:30vw" />
 
-             <div><label>Total No Of Pieces</label></div>
-             <InputNumber @bind-Value="shipment.Total_No_Of_Pieces" disabled=@isView />
+            <div><label>Total No Of Pieces</label></div>
+            <InputNumber @bind-Value="shipment.Total_No_Of_Pieces" disabled=@isView style="width:30vw" />
 
-             <div><label>Package Type</label></div>
-             <InputText @bind-Value="shipment.Package_Type" disabled=@isView />
+            <div><label>Package Type</label></div>
+            <InputText @bind-Value="shipment.Package_Type" disabled=@isView style="width:30vw" />
 
-             <div><label>Total No Of Volume Weight MTQ</label></div>
-             <InputNumber @bind-Value="shipment.Total_No_Of_Volume_Weight_MTQ" disabled=@isView />
+            <div><label>Total No Of Volume Weight MTQ</label></div>
+            <InputNumber @bind-Value="shipment.Total_No_Of_Volume_Weight_MTQ" disabled=@isView style="width:30vw" />
 
-             <div><label>Total No Of Gross Weight KGM</label></div>
-             <InputNumber @bind-Value="shipment.Total_No_Of_Gross_Weight_KGM" disabled=@isView />
+            <div><label>Total No Of Gross Weight KGM</label></div>
+            <InputNumber @bind-Value="shipment.Total_No_Of_Gross_Weight_KGM" disabled=@isView style="width:30vw" />
 
-             <div><label>Description</label></div>
-             <InputText @bind-Value="shipment.Description" disabled=@isView />
+            <div><label>Description</label></div>
+            <InputText @bind-Value="shipment.Description" disabled=@isView style="width:30vw" multiline="true" rows="5"/>
 
-             <div><label>Shipment Note</label></div>
-             <InputText @bind-Value="shipment.Shipment_Note" disabled=@isView />
-         </div>
+            <div><label>Shipment Note</label></div>
+            <InputText @bind-Value="shipment.Shipment_Note" disabled=@isView style="width:30vw" />
+        </div>
      </div>
 
-     <div style="margin-top: 20px;">
+    <div style="margin-top: 20px;">
          <button class="btn btn-outline-dark" type="button" @onclick="navigate">Cancel</button>
          <button class="btn btn-primary" type="submit" disabled=@isView>Save</button>
      </div>
@@ -154,10 +155,10 @@
 
      <label>Seal No 2</label>
      <InputText @bind-Value="container.Seal_No_2" disabled=@isView />
-     <button class ="btn btn-primary" type="submit" disabled=@isView>Save</button>
+     <button class ="btn btn-primary" type="submit" disabled=@(isView||chargesPresent)>Save</button>
  </EditForm>
 
-    <div class="py-4">
+    <div class="result-container py-4" style="max-width:80vw">
         <QuickGrid Items="@containers">
             <PropertyColumn Title="Container No" Property="@(c => c.Container_No)" Sortable="true" />
             <PropertyColumn Title="Container Type" Property="@(c => c.Container_Type)" Sortable="true" />
@@ -172,7 +173,8 @@
 
 @if (tab3)
 {
-    <button @onclick="HandleAutoRating">AutoRating</button>
+    <button class="btn btn-success" @onclick="HandleAutoRating" disabled=@chargesPresent>Auto Rating</button>
+    <div class="result-container py-4" style="max-width:80vw">
     <QuickGrid Items="@charges">
         <PropertyColumn Title="Charge Code" Property="@(c => c.Charge_Code)" Sortable="true" />
         <PropertyColumn Title="Charge Name" Property="@(c => c.Charge_Name)" Sortable="true" />
@@ -181,13 +183,44 @@
         <PropertyColumn Title="Charge Currency" Property="@(c => c.Charge_Currency)" Sortable="true" />
         <PropertyColumn Title="Charge Ex Rate" Property="@(c => c.Charge_Ex_Rate)" Sortable="true" />
         <PropertyColumn Title="VAT Code" Property="@(c => c.VAT_Code)" Sortable="true" />
+        <PropertyColumn Title="Charge Est Cost VAT OS Amount" Property="@(c => 0.00)" Sortable="true" />
         <PropertyColumn Title="Charge Est Cost Net OS Amount" Property="@(c => c.Charge_Est_Cost_Net_OS_Amount)" Sortable="true" />
+        <PropertyColumn Title="Charge Est Cost Gross OS Amount" Property="@(c => c.Charge_Est_Cost_Net_OS_Amount)" Sortable="true" />
+        <PropertyColumn Title="Charge Est Cost VAT Amount" Property="@(c => 0.00)" Sortable="true" />
         <PropertyColumn Title="Charge Est Cost Net Amount" Property="@(c => c.Charge_Est_Cost_Net_Amount)" Sortable="true" />
+        <PropertyColumn Title="Charge Est Cost Gross Amount" Property="@(c => c.Charge_Est_Cost_Net_Amount)" Sortable="true" />
         <PropertyColumn Title="Lane ID" Property="@(c => c.Lane_ID)" Sortable="true" />
         <PropertyColumn Title="Remarks" Property="@(c => c.Remarks)" Sortable="true" />
+        <TemplateColumn Title="Actions">
+            <button class="btn btn-sm btn-danger" @onclick="() => DeleteShipmentCharge(context.Shipment_Job_No, context.Charge_Name)" disabled=@isView>Delete</button>
+        </TemplateColumn>
     </QuickGrid>
-    <button class="btn btn-primary" @onclick="InsertShipmentCharge">Save</button>
+    </div>
+    <button class="btn btn-primary mt-4" @onclick="InsertShipmentCharge" disabled=@chargesPresent>Save</button>
 }
+
+<style>
+    .result-container {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    table {
+        font-family: arial, sans-serif;
+        border-collapse: collapse;
+        font-size: 14px;
+    }
+
+    td, th {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+    }
+
+    tr:nth-child(even) {
+        background-color: #dddddd;
+    }
+</style>
 
 @code {
     //tab display
@@ -239,6 +272,10 @@
         {
             await JS.InvokeVoidAsync("alert", "Please fill in the Shipment Job No");
         }
+        else if (container.Container_No == "")
+        {
+            await JS.InvokeVoidAsync("alert", "Please fill in the Container No");
+        }
         else
         {
             container.Shipment_Job_No = shipment.Job_No;
@@ -277,7 +314,7 @@
         chargesTemp = await getShipmentCharges();      
         if (!chargesTemp.Any())
         {
-            await JS.InvokeVoidAsync("alert", $"No charges found for shipment {shipment.Job_No}");
+            await JS.InvokeVoidAsync("alert", $"Failed to locate validate rate card for auto rating.");
         } else
         {
             charges = chargesTemp.AsQueryable();
@@ -297,12 +334,45 @@
         }
         var response = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/Shipment/CreateShipmentCharges/", chargesTemp);
         await JS.InvokeVoidAsync("alert", $"All charges of shipment {shipment.Job_No} have been saved");
+        chargesPresent = true;
+    }
+
+    async Task DeleteShipmentCharge(string Shipment_Job_No, string Charge_Name)
+    {
+        List<ShipmentCharge> chargesOld = await getShipmentChargesInitial();
+        if (!chargesOld.Any())
+        {
+            chargesTemp.RemoveAll(c => c.Charge_Name == Charge_Name && c.Shipment_Job_No == Shipment_Job_No);
+            charges = chargesTemp.AsQueryable();
+        }
+        else
+        {
+            string encodedChargeName = Uri.EscapeDataString(Charge_Name);
+            Console.WriteLine(encodedChargeName);
+            var response = await HttpClient.DeleteAsync($"{NavManager.BaseUri}api/shipment/DeleteShipmentCharge/{Shipment_Job_No}/{encodedChargeName}");
+            if (response.IsSuccessStatusCode)
+            {
+                chargesTemp = await getShipmentChargesInitial();
+                if (!chargesTemp.Any())
+                {
+                    chargesPresent = false;
+                }
+                charges = chargesTemp.AsQueryable();
+                StateHasChanged();
+                await JS.InvokeVoidAsync("alert", $"Charge {Charge_Name} has been deleted");
+            }
+            else
+            {
+                Console.WriteLine("Error deleting shipment charge");
+            }
+        }
     }
 
     //fetching shipment and containers data
     [Parameter]
     public string Shipment_Job_No { get; set; }
     bool isView = false;
+    bool chargesPresent = false;
 
     IQueryable<Container> containers = Enumerable.Empty<Container>().AsQueryable();
 
@@ -318,6 +388,14 @@
         var result = await getContainerData();
         containers = result.AsQueryable();
         StateHasChanged();
+
+        chargesTemp = await getShipmentChargesInitial();
+        if (chargesTemp.Any())
+        {
+            chargesPresent = true;
+            charges = chargesTemp.AsQueryable();
+            StateHasChanged();
+        }
     }
 
     async Task<List<Container>> getContainerData()
@@ -339,10 +417,13 @@
         return new();
     }
 
+    async Task<List<ShipmentCharge>> getShipmentChargesInitial()
+    {
+        return await HttpClient.GetFromJsonAsync<List<ShipmentCharge>>($"{NavManager.BaseUri}api/shipment/ShipmentChargesData/{Shipment_Job_No}");
+    }
+
     async Task<List<ShipmentCharge>> getShipmentCharges()
     {
-        Console.WriteLine("shipment");
-        Console.WriteLine(shipment == null);
         HttpResponseMessage response = await HttpClient.PostAsJsonAsync<Shipment>($"{NavManager.BaseUri}api/shipment/ShipmentCharges", shipment);
         var responseContent = await response.Content.ReadAsStringAsync();
         List<ShipmentCharge> result = JsonConvert.DeserializeObject<List<ShipmentCharge>>(responseContent);

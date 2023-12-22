@@ -41,88 +41,88 @@
     <EditForm Model="shipment" OnSubmit="InsertShipment" Enhance >
     <div style="display: flex;">
 
-         <!-- Left Column -->
-         <div style="flex: 1; padding-right: 20px;">
-             <div class="w"><label>Job No</label></div>
-             <InputText @bind-Value="shipment.Job_No" />
+    <!-- Left Column -->
+    <div style="flex: 1; padding-right: 20px;">
+        <div class="w"><label>Job No</label></div>
+        <InputText @bind-Value="shipment.Job_No" style="width:30vw" />
 
-             <div><label>Master BL No</label></div>
-             <InputText @bind-Value="shipment.Master_BL_No" />
+        <div><label>Master BL No</label></div>
+        <InputText @bind-Value="shipment.Master_BL_No" style="width:30vw" />
 
-             <div><label>Container Mode</label></div>
-             <InputText @bind-Value="shipment.Container_Mode" />
+        <div><label>Container Mode</label></div>
+        <InputText @bind-Value="shipment.Container_Mode" style="width:30vw" />
 
-             <div><label>Place Of Loading ID</label></div>
-             <InputText @bind-Value="shipment.Place_Of_Loading_ID" />
+        <div><label>Place Of Loading ID</label></div>
+        <InputText @bind-Value="shipment.Place_Of_Loading_ID" style="width:30vw" />
 
-             <div><label>Place Of Loading Name</label></div>
-             <InputText @bind-Value="shipment.Place_Of_Loading_Name" />
+        <div><label>Place Of Loading Name</label></div>
+        <InputText @bind-Value="shipment.Place_Of_Loading_Name" style="width:30vw" />
 
-             <div><label>Place Of Discharge ID</label></div>
-             <InputText @bind-Value="shipment.Place_Of_Discharge_ID" />
+        <div><label>Place Of Discharge ID</label></div>
+        <InputText @bind-Value="shipment.Place_Of_Discharge_ID" style="width:30vw" />
 
-             <div><label>Place Of Discharge Name</label></div>
-             <InputText @bind-Value="shipment.Place_Of_Discharge_Name" />
+        <div><label>Place Of Discharge Name</label></div>
+        <InputText @bind-Value="shipment.Place_Of_Discharge_Name" style="width:30vw" />
 
-             <div><label>Vessel Name</label></div>
-             <InputText @bind-Value="shipment.Vessel_Name" />
+        <div><label>Vessel Name</label></div>
+        <InputText @bind-Value="shipment.Vessel_Name" style="width:30vw" />
 
-             <div><label>Voyage No</label></div>
-             <InputText @bind-Value="shipment.Voyage_No" />
+        <div><label>Voyage No</label></div>
+        <InputText @bind-Value="shipment.Voyage_No" style="width:30vw" />
 
-             <div><label>ETD</label></div>
-             <InputDate @bind-Value="shipment.ETD_Date" />
+        <div><label>ETD</label></div>
+        <InputDate @bind-Value="shipment.ETD_Date" style="width:30vw" />
 
-             <div><label>ETA</label></div>
-             <InputDate @bind-Value="shipment.ETA_Date" />
+        <div><label>ETA</label></div>
+        <InputDate @bind-Value="shipment.ETA_Date" style="width:30vw" />
 
-             <div><label>Carrier Matchcode</label></div>
-             <InputText @bind-Value="shipment.Carrier_Matchcode" />
+        <div><label>Carrier Matchcode</label></div>
+        <InputText @bind-Value="shipment.Carrier_Matchcode" style="width:30vw" />
 
-             <div><label>Carrier Name</label></div>
-             <InputText @bind-Value="shipment.Carrier_Name" />
+        <div><label>Carrier Name</label></div>
+        <InputText @bind-Value="shipment.Carrier_Name" style="width:30vw" />
 
-         </div>
+    </div>
 
-         <!-- Right Column -->
-         <div style="flex: 1;">
-             <div><label>Carrier Contract No</label></div>
-             <InputText @bind-Value="shipment.Carrier_Contract_No" />
+<!-- Right Column -->
+    <div style="flex: 1;">
+        <div><label>Carrier Contract No</label></div>
+        <InputText @bind-Value="shipment.Carrier_Contract_No" style="width:30vw" />
 
-             <div><label>Carrier Booking Reference No</label></div>
-             <InputText @bind-Value="shipment.Carrier_Booking_Reference_No" />
+        <div><label>Carrier Booking Reference No</label></div>
+        <InputText @bind-Value="shipment.Carrier_Booking_Reference_No" style="width:30vw" />
 
-             <div><label>Inco Terms</label></div>
-             <InputText @bind-Value="shipment.Inco_Terms" />
+        <div><label>Inco Terms</label></div>
+        <InputText @bind-Value="shipment.Inco_Terms" style="width:30vw" />
 
-             <div><label>Controlling Customer Name</label></div>
-             <InputText @bind-Value="shipment.Controlling_Customer_Name" />
+        <div><label>Controlling Customer Name</label></div>
+        <InputText @bind-Value="shipment.Controlling_Customer_Name" style="width:30vw" />
 
-             <div><label>Shipper Name</label></div>
-             <InputText @bind-Value="shipment.Shipper_Name" />
+        <div><label>Shipper Name</label></div>
+        <InputText @bind-Value="shipment.Shipper_Name" style="width:30vw" />
 
-             <div><label>Consignee Name</label></div>
-             <InputText @bind-Value="shipment.Consignee_Name" />
+        <div><label>Consignee Name</label></div>
+        <InputText @bind-Value="shipment.Consignee_Name" style="width:30vw" />
 
-             <div><label>Total No Of Pieces</label></div>
-             <InputNumber @bind-Value="shipment.Total_No_Of_Pieces" />
+        <div><label>Total No Of Pieces</label></div>
+        <InputNumber @bind-Value="shipment.Total_No_Of_Pieces" style="width:30vw" />
 
-             <div><label>Package Type</label></div>
-             <InputText @bind-Value="shipment.Package_Type" />
+        <div><label>Package Type</label></div>
+        <InputText @bind-Value="shipment.Package_Type" style="width:30vw" />
 
-             <div><label>Total No Of Volume Weight MTQ</label></div>
-             <InputNumber @bind-Value="shipment.Total_No_Of_Volume_Weight_MTQ" />
+        <div><label>Total No Of Volume Weight MTQ</label></div>
+        <InputNumber @bind-Value="shipment.Total_No_Of_Volume_Weight_MTQ" style="width:30vw" />
 
-             <div><label>Total No Of Gross Weight KGM</label></div>
-             <InputNumber @bind-Value="shipment.Total_No_Of_Gross_Weight_KGM" />
+        <div><label>Total No Of Gross Weight KGM</label></div>
+        <InputNumber @bind-Value="shipment.Total_No_Of_Gross_Weight_KGM" style="width:30vw" />
 
-             <div><label>Description</label></div>
-             <InputText @bind-Value="shipment.Description" />
+        <div><label>Description</label></div>
+        <InputText @bind-Value="shipment.Description" style="width:30vw" />
 
-             <div><label>Shipment Note</label></div>
-             <InputText @bind-Value="shipment.Shipment_Note" />
-         </div>
-     </div>
+        <div><label>Shipment Note</label></div>
+        <InputText @bind-Value="shipment.Shipment_Note" style="width:30vw" />
+    </div>
+    </div>
 
      <div style="margin-top: 20px;">
          <button class="btn btn-outline-dark" type="button" @onclick="navigate">Cancel</button>

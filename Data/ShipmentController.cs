@@ -225,7 +225,7 @@ namespace _4PL.Data
 
             //Charge description : Total cost
             Dictionary<string, ShipmentCharge> chargeCostMap = new Dictionary<string, ShipmentCharge>();
-            List<RateCard> ratecards = _dbcontext.GetShipmentRatecards(s.Place_Of_Loading_ID, s.Place_Of_Discharge_ID, s.Carrier_Matchcode, s.Container_Mode);
+            List<RateCard> ratecards = _dbcontext.GetShipmentRatecards(s);
 
             //for loop the ratecard ids, multiply by # of containers for each charge, add to dictionary accordingly
             foreach (RateCard r in ratecards)
@@ -276,8 +276,6 @@ namespace _4PL.Data
                 }
 
             }
-            Console.WriteLine("charge cost map");
-            Console.WriteLine(chargeCostMap);
 
             List<ShipmentCharge> shipmentCharges = new();
             foreach (var kvp in chargeCostMap)
@@ -297,135 +295,156 @@ namespace _4PL.Data
             return Ok();
         }
 
-            private Dictionary<string, Tuple<Shipment , List<Container>>> ReadExcelFile(string fileNameWithoutExtension)
+        [HttpGet("ShipmentChargesData/{Shipment_Job_No}")]
+        public IActionResult GetInitialShipmentCharges(string Shipment_Job_No)
         {
-            Dictionary<string, Tuple<Shipment, List<Container>>> shipmentData = new Dictionary<string, Tuple<Shipment, List<Container>>>();
-
-            Excel.Application xlApp;
-            Excel.Workbook xlWorkBook;
-            Excel.Worksheet xlWorkSheet;
-            object misValue = System.Reflection.Missing.Value;
-            xlApp = new Excel.Application();
-
-            string fpath = Directory.GetCurrentDirectory() + "\\FileUploads\\" + fileNameWithoutExtension;
-            xlWorkBook = xlApp.Workbooks.Open(fpath, 0, true, 5, "", "", true, Microsoft.Office.Interop.Excel.XlPlatform.xlWindows, "\t", false, false, 0, true, 1, 0);
-            xlWorkSheet = (Excel.Worksheet)xlWorkBook.Worksheets.get_Item(1);
-
-            int lastUsedRow = 0;
-            // Find the last real row
-            lastUsedRow = xlWorkSheet.Cells.Find("*", System.Reflection.Missing.Value,
-                                           System.Reflection.Missing.Value, System.Reflection.Missing.Value,
-                                           Excel.XlSearchOrder.xlByRows, Excel.XlSearchDirection.xlPrevious,
-                                           false, System.Reflection.Missing.Value, System.Reflection.Missing.Value).Row;
-
-            for (int r = 2; r <= lastUsedRow; r++)
+            List<ShipmentCharge> shipmentcharges = new();
+            if (Shipment_Job_No != null)
             {
-                Excel.Range cell = xlWorkSheet.Cells[r, 1];
-                Shipment s = new Shipment();
-                Container c = new Container();
+                shipmentcharges = _dbcontext.fetchShipmentCharges(Shipment_Job_No);
+            }
+            return Ok(shipmentcharges);
+        }
 
-                //ways to automatically assign this, given the different data type
-                string jobNo = cellIsEmpty(cell) ? "" : cell.Value2;
-                s.Job_No = jobNo;
+        [HttpDelete("DeleteShipmentCharge/{Shipment_Job_No}/{encodedChargeName}")]
+        public ActionResult DeleteShipmentCharge(string Shipment_Job_No, string encodedChargeName)
+        {
+            string Charge_Name = Uri.UnescapeDataString(encodedChargeName);
+            System.Console.WriteLine($"chargename decoded {Charge_Name}");
+            int numDeleted = _dbcontext.DeleteShipmentCharge(Shipment_Job_No, Charge_Name);
 
-                cell = nextCell(xlWorkSheet, cell);
-                s.Master_BL_No = cellIsEmpty(cell) ? "" : cell.Value2;
+            return Ok(numDeleted > 0 ? true : false);
+        }
 
-                cell = nextCell(xlWorkSheet, cell);
-                s.Container_Mode = cellIsEmpty(cell) ? "" : cell.Value2;
+        private Dictionary<string, Tuple<Shipment , List<Container>>> ReadExcelFile(string fileNameWithoutExtension)
+        {
+        Dictionary<string, Tuple<Shipment, List<Container>>> shipmentData = new Dictionary<string, Tuple<Shipment, List<Container>>>();
 
-                cell = nextCell(xlWorkSheet, cell);
-                s.Place_Of_Loading_ID = cellIsEmpty(cell) ? "" : cell.Value2;
+        Excel.Application xlApp;
+        Excel.Workbook xlWorkBook;
+        Excel.Worksheet xlWorkSheet;
+        object misValue = System.Reflection.Missing.Value;
+        xlApp = new Excel.Application();
 
-                cell = nextCell(xlWorkSheet, cell);
-                s.Place_Of_Loading_Name = cellIsEmpty(cell) ? "" : cell.Value2;
+        string fpath = Directory.GetCurrentDirectory() + "\\FileUploads\\" + fileNameWithoutExtension;
+        xlWorkBook = xlApp.Workbooks.Open(fpath, 0, true, 5, "", "", true, Microsoft.Office.Interop.Excel.XlPlatform.xlWindows, "\t", false, false, 0, true, 1, 0);
+        xlWorkSheet = (Excel.Worksheet)xlWorkBook.Worksheets.get_Item(1);
 
-                cell = nextCell(xlWorkSheet, cell);
-                s.Place_Of_Discharge_ID = cellIsEmpty(cell) ? "" : cell.Value2;
+        int lastUsedRow = 0;
+        // Find the last real row
+        lastUsedRow = xlWorkSheet.Cells.Find("*", System.Reflection.Missing.Value,
+                                        System.Reflection.Missing.Value, System.Reflection.Missing.Value,
+                                        Excel.XlSearchOrder.xlByRows, Excel.XlSearchDirection.xlPrevious,
+                                        false, System.Reflection.Missing.Value, System.Reflection.Missing.Value).Row;
 
-                cell = nextCell(xlWorkSheet, cell);
-                s.Place_Of_Discharge_Name = cellIsEmpty(cell) ? "" : cell.Value2;
+        for (int r = 2; r <= lastUsedRow; r++)
+        {
+            Excel.Range cell = xlWorkSheet.Cells[r, 1];
+            Shipment s = new Shipment();
+            Container c = new Container();
 
-                cell = nextCell(xlWorkSheet, cell);
-                s.Vessel_Name = cellIsEmpty(cell) ? "" : cell.Value2;
+            //ways to automatically assign this, given the different data type
+            string jobNo = cellIsEmpty(cell) ? "" : cell.Value2;
+            s.Job_No = jobNo;
 
-                cell = nextCell(xlWorkSheet, cell);
-                s.Voyage_No = cellIsEmpty(cell) ? "" : cell.Value2;
+            cell = nextCell(xlWorkSheet, cell);
+            s.Master_BL_No = cellIsEmpty(cell) ? "" : cell.Value2;
+
+            cell = nextCell(xlWorkSheet, cell);
+            s.Container_Mode = cellIsEmpty(cell) ? "" : cell.Value2;
+
+            cell = nextCell(xlWorkSheet, cell);
+            s.Place_Of_Loading_ID = cellIsEmpty(cell) ? "" : cell.Value2;
+
+            cell = nextCell(xlWorkSheet, cell);
+            s.Place_Of_Loading_Name = cellIsEmpty(cell) ? "" : cell.Value2;
+
+            cell = nextCell(xlWorkSheet, cell);
+            s.Place_Of_Discharge_ID = cellIsEmpty(cell) ? "" : cell.Value2;
+
+            cell = nextCell(xlWorkSheet, cell);
+            s.Place_Of_Discharge_Name = cellIsEmpty(cell) ? "" : cell.Value2;
+
+            cell = nextCell(xlWorkSheet, cell);
+            s.Vessel_Name = cellIsEmpty(cell) ? "" : cell.Value2;
+
+            cell = nextCell(xlWorkSheet, cell);
+            s.Voyage_No = cellIsEmpty(cell) ? "" : cell.Value2;
            
-                cell = nextCell(xlWorkSheet, cell);
-                s.ETD_Date = cellIsEmpty(cell) ? DateTime.Now : DateTime.ParseExact(cell.Text, "d-MMM-yy", null);
+            cell = nextCell(xlWorkSheet, cell);
+            s.ETD_Date = cellIsEmpty(cell) ? DateTime.Now : DateTime.ParseExact(cell.Text, "d-MMM-yy", null);
 
-                cell = nextCell(xlWorkSheet, cell);
-                s.ETA_Date = cellIsEmpty(cell) ? DateTime.Now : DateTime.ParseExact(cell.Text, "d-MMM-yy", null);
+            cell = nextCell(xlWorkSheet, cell);
+            s.ETA_Date = cellIsEmpty(cell) ? DateTime.Now : DateTime.ParseExact(cell.Text, "d-MMM-yy", null);
 
-                cell = nextCell(xlWorkSheet, cell);
-                s.Carrier_Matchcode = cellIsEmpty(cell) ? "" : cell.Value2;
+            cell = nextCell(xlWorkSheet, cell);
+            s.Carrier_Matchcode = cellIsEmpty(cell) ? "" : cell.Value2;
 
-                cell = nextCell(xlWorkSheet, cell);
-                s.Carrier_Name = cellIsEmpty(cell) ? "" : cell.Value2;
+            cell = nextCell(xlWorkSheet, cell);
+            s.Carrier_Name = cellIsEmpty(cell) ? "" : cell.Value2;
 
-                cell = nextCell(xlWorkSheet, cell);
-                s.Carrier_Contract_No = cellIsEmpty(cell) ? "" : cell.Value2;
+            cell = nextCell(xlWorkSheet, cell);
+            s.Carrier_Contract_No = cellIsEmpty(cell) ? "" : cell.Value2;
 
-                cell = nextCell(xlWorkSheet, cell);
-                s.Carrier_Booking_Reference_No = cellIsEmpty(cell) ? "" : cell.Value2;
+            cell = nextCell(xlWorkSheet, cell);
+            s.Carrier_Booking_Reference_No = cellIsEmpty(cell) ? "" : cell.Value2;
                 
-                cell = nextCell(xlWorkSheet, cell);
-                s.Inco_Terms = cellIsEmpty(cell) ? "" : cell.Value2;
+            cell = nextCell(xlWorkSheet, cell);
+            s.Inco_Terms = cellIsEmpty(cell) ? "" : cell.Value2;
 
-                cell = nextCell(xlWorkSheet, cell);
-                s.Controlling_Customer_Name = cellIsEmpty(cell) ? "" : cell.Value2; 
+            cell = nextCell(xlWorkSheet, cell);
+            s.Controlling_Customer_Name = cellIsEmpty(cell) ? "" : cell.Value2; 
 
-                cell = nextCell(xlWorkSheet, cell);
-                s.Shipper_Name = cellIsEmpty(cell) ? "" : cell.Value2; 
+            cell = nextCell(xlWorkSheet, cell);
+            s.Shipper_Name = cellIsEmpty(cell) ? "" : cell.Value2; 
 
-                cell = nextCell(xlWorkSheet, cell);
-                s.Consignee_Name = cellIsEmpty(cell) ? "" : cell.Value2;
+            cell = nextCell(xlWorkSheet, cell);
+            s.Consignee_Name = cellIsEmpty(cell) ? "" : cell.Value2;
 
-                cell = nextCell(xlWorkSheet, cell);
-                s.Total_No_Of_Pieces = cellIsEmpty(cell) ? 0 : (int)cell.Value2;
+            cell = nextCell(xlWorkSheet, cell);
+            s.Total_No_Of_Pieces = cellIsEmpty(cell) ? 0 : (int)cell.Value2;
 
-                cell = nextCell(xlWorkSheet, cell);
-                s.Package_Type = cellIsEmpty(cell) ? "" : cell.Value2;
+            cell = nextCell(xlWorkSheet, cell);
+            s.Package_Type = cellIsEmpty(cell) ? "" : cell.Value2;
 
-                cell = nextCell(xlWorkSheet, cell);
-                s.Total_No_Of_Volume_Weight_MTQ = cellIsEmpty(cell) ? 0.0 : (double)cell.Value2;
+            cell = nextCell(xlWorkSheet, cell);
+            s.Total_No_Of_Volume_Weight_MTQ = cellIsEmpty(cell) ? 0.0 : (double)cell.Value2;
 
-                cell = nextCell(xlWorkSheet, cell);
-                s.Total_No_Of_Gross_Weight_KGM = cellIsEmpty(cell) ? 0.0 : (double)cell.Value2;
+            cell = nextCell(xlWorkSheet, cell);
+            s.Total_No_Of_Gross_Weight_KGM = cellIsEmpty(cell) ? 0.0 : (double)cell.Value2;
 
-                cell = nextCell(xlWorkSheet, cell);
-                s.Description = cellIsEmpty(cell) ? "" : cell.Value2;
+            cell = nextCell(xlWorkSheet, cell);
+            s.Description = cellIsEmpty(cell) ? "" : cell.Value2;
 
-                cell = nextCell(xlWorkSheet, cell);
-                s.Shipment_Note = cellIsEmpty(cell) ? "" : cell.Value2;
+            cell = nextCell(xlWorkSheet, cell);
+            s.Shipment_Note = cellIsEmpty(cell) ? "" : cell.Value2;
 
-                cell = nextCell(xlWorkSheet, cell);
-                c.Container_No = cellIsEmpty(cell) ? "" : cell.Value2;
+            cell = nextCell(xlWorkSheet, cell);
+            c.Container_No = cellIsEmpty(cell) ? "" : cell.Value2;
 
-                cell = nextCell(xlWorkSheet, cell);
-                c.Container_Type = cellIsEmpty(cell) ? "" : cell.Value2;
+            cell = nextCell(xlWorkSheet, cell);
+            c.Container_Type = cellIsEmpty(cell) ? "" : cell.Value2;
 
-                cell = nextCell(xlWorkSheet, cell);
-                c.Seal_No_1 = cellIsEmpty(cell) ? "" : cell.Value2;
+            cell = nextCell(xlWorkSheet, cell);
+            c.Seal_No_1 = cellIsEmpty(cell) ? "" : cell.Value2;
 
-                cell = nextCell(xlWorkSheet, cell);
-                c.Seal_No_2 = cellIsEmpty(cell) ? "" : cell.Value2;
+            cell = nextCell(xlWorkSheet, cell);
+            c.Seal_No_2 = cellIsEmpty(cell) ? "" : cell.Value2;
 
-                c.Shipment_Job_No = jobNo;
+            c.Shipment_Job_No = jobNo;
 
-                if (!shipmentData.ContainsKey(jobNo))
-                {
-                    shipmentData[jobNo] = new Tuple<Shipment, List<Container>>(s, new List<Container>());
-                }
-
-                shipmentData[jobNo].Item2.Add(c);
+            if (!shipmentData.ContainsKey(jobNo))
+            {
+                shipmentData[jobNo] = new Tuple<Shipment, List<Container>>(s, new List<Container>());
             }
 
-            xlWorkBook.Close(true, misValue, misValue);
-            xlApp.Quit();
-            System.IO.File.Delete(fpath + ".xlsx");
-            return shipmentData;
+            shipmentData[jobNo].Item2.Add(c);
+        }
+
+        xlWorkBook.Close(true, misValue, misValue);
+        xlApp.Quit();
+        System.IO.File.Delete(fpath + ".xlsx");
+        return shipmentData;
         }
         private static bool cellIsEmpty(Excel.Range cell)
         {
