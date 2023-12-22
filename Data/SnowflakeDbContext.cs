@@ -1,14 +1,7 @@
 using Snowflake.Data.Client;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
-using System.Diagnostics.Contracts;
-using Microsoft.Identity.Client;
-using Microsoft.EntityFrameworkCore.Storage;
-using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using _4PL.Components.Account.Pages.Manage;
-using System.ComponentModel;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace _4PL.Data
 {
@@ -2073,6 +2066,54 @@ namespace _4PL.Data
                         throw new Exception($"Failed to delete shipment charge (Job_No: {Shipment_Job_No}, Container_No: {Charge_Name})");
                     }
                 }
+            }
+        }
+
+        public List<ActualShipmentCharge> fetchActualCharges(string Shipment_Job_No)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                List<ActualShipmentCharge> result = new();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = @$"SELECT * FROM SHIPMENT_ACTUAL_COST WHERE SHIPMENT_JOB_NO = :Shipment_Job_No";
+
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Shipment_Job_No", Value = Shipment_Job_No, DbType = DbType.String });
+                    IDataReader reader = command.ExecuteReader();
+
+                    //Read result
+                    while (reader.Read())
+                    {
+                        ActualShipmentCharge asc = new();
+                        asc.Shipment_Job_No = reader.GetString(reader.GetOrdinal("SHIPMENT_JOB_NO"));
+                        asc.Charge_Code = reader.GetString(reader.GetOrdinal("CHARGE_CODE"));
+                        asc.Charge_Name = reader.GetString(reader.GetOrdinal("CHARGE_NAME"));
+                        asc.Creditor_Name = reader.GetString(reader.GetOrdinal("CREDITOR_NAME"));
+                        asc.Charge_Currency = reader.GetString(reader.GetOrdinal("CHARGE_CURRENCY"));
+                        asc.Charge_Ex_Rate = reader.GetDouble(reader.GetOrdinal("CHARGE_EX_RATE"));
+                        asc.VAT_Code = reader.GetString(reader.GetOrdinal("VAT_CODE"));
+                        asc.AP_Invoice_No = reader.GetInt32(reader.GetOrdinal("AP_INVOICE_NO"));
+                        asc.AP_Invoice_Date = reader.GetDateTime(reader.GetOrdinal("AP_INVOICE_DATE"));
+                        asc.AP_Invoice_Due_Date = reader.GetDateTime(reader.GetOrdinal("AP_INVOICE_DATE"));
+                        asc.AP_Charge_Currency = reader.GetString(reader.GetOrdinal("AP_CHARGE_CURRENCY"));
+                        asc.AP_Charge_Ex_Rate = reader.GetDouble(reader.GetOrdinal("AP_CHARGE_EX_RATE"));
+                        asc.Charge_Act_Cost_VAT_OS_Amount = reader.GetDecimal(reader.GetOrdinal("CHARGE_ACT_COST_VAT_OS_AMOUNT"));
+                        asc.Charge_Act_Cost_Net_OS_Amount = reader.GetDecimal(reader.GetOrdinal("CHARGE_ACT_COST_NET_OS_AMOUNT"));
+                        asc.Charge_Act_Cost_Gross_OS_Amount = reader.GetDecimal(reader.GetOrdinal("CHARGE_ACT_COST_GROSS_OS_AMOUNT"));
+                        asc.Charge_Act_Cost_VAT_Amount = reader.GetDecimal(reader.GetOrdinal("CHARGE_ACT_COST_VAT_AMOUNT"));
+                        asc.Charge_Act_Cost_Net_Amount = reader.GetDecimal(reader.GetOrdinal("CHARGE_ACT_COST_NET_AMOUNT"));
+                        asc.Charge_Act_Cost_Gross_Amount = reader.GetDecimal(reader.GetOrdinal("CHARGE_ACT_COST_GROSS_AMOUNT"));
+                        asc.AP_Invoice_Net_Total_Amount = reader.GetDecimal(reader.GetOrdinal("AP_INVOICE_NET_TOTAL_AMOUNT"));
+                        asc.AP_Invoice_VAT_Total_Amount = reader.GetDecimal(reader.GetOrdinal("AP_INVOICE_VAT_TOTAL_AMOUNT"));
+                        asc.AP_Invoice_Gross_Total_Amount = reader.GetDecimal(reader.GetOrdinal("AP_INVOICE_GROSS_TOTAL_AMOUNT"));
+                        asc.AP_Invoice_Audit_Status = reader.GetBoolean(reader.GetOrdinal("AP_INVOICE_AUDIT_STATUS"));
+                        asc.AP_Invoice_Audit_Date = reader.GetDateTime(reader.GetOrdinal("AP_INVOICE_AUDIT_DATE"));
+
+                        result.Add(asc);
+                    }
+                }
+                return result;
             }
         }
 

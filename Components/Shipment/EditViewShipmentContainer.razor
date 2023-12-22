@@ -23,6 +23,7 @@
     <button class="btn btn-outline-dark @(tab1? "active-tab-button" : "")" @onclick="(x => DisplayTab(1))">Shipment</button>
     <button class="btn btn-outline-dark @(tab2? "active-tab-button" : "")" @onclick="(x => DisplayTab(2))">Container</button>
     <button class="btn btn-outline-dark @(tab3? "active-tab-button" : "")" @onclick="(x => DisplayTab(3))">Accrual Cost</button>
+    <button class="btn btn-outline-dark @(tab4? "active-tab-button" : "")" @onclick="(x => DisplayTab(4))">Actual Cost</button>
 </div>
 
 @if (tab1)
@@ -268,6 +269,36 @@
     <button class="btn btn-primary mt-4" @onclick="InsertShipmentCharge" disabled=@chargesPresent>Save</button>
 }
 
+@if (tab4)
+{
+    <div class="result-container py-4" style="max-width:80vw">
+        <QuickGrid Items="@actualCharges">
+            <PropertyColumn Title="Charge Code" Property="@(c => c.Charge_Code)" Sortable="true" />
+            <PropertyColumn Title="Charge Name" Property="@(c => c.Charge_Name)" Sortable="true" />
+            <PropertyColumn Title="Creditor Name" Property="@(c => c.Creditor_Name)" Sortable="true" />
+            <PropertyColumn Title="Charge Currency" Property="@(c => c.Charge_Currency)" Sortable="true" />
+            <PropertyColumn Title="Charge Ex Rate" Property="@(c => c.Charge_Ex_Rate)" Sortable="true" />
+            <PropertyColumn Title="VAT Code" Property="@(c => c.VAT_Code)" Sortable="true" />
+            <PropertyColumn Title="AP Invoice No." Property="@(c => c.AP_Invoice_No)" Sortable="true" />
+            <PropertyColumn Title="AP Invoice Date" Property="@(c => c.AP_Invoice_Date)" Sortable="true" />
+            <PropertyColumn Title="AP Invoice Due Date" Property="@(c => c.AP_Invoice_Due_Date)" Sortable="true" />
+            <PropertyColumn Title="AP Charge Currency" Property="@(c => c.AP_Charge_Currency)" Sortable="true" />
+            <PropertyColumn Title="AP Charge Ex Rate" Property="@(c => c.AP_Charge_Ex_Rate)" Sortable="true" />
+            <PropertyColumn Title="Charge Act Cost VAT OS Amount" Property="@(c => c.Charge_Act_Cost_VAT_OS_Amount)" Sortable="true" />
+            <PropertyColumn Title="Charge Act Cost Net OS Amount" Property="@(c => c.Charge_Act_Cost_Net_OS_Amount)" Sortable="true" />
+            <PropertyColumn Title="Charge Act Cost Gross OS Amount" Property="@(c => c.Charge_Act_Cost_Gross_OS_Amount)" Sortable="true" />
+            <PropertyColumn Title="Charge Act Cost VAT Amount" Property="@(c => c.Charge_Act_Cost_VAT_Amount)" Sortable="true" />
+            <PropertyColumn Title="Charge Act Cost Net Amount" Property="@(c => c.Charge_Act_Cost_Net_Amount)" Sortable="true" />
+            <PropertyColumn Title="Charge Act Cost Gross Amount" Property="@(c => c.Charge_Act_Cost_Gross_Amount)" Sortable="true" />
+            <PropertyColumn Title="AP Invoice Net Total Amount" Property="@(c => c.AP_Invoice_Net_Total_Amount)" Sortable="true" />
+            <PropertyColumn Title="AP Invoice VAT Total Amount" Property="@(c => c.AP_Invoice_VAT_Total_Amount)" Sortable="true" />
+            <PropertyColumn Title="AP Invoice Gross Total Amount" Property="@(c => c.AP_Invoice_Gross_Total_Amount)" Sortable="true" />
+            <PropertyColumn Title="AP Invoice Audit Status" Property="@(c => c.AP_Invoice_Audit_Status)" Sortable="true" />
+            <PropertyColumn Title="AP Invoice Audit Date" Property="@(c => c.AP_Invoice_Audit_Date)" Sortable="true" />
+        </QuickGrid>
+    </div>
+}
+
 <style>
     table {
         font-family: arial, sans-serif;
@@ -302,6 +333,7 @@
     private bool tab1 = true;
     private bool tab2 = false;
     private bool tab3 = false;
+    private bool tab4 = false;
 
     public void DisplayTab(int tabNumber)
     {
@@ -310,12 +342,14 @@
             this.tab1 = true;
             this.tab2 = false;
             this.tab3 = false;
+            this.tab4 = false;
         }
         if (tabNumber == 2)
         {
             this.tab1 = false;
             this.tab2 = true;
             this.tab3 = false;
+            this.tab4 = false;
         }
 
         if (tabNumber == 3)
@@ -323,6 +357,19 @@
             this.tab1 = false;
             this.tab2 = false;
             this.tab3 = true;
+            this.tab4 = false;
+        }
+
+        if (tabNumber == 4)
+        {
+            this.tab1 = false;
+            this.tab2 = false;
+            this.tab3 = false;
+            this.tab4 = true;
+            if (!isActualFetched)
+            {
+                FetchActualCharges();
+            }
         }
     }
 
@@ -514,5 +561,17 @@
         var responseContent = await response.Content.ReadAsStringAsync();
         Tuple<List<ShipmentCharge>, List<string>> result = JsonConvert.DeserializeObject<Tuple<List<ShipmentCharge>, List<string>>>(responseContent);
         return result;
+    }
+
+    //fetching actual costs
+    IQueryable<ActualShipmentCharge> actualCharges = Enumerable.Empty<ActualShipmentCharge>().AsQueryable();
+    bool isActualFetched = false;
+
+    private async Task FetchActualCharges()
+    {
+        isActualFetched = true;
+        var result = await HttpClient.GetFromJsonAsync<List<ActualShipmentCharge>>($"{NavManager.BaseUri}api/shipment/FetchActualCharges/{Shipment_Job_No}");
+        actualCharges = result.AsQueryable();
+        StateHasChanged();
     }
 }

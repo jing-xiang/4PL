@@ -294,6 +294,14 @@ namespace _4PL.Data
             return Ok(result);
         }
 
+        [HttpGet("FetchActualCharges/{Shipment_Job_No}")]
+        public IActionResult fetchActualCharges(string Shipment_Job_No)
+        {
+            List<ActualShipmentCharge> actualCharges = new();
+            actualCharges = _dbcontext.fetchActualCharges(Shipment_Job_No);
+            return Ok(actualCharges);
+        }
+
         [HttpPost("CreateShipmentCharges")]
         public IActionResult CreateShipmentCharges([FromBody] List<ShipmentCharge> shipmentcharges)
         { 
