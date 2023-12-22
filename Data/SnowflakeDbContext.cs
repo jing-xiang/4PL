@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using _4PL.Components.Account.Pages.Manage;
+using System.ComponentModel;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace _4PL.Data
@@ -1900,6 +1901,167 @@ namespace _4PL.Data
                 return result;
             }
         }
+
+
+        public List<RateCard> GetShipmentRatecards(Shipment s)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+
+                List<RateCard> ratecards = new List<RateCard>();
+
+                using (IDbCommand command = conn.CreateCommand())
+                {
+
+                    command.CommandText = @$"SELECT * FROM DEV_RL_DB.HWL_4PL.RATECARDS
+                        WHERE POL_PORT ILIKE :Place_Of_Loading_ID
+                        AND POD_PORT ILIKE :Place_Of_Discharge_ID
+                        AND CREDITOR_MATCHCODE ILIKE :Carrier_Matchcode
+                        AND CONTAINER_MODE ILIKE :Container_Mode
+                        AND :ETD >= RATE_VALIDITY_FROM
+                        AND :ETD <= RATE_VALIDITY_TO
+                    ";
+
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Place_Of_Loading_ID", Value = s.Place_Of_Loading_ID, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Place_Of_Discharge_ID", Value = s.Place_Of_Discharge_ID, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Carrier_Matchcode", Value = s.Carrier_Matchcode, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Container_Mode", Value = s.Container_Mode, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "ETD", Value = s.ETD_Date, DbType = DbType.Date });
+
+                    IDataReader reader = command.ExecuteReader();
+
+                    //Read result
+                    while (reader.Read())
+                    {
+                        RateCard rc = new RateCard();
+
+                        rc.Id = Guid.Parse(reader.GetString(reader.GetOrdinal("ID")));
+                        rc.Lane_ID = reader.GetString(reader.GetOrdinal("LANE_ID"));
+                        rc.Controlling_Customer_Matchcode = reader.GetString(reader.GetOrdinal("CONTROLLING_CUSTOMER_MATCHCODE"));
+                        rc.Controlling_Customer_Name = reader.GetString(reader.GetOrdinal("CONTROLLING_CUSTOMER_NAME"));
+                        rc.Transport_Mode = reader.GetString(reader.GetOrdinal("TRANSPORT_MODE"));
+                        rc.Function = reader.GetString(reader.GetOrdinal("FUNC"));
+                        rc.Rate_Validity_From = reader.GetDateTime(reader.GetOrdinal("RATE_VALIDITY_FROM"));
+                        rc.Rate_Validity_To = reader.GetDateTime(reader.GetOrdinal("RATE_VALIDITY_TO"));
+                        rc.POL_Name = reader.GetString(reader.GetOrdinal("POL_NAME"));
+                        rc.POL_Country = reader.GetString(reader.GetOrdinal("POL_COUNTRY"));
+                        rc.POL_Port = reader.GetString(reader.GetOrdinal("POL_PORT"));
+                        rc.POD_Name = reader.GetString(reader.GetOrdinal("POD_NAME"));
+                        rc.POD_Country = reader.GetString(reader.GetOrdinal("POD_COUNTRY"));
+                        rc.POD_Port = reader.GetString(reader.GetOrdinal("POD_PORT"));
+                        rc.Creditor_Matchcode = reader.GetString(reader.GetOrdinal("CREDITOR_MATCHCODE"));
+                        rc.Creditor_Name = reader.GetString(reader.GetOrdinal("CREDITOR_NAME"));
+                        rc.Pickup_Address = reader.GetString(reader.GetOrdinal("PICKUP_ADDRESS_NAME"));
+                        rc.Delivery_Address = reader.GetString(reader.GetOrdinal("DELIVERY_ADDRESS_NAME"));
+                        rc.Dangerous_Goods = reader.GetString(reader.GetOrdinal("DANGEROUS_GOODS"));
+                        rc.Temperature_Controlled = reader.GetString(reader.GetOrdinal("TEMPERATURE_CONTROLLED"));
+                        rc.Container_Mode = reader.GetString(reader.GetOrdinal("CONTAINER_MODE"));
+                        rc.Container_Type = reader.GetString(reader.GetOrdinal("CONTAINER_TYPE"));
+
+                        ratecards.Add(rc);
+
+                    }
+                }
+
+                return ratecards;
+
+            }
+        }
+
+        public void InsertShipmentCharge(ShipmentCharge sc)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = @$"CALL CREATE_SHIPMENT_CHARGE (:SHIPMENT_JOB_NO, :CHARGE_CODE, :CHARGE_NAME, :CREDITOR_NAME, :OS_CHARGE_CURRENCY, :CHARGE_CURRENCY, :CHARGE_EX_RATE, 
+                        :VAT_CODE, :CHARGE_EST_COST_NET_OS_AMOUNT, :CHARGE_EST_COST_NET_AMOUNT, :LANE_ID, :REMARKS)";
+
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "SHIPMENT_JOB_NO", Value = sc.Shipment_Job_No, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "CHARGE_CODE", Value = sc.Charge_Code, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "CHARGE_NAME", Value = sc.Charge_Name, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "CREDITOR_NAME", Value = sc.Creditor_Name, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "OS_CHARGE_CURRENCY", Value = sc.OS_Charge_Currency, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "CHARGE_CURRENCY", Value = sc.Charge_Currency, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "CHARGE_EX_RATE", Value = sc.Charge_Ex_Rate, DbType = DbType.Double });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "VAT_CODE", Value = sc.VAT_Code, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "CHARGE_EST_COST_NET_OS_AMOUNT", Value = sc.Charge_Est_Cost_Net_OS_Amount, DbType = DbType.Double });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "CHARGE_EST_COST_NET_AMOUNT", Value = sc.Charge_Est_Cost_Net_Amount, DbType = DbType.Double });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "LANE_ID", Value = sc.Lane_ID, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "REMARKS", Value = sc.Remarks, DbType = DbType.String });
+
+                    command.ExecuteNonQuery();
+
+                }
+            }
+
+        }
+
+        public List<ShipmentCharge> fetchShipmentCharges(string Shipment_Job_No)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                List<ShipmentCharge> result = new List<ShipmentCharge>();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = @$"SELECT * FROM DEV_RL_DB.HWL_4PL.SHIPMENT_ACCRUAL_COST WHERE SHIPMENT_JOB_NO = :Shipment_Job_No";
+
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Shipment_Job_No", Value = Shipment_Job_No, DbType = DbType.String });
+                    IDataReader reader = command.ExecuteReader();
+
+                    //Read result
+                    while (reader.Read())
+                    {
+                        ShipmentCharge sc = new ShipmentCharge();
+                        sc.Shipment_Job_No = reader.GetString(reader.GetOrdinal("SHIPMENT_JOB_NO"));
+                        sc.Charge_Code = reader.GetString(reader.GetOrdinal("CHARGE_CODE"));
+                        sc.Charge_Name = reader.GetString(reader.GetOrdinal("CHARGE_NAME"));
+                        sc.Creditor_Name = reader.GetString(reader.GetOrdinal("CREDITOR_NAME"));
+                        sc.OS_Charge_Currency = reader.GetString(reader.GetOrdinal("OS_CHARGE_CURRENCY"));
+                        sc.Charge_Currency = reader.GetString(reader.GetOrdinal("CHARGE_CURRENCY"));
+                        sc.Charge_Ex_Rate = reader.GetDouble(reader.GetOrdinal("CHARGE_EX_RATE"));
+                        sc.VAT_Code = reader.GetString(reader.GetOrdinal("VAT_CODE"));
+                        sc.Charge_Est_Cost_Net_OS_Amount = reader.GetDecimal(reader.GetOrdinal("CHARGE_EST_COST_NET_OS_AMOUNT"));
+                        sc.Charge_Est_Cost_Net_Amount = reader.GetDecimal(reader.GetOrdinal("CHARGE_EST_COST_NET_AMOUNT"));
+                        sc.Lane_ID = reader.GetString(reader.GetOrdinal("LANE_ID"));
+                        sc.Remarks = reader.GetString(reader.GetOrdinal("REMARKS"));
+                        result.Add(sc);
+                    }
+                }
+                return result;
+            }
+        }
+
+        public int DeleteShipmentCharge(string Shipment_Job_No, string Charge_Name)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    Console.Write(Charge_Name);
+                    command.CommandText = $@"CALL DEV_RL_DB.HWL_4PL.DELETE_SHIPMENT_CHARGE(:Shipment_Job_No, :Charge_Name)";
+
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Shipment_Job_No", Value = Shipment_Job_No, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Charge_Name", Value = Charge_Name, DbType = DbType.String });
+
+                    var result = command.ExecuteScalar();
+                    if (result != DBNull.Value)
+                    {
+                        return Int32.Parse(result.ToString());
+                    }
+                    else
+                    {
+                        throw new Exception($"Failed to delete shipment charge (Job_No: {Shipment_Job_No}, Container_No: {Charge_Name})");
+                    }
+                }
+            }
+        }
+
     }
     
 }
