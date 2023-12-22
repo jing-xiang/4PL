@@ -1988,7 +1988,7 @@ namespace _4PL.Data
                 using (IDbCommand command = conn.CreateCommand())
                 {
                     command.CommandText = @$"CALL CREATE_SHIPMENT_CHARGE (:SHIPMENT_JOB_NO, :CHARGE_CODE, :CHARGE_NAME, :CREDITOR_NAME, :OS_CHARGE_CURRENCY, :CHARGE_CURRENCY, :CHARGE_EX_RATE, 
-                        :VAT_CODE, :CHARGE_EST_COST_NET_OS_AMOUNT, :CHARGE_EST_COST_NET_AMOUNT, :LANE_ID, :REMARKS)";
+                        :VAT_CODE, :CHARGE_EST_COST_NET_OS_AMOUNT, :CHARGE_EST_COST_NET_AMOUNT, :LANE_ID, :REMARKS, :CHARGE_EST_COST_VAT_OS_AMOUNT, :CHARGE_EST_COST_VAT_AMOUNT)";
 
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "SHIPMENT_JOB_NO", Value = sc.Shipment_Job_No, DbType = DbType.String });
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "CHARGE_CODE", Value = sc.Charge_Code, DbType = DbType.String });
@@ -2002,6 +2002,8 @@ namespace _4PL.Data
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "CHARGE_EST_COST_NET_AMOUNT", Value = sc.Charge_Est_Cost_Net_Amount, DbType = DbType.Double });
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "LANE_ID", Value = sc.Lane_ID, DbType = DbType.String });
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "REMARKS", Value = sc.Remarks, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "CHARGE_EST_COST_VAT_OS_AMOUNT", Value = sc.Charge_Est_Cost_VAT_OS_Amount, DbType = DbType.Double });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "CHARGE_EST_COST_VAT_AMOUNT", Value = sc.Charge_Est_Cost_VAT_Amount, DbType = DbType.Double });
 
                     command.ExecuteNonQuery();
 
@@ -2039,6 +2041,8 @@ namespace _4PL.Data
                         sc.Charge_Est_Cost_Net_Amount = reader.GetDecimal(reader.GetOrdinal("CHARGE_EST_COST_NET_AMOUNT"));
                         sc.Lane_ID = reader.GetString(reader.GetOrdinal("LANE_ID"));
                         sc.Remarks = reader.GetString(reader.GetOrdinal("REMARKS"));
+                        sc.Charge_Est_Cost_VAT_OS_Amount = reader.GetDecimal(reader.GetOrdinal("CHARGE_EST_COST_VAT_OS_AMOUNT"));
+                        sc.Charge_Est_Cost_VAT_Amount = reader.GetDecimal(reader.GetOrdinal("CHARGE_EST_COST_VAT_AMOUNT"));
                         result.Add(sc);
                     }
                 }

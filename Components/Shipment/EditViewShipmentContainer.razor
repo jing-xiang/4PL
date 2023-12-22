@@ -125,19 +125,19 @@
 @if (tab2)
 {
     <EditForm Model="container" OnSubmit="InsertContainer" Enhance>
-     <label>Container No</label>
-     <InputText @bind-Value="container.Container_No" disabled=@isView />
+         <label>Container No</label>
+         <InputText @bind-Value="container.Container_No" disabled=@isView />
 
-     <label>Container Type</label>
-     <InputText @bind-Value="container.Container_Type" disabled=@isView />
+         <label>Container Type</label>
+         <InputText @bind-Value="container.Container_Type" disabled=@isView />
 
-     <label>Seal No 1</label>
-     <InputText @bind-Value="container.Seal_No_1" disabled=@isView />
+         <label>Seal No 1</label>
+         <InputText @bind-Value="container.Seal_No_1" disabled=@isView />
 
-     <label>Seal No 2</label>
-     <InputText @bind-Value="container.Seal_No_2" disabled=@isView />
-     <button class ="btn btn-primary" type="submit" disabled=@(isView||chargesPresent)>Save</button>
- </EditForm>
+         <label>Seal No 2</label>
+         <InputText @bind-Value="container.Seal_No_2" disabled=@isView />
+         <button class ="btn btn-primary" type="submit" disabled=@(isView||chargesPresent)>Save</button>
+     </EditForm>
 
     <div class="result-container py-4" style="max-width:80vw">
         <QuickGrid Items="@containers">
@@ -154,6 +154,94 @@
 
 @if (tab3)
 {
+    <EditForm Model="sc" OnSubmit="AddShipmentCharge" Enhance>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="form-group">
+                    <label class="control-label">Charge Code</label>
+                    <InputText @bind-Value="sc.Charge_Code" disabled="@isView" class="form-control" />
+                </div>
+
+                <div class="form-group">
+                    <label class="control-label">Charge Name</label>
+                    <InputText @bind-Value="sc.Charge_Name" disabled="@isView" class="form-control" />
+                </div>
+
+                <div class="form-group">
+                    <label class="control-label">Creditor Name</label>
+                    <InputText @bind-Value="sc.Creditor_Name" disabled="@isView" class="form-control" />
+                </div>
+
+                <div class="form-group">
+                     <label class="control-label">Charge Ex Rate</label>
+                     <InputNumber @bind-Value="sc.Charge_Ex_Rate" disabled="@isView" class="form-control" />
+                </div>
+
+                 <div class="form-group">
+                     <label class="control-label">VAT Code</label>
+                     <InputText @bind-Value="sc.VAT_Code" disabled="@isView" class="form-control" />
+                 </div>
+            </div>
+        </div>
+
+        <div class="row">
+        <div class="col-md-6">
+            <div class="form-group">
+                <label class="control-label">OS Charge Currency</label>
+                <InputText @bind-Value="sc.OS_Charge_Currency" disabled="@isView" class="form-control" />
+            </div>
+
+             <div class="form-group">
+                 <label class="control-label">Charge Est Cost VAT OS Amount</label>
+                 <InputNumber @bind-Value="sc.Charge_Est_Cost_VAT_OS_Amount" disabled="@isView" class="form-control" />
+             </div>
+
+             <div class="form-group">
+                 <label class="control-label">Charge Est Cost Net OS Amount</label>
+                 <InputNumber @bind-Value="sc.Charge_Est_Cost_Net_OS_Amount" disabled="@isView" class="form-control" />
+             </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="form-group">
+                <label class="control-label">Charge Currency</label>
+                <InputText @bind-Value="sc.Charge_Currency" disabled="@isView" class="form-control" />
+            </div>
+
+             <div class="form-group">
+                 <label class="control-label">Charge Est Cost VAT Amount</label>
+                 <InputNumber @bind-Value="sc.Charge_Est_Cost_VAT_Amount" disabled="@isView" class="form-control" />
+             </div>
+
+             <div class="form-group">
+                 <label class="control-label">Charge Est Cost Net Amount</label>
+                 <InputNumber @bind-Value="sc.Charge_Est_Cost_Net_Amount" disabled="@isView" class="form-control" />
+             </div>
+            
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+             <div class="form-group">
+                 <label class="control-label">Lane ID</label>
+                 <InputText @bind-Value="sc.Lane_ID" disabled="@isView" class="form-control" />
+             </div>
+
+            <div class="form-group">
+                <label class="control-label">Remarks</label>
+                <InputText @bind-Value="sc.Remarks" disabled="@isView" class="form-control" multiline="true" rows="5" />
+            </div>
+        </div>
+    </div>
+
+    <div class="row pt-2 pb-4">
+        <div class="col-md-12">
+            <button class="btn btn-primary" type="submit" disabled="@isView">Save</button>
+        </div>
+    </div>
+</EditForm>
+
     <button class="btn btn-success" @onclick="HandleAutoRating" disabled=@chargesPresent>Auto Rating</button>
     <div class="result-container py-4" style="max-width:80vw">
     <QuickGrid Items="@charges">
@@ -164,12 +252,12 @@
         <PropertyColumn Title="Charge Currency" Property="@(c => c.Charge_Currency)" Sortable="true" />
         <PropertyColumn Title="Charge Ex Rate" Property="@(c => c.Charge_Ex_Rate)" Sortable="true" />
         <PropertyColumn Title="VAT Code" Property="@(c => c.VAT_Code)" Sortable="true" />
-        <PropertyColumn Title="Charge Est Cost VAT OS Amount" Property="@(c => 0.00)" Sortable="true" />
+        <PropertyColumn Title="Charge Est Cost VAT OS Amount" Property="@(c => c.Charge_Est_Cost_VAT_OS_Amount)" Sortable="true" />
         <PropertyColumn Title="Charge Est Cost Net OS Amount" Property="@(c => c.Charge_Est_Cost_Net_OS_Amount)" Sortable="true" />
-        <PropertyColumn Title="Charge Est Cost Gross OS Amount" Property="@(c => c.Charge_Est_Cost_Net_OS_Amount)" Sortable="true" />
-        <PropertyColumn Title="Charge Est Cost VAT Amount" Property="@(c => 0.00)" Sortable="true" />
+        <PropertyColumn Title="Charge Est Cost Gross OS Amount" Property="@(c => c.Charge_Est_Cost_Net_OS_Amount + c.Charge_Est_Cost_VAT_OS_Amount)" Sortable="true" />
+        <PropertyColumn Title="Charge Est Cost VAT Amount" Property="@(c => @c.Charge_Est_Cost_VAT_Amount)" Sortable="true" />
         <PropertyColumn Title="Charge Est Cost Net Amount" Property="@(c => c.Charge_Est_Cost_Net_Amount)" Sortable="true" />
-        <PropertyColumn Title="Charge Est Cost Gross Amount" Property="@(c => c.Charge_Est_Cost_Net_Amount)" Sortable="true" />
+        <PropertyColumn Title="Charge Est Cost Gross Amount" Property="@(c => c.Charge_Est_Cost_Net_Amount + c.Charge_Est_Cost_VAT_Amount)" Sortable="true" />
         <PropertyColumn Title="Lane ID" Property="@(c => c.Lane_ID)" Sortable="true" />
         <PropertyColumn Title="Remarks" Property="@(c => c.Remarks)" Sortable="true" />
         <TemplateColumn Title="Actions">
@@ -242,6 +330,7 @@
     [SupplyParameterFromForm]
     Shipment shipment { get; set; } = new();
     Container container { get; set; } = new();
+    ShipmentCharge sc { get; set; } = new();
 
     List<ShipmentCharge> chargesTemp = new();
     IQueryable<ShipmentCharge> charges = Enumerable.Empty<ShipmentCharge>().AsQueryable();
@@ -309,6 +398,14 @@
         StateHasChanged();
     }
 
+    async Task AddShipmentCharge()
+    {
+        chargesTemp.Add(sc);
+        charges = chargesTemp.AsQueryable();
+        StateHasChanged();
+        sc = new ShipmentCharge();
+    }
+
     async Task InsertShipmentCharge()
     {
         if (!chargesTemp.Any())
@@ -334,8 +431,10 @@
         }
         else
         {
+            chargesTemp.RemoveAll(c => c.Charge_Name == Charge_Name && c.Shipment_Job_No == Shipment_Job_No);
+            charges = chargesTemp.AsQueryable();
             string encodedChargeName = Uri.EscapeDataString(Charge_Name);
-            Console.WriteLine(encodedChargeName);
+
             var response = await HttpClient.DeleteAsync($"{NavManager.BaseUri}api/shipment/DeleteShipmentCharge/{Shipment_Job_No}/{encodedChargeName}");
             if (response.IsSuccessStatusCode)
             {
