@@ -26,13 +26,18 @@
     tr:nth-child(even) {
         background-color: #dddddd;
     }
+
+    .active-tab-button {
+        background-color: #2b2d33;
+        color: white;
+    }
 </style>
 
 <h4>Adding Shipment Container</h4>
 
 <div class="tab mb-4">
-    <button @onclick="(x => DisplayTab(1))">Shipment</button>
-    <button @onclick="(x => DisplayTab(2))">Container</button>
+    <button class="btn btn-outline-dark @(tab1? "active-tab-button" : "")" @onclick="(x => DisplayTab(1))">Shipment</button>
+    <button class="btn btn-outline-dark @(tab2? "active-tab-button" : "")" @onclick="(x => DisplayTab(2))">Container</button>
 </div>
 
 @if(tab1)

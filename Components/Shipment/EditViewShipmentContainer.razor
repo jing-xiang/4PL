@@ -12,25 +12,6 @@
 
 @rendermode InteractiveServer
 
-<style>
-    table {
-        font-family: arial, sans-serif;
-        border-collapse: collapse;
-        width: 100%;
-        font-size: 14px;
-    }
-
-    td, th {
-        border: 1px solid #dddddd;
-        text-align: left;
-        padding: 8px;
-    }
-
-    tr:nth-child(even) {
-        background-color: #dddddd;
-    }
-</style>
-
 @if (isView)
 {
     <h4>Shipment Container</h4>
@@ -39,9 +20,9 @@
 }
 
 <div class="tab mb-4">
-    <button @onclick="(x => DisplayTab(1))">Shipment</button>
-    <button @onclick="(x => DisplayTab(2))">Container</button>
-    <button @onclick="(x => DisplayTab(3))">Accrual Cost</button>
+    <button class="btn btn-outline-dark @(tab1? "active-tab-button" : "")" @onclick="(x => DisplayTab(1))">Shipment</button>
+    <button class="btn btn-outline-dark @(tab2? "active-tab-button" : "")" @onclick="(x => DisplayTab(2))">Container</button>
+    <button class="btn btn-outline-dark @(tab3? "active-tab-button" : "")" @onclick="(x => DisplayTab(3))">Accrual Cost</button>
 </div>
 
 @if (tab1)
@@ -200,14 +181,10 @@
 }
 
 <style>
-    .result-container {
-        width: 100%;
-        overflow-x: auto;
-    }
-
     table {
         font-family: arial, sans-serif;
         border-collapse: collapse;
+        width: 100%;
         font-size: 14px;
     }
 
@@ -219,6 +196,16 @@
 
     tr:nth-child(even) {
         background-color: #dddddd;
+    }
+
+    .result-container {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .active-tab-button {
+        background-color: #2b2d33;
+        color: white;
     }
 </style>
 
@@ -311,15 +298,15 @@
 
     async Task HandleAutoRating()
     {
-        chargesTemp = await getShipmentCharges();      
-        if (!chargesTemp.Any())
+        Tuple<List<ShipmentCharge>, List<string>> temp = await getShipmentCharges();
+        chargesTemp = temp.Item1;
+        List<string> containerTypeNoRatecards = temp.Item2;
+        if (containerTypeNoRatecards.Any())
         {
-            await JS.InvokeVoidAsync("alert", $"Failed to locate validate rate card for auto rating.");
-        } else
-        {
-            charges = chargesTemp.AsQueryable();
-            StateHasChanged();
-        }
+            await JS.InvokeVoidAsync("alert", $"Failed to locate validate rate card for auto rating for Container Type(s): " + string.Join(",", containerTypeNoRatecards));
+        } 
+        charges = chargesTemp.AsQueryable();
+        StateHasChanged();
     }
 
     async Task InsertShipmentCharge()
@@ -422,11 +409,11 @@
         return await HttpClient.GetFromJsonAsync<List<ShipmentCharge>>($"{NavManager.BaseUri}api/shipment/ShipmentChargesData/{Shipment_Job_No}");
     }
 
-    async Task<List<ShipmentCharge>> getShipmentCharges()
+    async Task<Tuple<List<ShipmentCharge>, List<string>>> getShipmentCharges()
     {
         HttpResponseMessage response = await HttpClient.PostAsJsonAsync<Shipment>($"{NavManager.BaseUri}api/shipment/ShipmentCharges", shipment);
         var responseContent = await response.Content.ReadAsStringAsync();
-        List<ShipmentCharge> result = JsonConvert.DeserializeObject<List<ShipmentCharge>>(responseContent);
+        Tuple<List<ShipmentCharge>, List<string>> result = JsonConvert.DeserializeObject<Tuple<List<ShipmentCharge>, List<string>>>(responseContent);
         return result;
     }
 }
