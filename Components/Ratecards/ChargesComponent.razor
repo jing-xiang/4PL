@@ -1,0 +1,117 @@
+﻿@page "/ratecard/qg/{ratecardId}"
+
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Components.QuickGrid
+
+@inject HttpClient HttpClient
+@inject IJSRuntime JS
+@inject NavigationManager NavManager
+@inject IConfiguration Configuration
+@using _4PL.Data
+@using Microsoft.AspNetCore.Components.Forms
+@using System.ComponentModel.DataAnnotations
+@using System.Diagnostics
+
+<div class="result-container py-4" style="max-width:80vw">
+    <QuickGrid Items="@charges" Pagination="@pagination">
+        <PropertyColumn Title="Charge ID" Property="@(c => c.Id)" Sortable="true" />
+        <PropertyColumn Title="Charge Description" Property="@(c => c.Charge_Description)" Sortable="true" />
+        <PropertyColumn Title="Calculation Base" Property="@(c => c.Calculation_Base)" Sortable="true" />
+        <PropertyColumn Title="Min" Property="@(c => c.Min)" Sortable="true" />
+        <PropertyColumn Title="OS Unit Price" Property="@(c => c.OS_Unit_Price)" Sortable="true" />
+        <PropertyColumn Title="OS Currency" Property="@(c => c.OS_Currency)" Sortable="true" />
+        <PropertyColumn Title="Unit Price" Property="@(c => c.Unit_Price)" Sortable="true" />
+        <PropertyColumn Title="Currency" Property="@(c => c.Currency)" Sortable="true" />
+        <PropertyColumn Title="Per Percent" Property="@(c => c.Per_Percent)" Sortable="true" />
+        <PropertyColumn Title="Charge Code" Property="@(c => c.Charge_Code)" Sortable="true" />
+
+        <TemplateColumn Title="Actions">
+            <button class="btn btn-sm btn-danger" @onclick="() => DeleteCharge(context.Id.ToString())">Delete</button>
+        </TemplateColumn>
+    </QuickGrid>
+</div>
+<Paginator State="@pagination" />
+
+<style>
+    .result-container {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    table {
+        font-family: arial, sans-serif;
+        border-collapse: collapse;
+        font-size: 14px;
+    }
+
+    td, th {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+    }
+
+    tr:nth-child(even) {
+        background-color: #dddddd;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public string ratecardId { get; set; } = "";
+    Charge charge { get; set; } = new();
+
+    PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
+    IQueryable<Charge> charges = Enumerable.Empty<Charge>().AsQueryable();
+
+
+    // public async void Search()
+    protected override async Task OnInitializedAsync()
+    {
+        await getChargeData();
+    }
+
+    async Task getChargeData()
+    {
+        var result = await HttpClient.GetFromJsonAsync<List<Charge>>($"{NavManager.BaseUri}api/RateCard/GetCharges/{ratecardId}");
+        if (result != null && result.Any())
+        {
+            charges = result.AsQueryable();
+            StateHasChanged();
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", $"No charges found");
+        }
+    }
+
+
+    async Task DeleteCharge(string chargeId)
+    {
+
+        bool confirm = await JS.InvokeAsync<bool>("confirm", "Do you want to delete the charge?");
+
+        if (!confirm)
+        {
+            return;
+        }
+
+        Debug.WriteLine($">>> Logging: {chargeId}");
+
+        HttpResponseMessage result = await HttpClient.DeleteAsync($"{Configuration["ApiBaseUrl"]}/api/RateCard/DeleteCharge/{chargeId}");
+
+        // HttpResponseMessage result = await deleteChargeMethod.Invoke(chargeId);
+
+        Debug.WriteLine($"Logging: {result.StatusCode}");
+
+        if (result.Content.ReadAsStringAsync().Result == "true")
+        {
+            await getChargeData();
+            StateHasChanged();
+            await JS.InvokeVoidAsync("alert", "Charge deleted");
+        }
+
+
+        // NavManager.Refresh(true);
+    }
+
+}

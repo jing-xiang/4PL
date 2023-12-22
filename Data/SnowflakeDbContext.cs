@@ -8,6 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using _4PL.Components.Account.Pages.Manage;
 using System.ComponentModel;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace _4PL.Data
 {
@@ -31,6 +32,7 @@ namespace _4PL.Data
             {
                 conn.Open();
                 bool isDuplicate = false;
+                List<string> access_types = new List<string>();
 
                 using (IDbCommand command = conn.CreateCommand())
                 {
@@ -47,13 +49,36 @@ namespace _4PL.Data
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "token", Value = user.Token, DbType = DbType.String });
 
                     isDuplicate = Convert.ToBoolean(command.ExecuteScalar());
-                }
 
+                }
                 if (isDuplicate)
                 {
                     throw new DuplicateNameException("Account already exists.");
                 }
+                using (IDbCommand command1 = conn.CreateCommand())
+                {
+                    command1.CommandText = $"SELECT * FROM access_model";
+                    using (var reader = command1.ExecuteReader())
+                    {
+
+                        while (reader.Read())
+                        {
+                            //fetch access rights
+                            var accesstype = reader.GetString(0);
+                            //append to array
+                            access_types.Add(accesstype);
+                            Console.WriteLine(accesstype);
+                        }
+                    }
+                }
+                    for (int i = 0; i < access_types.Count; i++)
+                        {
+                            IDbCommand command2 = conn.CreateCommand();
+                            command2.CommandText = $"INSERT INTO access_control (email, access_type, is_accessible) VALUES ('{user.Email}', '{access_types[i]}', false)";
+                            command2.ExecuteScalar();
+                        }
             }
+        
         }
 
         public async Task<IDataReader> GetEmailSettings()
@@ -391,6 +416,8 @@ namespace _4PL.Data
                 Console.WriteLine("command created");
                 command.ExecuteScalar();
                 Console.WriteLine("command executed");
+                command.CommandText = $"DELETE FROM access_control WHERE email = '{email}'";
+                command.ExecuteScalar();
             }
         }
 
@@ -525,7 +552,37 @@ namespace _4PL.Data
                 }
             }
         }
-        
+
+        public async Task AddAccessRights(string access_type, string description, string[] accounts)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = $"UPDATE access_model SET description = '{description}' WHERE access_type = '{access_type}'";
+                    int rowsAffected = command.ExecuteNonQuery();
+
+                    if (rowsAffected == 0)
+                    {
+                        command.CommandText = $"INSERT INTO access_model (access_type, description) VALUES ('{access_type}', '{description}')";
+                        command.ExecuteScalar();
+                        for (int i = 0; i < accounts.Length; i++)
+                        {
+                            command.CommandText = $"INSERT INTO access_control (email, access_type, is_accessible) VALUES ('{accounts[i]}', '{access_type}', false)";
+                            command.ExecuteScalar();
+                        }
+                        Console.WriteLine("access rights added");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Access type '{access_type}' description updated.");
+                    }
+                }
+            }
+        }
+
+
 
         /*
          * Ratecard
@@ -536,7 +593,7 @@ namespace _4PL.Data
          * 2. Creates ratecard (references transactionId)
          * 3. Creates individual charges (references transactionId and ratecardId)
          */
-        public async Task<string> CreateRcTransaction(ApplicationUser user, List<RateCard> ratecards)
+        public async Task<List<string>> CreateRcTransaction(ApplicationUser user, List<RateCard> ratecards)
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
@@ -563,8 +620,15 @@ namespace _4PL.Data
                 }
 
                 //2. Creates ratecard (references transactionId)
+                List<string> ratecardIds = new List<string>();
                 foreach (RateCard ratecard in ratecards)
                 {
+                    //Validate
+                    if (Search(100, 0, ratecard).Count > 0)
+                    {
+                        continue;
+                    }
+
                     string ratecardId;
                     using (IDbCommand command = conn.CreateCommand())
                     {
@@ -621,6 +685,7 @@ namespace _4PL.Data
                         if (result != DBNull.Value)
                         {
                             ratecardId = result.ToString();
+                            ratecardIds.Add(ratecardId);
                             //return result.ToString();
                         }
                         else
@@ -727,7 +792,8 @@ namespace _4PL.Data
                     Console.WriteLine(ratecards.Count);
                 }
 
-                return transactionId;
+                //return transactionId;
+                return ratecardIds;
 
             }
         }
@@ -959,7 +1025,7 @@ namespace _4PL.Data
          * Retrieves charges from ratecard ID
          * 
          */
-        public List<Charge> GetChargesFromRatecardId(string ratecardId, long offset, long limit)
+        public List<Charge> GetChargesFromRatecardId(string ratecardId, long offset=0, long limit=1000)
         {
             List<Charge> charges = new List<Charge>();
 
@@ -1332,27 +1398,6 @@ namespace _4PL.Data
             long limit = 10,
             long offset = 0,
             RateCard formInput = null
-            //string Lane_ID = "%",
-            //string Controlling_Customer_Matchcode = "%",
-            //string Controlling_Customer_Name = "%",
-            //string Transport_Mode = "%",
-            //string Function = "%",
-            //DateTime Rate_Validity_From = new DateTime(),
-            //DateTime Rate_Validity_To = new DateTime(),
-            //string POL_Name = "%",
-            //string POL_Country = "%",
-            //string POL_Port = "%",
-            //string POD_Name = "%",
-            //string POD_Country = "%",
-            //string POD_Port = "%",
-            //string Creditor_Matchcode = "%",
-            //string Creditor_Name = "%",
-            //string Pickup_Address = "%",
-            //string Delivery_Address = "%",
-            //string Dangerous_Goods = "%",
-            //string Temperature_Controlled = "%",
-            //string Container_Mode = "%",
-            //string Container_Type = "%"
         )
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))

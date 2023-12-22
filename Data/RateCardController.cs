@@ -120,9 +120,10 @@ namespace _4PL.Data
         {
 
             List<RateCard> ratecards = ReadRatecardExcel(fileNameWithoutExtension);
-            
+
             //1.Create transaction
-            string transactionId = await _dbContext.CreateRcTransaction(null, ratecards);
+            //string transactionId = await _dbContext.CreateRcTransaction(null, ratecards);
+            List<string> ratecardIds = await _dbContext.CreateRcTransaction(null, ratecards);
 
             //For each rate card, ...
             //foreach (RateCard rc in ratecards)
@@ -135,7 +136,8 @@ namespace _4PL.Data
             //    Console.WriteLine(ratecards.Count);
             //}
 
-            return Ok(transactionId);
+            //return Ok(transactionId);
+            return Ok(ratecardIds);
         }
 
 
@@ -196,33 +198,20 @@ namespace _4PL.Data
             return charge == null ? NotFound() : Ok(charge);
         }
 
+        [HttpGet("GetCharges/{ratecardId}")]
+        public ActionResult GetChargesFromRatecardId(string ratecardId)
+        {
+            List<Charge> charges = _dbContext.GetChargesFromRatecardId(ratecardId);
+
+            return Ok(charges);
+        }
+
         [HttpGet("Search")]
         [HttpPost("Search")]
         public ActionResult search(
             long limit = 10,
             long offset = 0,
             [FromBody] RateCard formInput=null
-            //string Lane_ID = "%", 
-            //string Controlling_Customer_Matchcode = "%", 
-            //string Controlling_Customer_Name = "%",
-            //string Transport_Mode = "%",
-            //string Function = "%",
-            //DateTime Rate_Validity_From = new DateTime(),
-            //DateTime Rate_Validity_To = new DateTime(),
-            //string POL_Name = "%",
-            //string POL_Country = "%",
-            //string POL_Port = "%",
-            //string POD_Name = "%",
-            //string POD_Country = "%",
-            //string POD_Port = "%",
-            //string Creditor_Matchcode = "%",
-            //string Creditor_Name = "%",
-            //string Pickup_Address = "%",
-            //string Delivery_Address = "%",
-            //string Dangerous_Goods = "%",
-            //string Temperature_Controlled = "%",
-            //string Container_Mode = "%",
-            //string Container_Type = "%"
         )
         {
             if (formInput == null)
@@ -238,27 +227,6 @@ namespace _4PL.Data
                 limit,
                 offset,
                 formInput
-                //Lane_ID,
-                //Controlling_Customer_Matchcode,
-                //Controlling_Customer_Name,
-                //Transport_Mode,
-                //Function,
-                //Rate_Validity_From,
-                //Rate_Validity_To,
-                //POL_Name,
-                //POL_Country,
-                //POL_Port,
-                //POD_Name,
-                //POD_Country,
-                //POD_Port,
-                //Creditor_Matchcode,
-                //Creditor_Name,
-                //Pickup_Address,
-                //Delivery_Address,
-                //Dangerous_Goods,
-                //Temperature_Controlled,
-                //Container_Mode,
-                //Container_Type
             ));
         }
 
