@@ -226,7 +226,8 @@ namespace _4PL.Data
             //Charge description : Total cost
             Dictionary<string, ShipmentCharge> chargeCostMap = new Dictionary<string, ShipmentCharge>();
             List<RateCard> ratecards = _dbcontext.GetShipmentRatecards(s);
-
+            Dictionary<string, int> containerTypeNoRatecards = containerTypeCounterMap;
+            Console.WriteLine("count ratecards found: " + ratecards.Count);
             //for loop the ratecard ids, multiply by # of containers for each charge, add to dictionary accordingly
             foreach (RateCard r in ratecards)
             {
@@ -235,6 +236,11 @@ namespace _4PL.Data
                 {
                     containerCount = containerTypeCounterMap[r.Container_Type];
                 }
+                Console.WriteLine("before remove " + string.Join(", ", containerTypeNoRatecards.Keys.ToList()));
+                containerTypeNoRatecards.Remove(r.Container_Type);
+                Console.WriteLine(r.Container_Type);
+                Console.WriteLine(containerTypeCounterMap.ContainsKey(r.Container_Type));
+                Console.WriteLine("after remove " + string.Join(", ", containerTypeNoRatecards.Keys.ToList()));
                 List<Charge> charges = _dbcontext.GetChargesFromRatecardId(r.Id.ToString(), 0, 100);
                 foreach (Charge c in charges)
                 {
@@ -282,7 +288,10 @@ namespace _4PL.Data
             {
                 shipmentCharges.Add(kvp.Value);
             }
-            return Ok(shipmentCharges);
+
+            List<string> containerTypeNoRatecardslist = containerTypeNoRatecards.Keys.ToList();
+            Tuple<List<ShipmentCharge>, List<string>> result = new Tuple<List<ShipmentCharge>, List<string>>(shipmentCharges, containerTypeNoRatecardslist);
+            return Ok(result);
         }
 
         [HttpPost("CreateShipmentCharges")]
