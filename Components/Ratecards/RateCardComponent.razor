@@ -19,28 +19,28 @@ else
                 <table class="table table-bordered">
                     <thead class="thead-light">
                         <tr>
-                            <th>RatecardID</th>
-                            <th>LaneID</th>
-                            <th>Transport_Mode</th>
-                            <th>Controlling_Customer_Matchcode</th>
-                            <th>Controlling_Customer_Name</th>
-                            <th>Transport_Mode</th>
+                            <th>Ratecard ID</th>
+                            <th>Lane ID</th>
+                            <th>Transport Mode</th>
+                            <th>Controlling Customer Matchcode</th>
+                            <th>Controlling Customer Name</th>
+                            <th>Transport Mode</th>
                             <th>Function</th>
-                            <th>Rate_Validity_From</th>
-                            <th>Rate_Validity_To</th>
-                            <th>POL_Name</th>
-                            <th>POL_Country</th>
-                            <th>POL_Port</th>
-                            <th>POD_Name</th>
-                            <th>POD_Country</th>
-                            <th>POD_Port</th>
-                            <th>Creditor_Matchcode</th>
-                            <th>Pickup_Address</th>
-                            <th>Delivery_Address</th>
-                            <th>Dangerous_Goods</th>
-                            <th>Temperature_Controlled</th>
-                            <th>Container_Mode</th>
-                            <th>Container_Type</th>
+                            <th>Rate Validity From</th>
+                            <th>Rate Validity To</th>
+                            <th>POL Name</th>
+                            <th>POL Country</th>
+                            <th>POL Port</th>
+                            <th>POD Name</th>
+                            <th>POD Country</th>
+                            <th>POD Port</th>
+                            <th>Creditor Matchcode</th>
+                            <th>Pickup Address</th>
+                            <th>Delivery Address</th>
+                            <th>Dangerous Goods</th>
+                            <th>Temperature Controlled</th>
+                            <th>Container Mode</th>
+                            <th>Container Type</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -86,31 +86,7 @@ else
 
             else
             {
-                <table class="table table-bordered table-bordered">
-                    <thead class="thead-light">
-                        <tr>
-                            <th>Charge Id</th>
-                            <th>Charge Charge_Description</th>
-                            <th>Charge Calculation_Base</th>
-                            <th>Charge Min</th>
-                            <th>Charge OS_Unit_Price</th>
-                            <th>Charge OS_Currency</th>
-                            <th>Charge Unit_Price</th>
-                            <th>Charge Currency</th>
-                            <th>Charge Per_Percent</th>
-                            <th>Charge Charge_Code</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        @foreach (string chargeId in chargeIds)
-                        {
-                            <ChargeComponent chargeId="@chargeId" deleteChargeMethod="@deleteChargeMethod"></ChargeComponent>
-                        }
-                    </tbody>
-
-                </table>
+                <ChargesComponent ratecardId="@ratecardId"></ChargesComponent>
             }
 
         </div>
@@ -174,7 +150,8 @@ else
         if (result.Content.ReadAsStringAsync().Result == "true")
         {
             rc = null;
-            // StateHasChanged();
+            StateHasChanged();
+            await JS.InvokeVoidAsync("alert", "Ratecard and its associated charges deleted");
         }
 
         // NavManager.Refresh(true);

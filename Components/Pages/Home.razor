@@ -8,6 +8,11 @@
 
 @inject NavigationManager NavigationManager
 
+<h2>
+<AuthorizeView>
+    Hello, @context.User.Identity?.Name!
+</AuthorizeView>
+</h2>
 <div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">Mondelez</a>
@@ -24,12 +29,12 @@
         <AuthorizeView>
             <Authorized>
                 <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="auth">
+                    <NavLink class="nav-link" href="ratecard">
                         <span class="bi bi-lock-nav-menu" aria-hidden="true"></span> Rate Card
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="auth">
+                    <NavLink class="nav-link" href="shipment">
                         <span class="bi bi-lock-nav-menu" aria-hidden="true"></span> Shipment 
                     </NavLink>
                 </div>
@@ -41,6 +46,11 @@
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="Admin">
                         <span class="bi bi-person-badge-nav-menu" aria-hidden="true"></span> Maintenance
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="Account/AccessRights">
+                        <span class="bi bi-person-badge-nav-menu" aria-hidden="true"></span> Manage Access Rights
                     </NavLink>
                 </div>
             </Authorized>
