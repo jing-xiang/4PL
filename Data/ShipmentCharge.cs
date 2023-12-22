@@ -14,6 +14,8 @@
         public decimal Charge_Est_Cost_Net_Amount { get; set; }
         public string Lane_ID { get; set; }
         public string Remarks { get; set; }
+        public decimal Charge_Est_Cost_VAT_OS_Amount { get; set; }
+        public decimal Charge_Est_Cost_VAT_Amount { get; set; }
 
         public ShipmentCharge()
         {
@@ -29,6 +31,8 @@
             this.Charge_Est_Cost_Net_Amount = 0;
             this.Lane_ID = "";
             this.Remarks = "FREETEXT";
+            this.Charge_Est_Cost_VAT_OS_Amount = 0;
+            this.Charge_Est_Cost_VAT_Amount = 0;
         }
     }
 }
