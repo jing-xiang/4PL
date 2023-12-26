@@ -227,6 +227,10 @@
 
     <div class="row pt-2 pb-4">
         <div class="col-md-12">
+             @if (isEditingShipmentCharge)
+                {
+                    <button class="btn btn-outline-dark" type="button" disabled="@isView" @onclick="CancelShipmentChargeEdit" style="margin-right: 5px">Cancel</button>
+                }
             <button class="btn btn-primary" type="submit" disabled="@isView">@(isEditingShipmentCharge ? "Edit Shipment Charge" : "Add Shipment Charge")</button>
         </div>
     </div>
@@ -464,6 +468,12 @@
     {
         sc = scInput;
         isEditingShipmentCharge = true;
+    }
+
+    async Task CancelShipmentChargeEdit()
+    {
+        sc = new();
+        isEditingShipmentCharge = false;
     }
 
     decimal CalculateExchangeRate(ShipmentCharge sc)
