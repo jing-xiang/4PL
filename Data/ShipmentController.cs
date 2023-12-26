@@ -242,17 +242,18 @@ namespace _4PL.Data
                         if (chargeCostMap.ContainsKey(c.Charge_Description))
                         {
                             ShipmentCharge temp = chargeCostMap[c.Charge_Description];
-                            temp.Remarks += $"\n {containerCount} {r.Container_Type} @ {c.OS_Unit_Price} {c.OS_Currency}/Container";
+                            
                             if (string.Equals(c.Calculation_Base, "Per Container", StringComparison.CurrentCultureIgnoreCase))
                             {
-
                                 temp.Charge_Est_Cost_Net_OS_Amount += c.OS_Unit_Price * containerCount;
                                 temp.Charge_Est_Cost_Net_Amount += c.Unit_Price * containerCount;
+                                temp.Remarks += $"\n {containerCount} {r.Container_Type} @ {c.OS_Unit_Price} {c.OS_Currency}/Container";
                             }
                             else
                             {
                                 temp.Charge_Est_Cost_Net_OS_Amount += c.OS_Unit_Price;
                                 temp.Charge_Est_Cost_Net_Amount += c.Unit_Price;
+                                temp.Remarks += $"\n {containerCount} {r.Container_Type} @ {c.OS_Unit_Price} {c.OS_Currency}";
                             }
                             chargeCostMap[c.Charge_Description] = temp;
                         }
@@ -265,16 +266,18 @@ namespace _4PL.Data
                             newCharge.Charge_Currency = c.Currency;
                             newCharge.Creditor_Name = r.Creditor_Name;
                             newCharge.Lane_ID = r.Lane_ID;
-                            newCharge.Remarks = $"{c.Charge_Code}: {containerCount} {r.Container_Type} @ {c.OS_Unit_Price} {c.OS_Currency}/Container";
+                          
                             if (string.Equals(c.Calculation_Base, "Per Container", StringComparison.CurrentCultureIgnoreCase))
                             {
                                 newCharge.Charge_Est_Cost_Net_OS_Amount += c.OS_Unit_Price * containerCount;
                                 newCharge.Charge_Est_Cost_Net_Amount += c.Unit_Price * containerCount;
+                                newCharge.Remarks = $"{c.Charge_Code}: {containerCount} {r.Container_Type} @ {c.OS_Unit_Price} {c.OS_Currency}/Container";
                             }
                             else
                             {
                                 newCharge.Charge_Est_Cost_Net_OS_Amount += c.OS_Unit_Price;
                                 newCharge.Charge_Est_Cost_Net_Amount += c.Unit_Price;
+                                newCharge.Remarks = $"{c.Charge_Code}: {containerCount} {r.Container_Type} @ {c.OS_Unit_Price} {c.OS_Currency}";
                             }
                             chargeCostMap[c.Charge_Description] = newCharge;
                         }
