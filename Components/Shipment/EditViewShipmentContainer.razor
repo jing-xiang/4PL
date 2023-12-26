@@ -33,84 +33,84 @@
 
         <!-- Left Column -->
         <div style="flex: 1; padding-right: 20px;">
-            <div><label>Job No</label></div>
-            <InputText @bind-Value="shipment.Job_No" disabled="true" style="width:30vw"/>
+            <div class="form-group"><label>Job No</label></div>
+            <InputText @bind-Value="shipment.Job_No" disabled="true" style="width:30vw" class="form-control" />
 
-            <div><label>Master BL No</label></div>
-            <InputText @bind-Value="shipment.Master_BL_No" disabled=@isView style="width:30vw" />
+            <div class="form-group"><label>Master BL No</label></div>
+            <InputText @bind-Value="shipment.Master_BL_No" disabled=@isView style="width:30vw" class="form-control"/>
 
-            <div><label>Container Mode</label></div>
-            <InputText @bind-Value="shipment.Container_Mode" disabled=@isView style="width:30vw" />
+            <div class="form-group"><label>Container Mode</label></div>
+            <InputText @bind-Value="shipment.Container_Mode" disabled=@isView style="width:30vw" class="form-control" />
 
-            <div><label>Place Of Loading ID</label></div>
-            <InputText @bind-Value="shipment.Place_Of_Loading_ID" disabled=@isView style="width:30vw" />
+            <div class="form-group"><label>Place Of Loading ID</label></div>
+            <InputText @bind-Value="shipment.Place_Of_Loading_ID" disabled=@isView style="width:30vw" class="form-control" />
 
-            <div><label>Place Of Loading Name</label></div>
-            <InputText @bind-Value="shipment.Place_Of_Loading_Name" disabled=@isView style="width:30vw" />
+            <div class="form-group"><label>Place Of Loading Name</label></div>
+            <InputText @bind-Value="shipment.Place_Of_Loading_Name" disabled=@isView style="width:30vw" class="form-control" />
 
-            <div><label>Place Of Discharge ID</label></div>
-            <InputText @bind-Value="shipment.Place_Of_Discharge_ID" disabled=@isView style="width:30vw" />
+            <div class="form-group"><label>Place Of Discharge ID</label></div>
+            <InputText @bind-Value="shipment.Place_Of_Discharge_ID" disabled=@isView style="width:30vw" class="form-control"/>
 
-            <div><label>Place Of Discharge Name</label></div>
-            <InputText @bind-Value="shipment.Place_Of_Discharge_Name" disabled=@isView style="width:30vw" />
+            <div class="form-group"><label>Place Of Discharge Name</label></div>
+            <InputText @bind-Value="shipment.Place_Of_Discharge_Name" disabled=@isView style="width:30vw" class="form-control"/>
 
-            <div><label>Vessel Name</label></div>
-            <InputText @bind-Value="shipment.Vessel_Name" disabled=@isView style="width:30vw" />
+            <div class="form-group"><label>Vessel Name</label></div>
+            <InputText @bind-Value="shipment.Vessel_Name" disabled=@isView style="width:30vw" class="form-control" />
 
-            <div><label>Voyage No</label></div>
-            <InputText @bind-Value="shipment.Voyage_No" disabled=@isView style="width:30vw" />
+            <div class="form-group"><label>Voyage No</label></div>
+            <InputText @bind-Value="shipment.Voyage_No" disabled=@isView style="width:30vw" class="form-control"/>
 
-            <div><label>ETD</label></div>
-            <InputDate @bind-Value="shipment.ETD_Date" disabled=@isView style="width:30vw" />
+            <div class="form-group"><label>ETD</label></div>
+            <InputDate @bind-Value="shipment.ETD_Date" disabled=@isView style="width:30vw" class="form-control" />
 
-            <div><label>ETA</label></div>
-            <InputDate @bind-Value="shipment.ETA_Date" disabled=@isView style="width:30vw" />
+            <div class="form-group"><label>ETA</label></div>
+            <InputDate @bind-Value="shipment.ETA_Date" disabled=@isView style="width:30vw" class="form-control"/>
 
-            <div><label>Carrier Matchcode</label></div>
-            <InputText @bind-Value="shipment.Carrier_Matchcode" disabled=@isView style="width:30vw" />
+            <div class="form-group"><label>Carrier Matchcode</label></div>
+            <InputText @bind-Value="shipment.Carrier_Matchcode" disabled=@isView style="width:30vw" class="form-control" />
 
-            <div><label>Carrier Name</label></div>
-            <InputText @bind-Value="shipment.Carrier_Name" disabled=@isView style="width:30vw" />
+            <div class="form-group"><label>Carrier Name</label></div>
+            <InputText @bind-Value="shipment.Carrier_Name" disabled=@isView style="width:30vw" class="form-control" />
 
         </div>
 
         <!-- Right Column -->
         <div style="flex: 1;">
-            <div><label>Carrier Contract No</label></div>
-            <InputText @bind-Value="shipment.Carrier_Contract_No" disabled=@isView style="width:30vw"/>
+            <div class="form-group"><label>Carrier Contract No</label></div>
+            <InputText @bind-Value="shipment.Carrier_Contract_No" disabled=@isView style="width:30vw" class="form-control"/>
 
-            <div><label>Carrier Booking Reference No</label></div>
-            <InputText @bind-Value="shipment.Carrier_Booking_Reference_No" disabled=@isView style="width:30vw" />
+            <div class="form-group"><label>Carrier Booking Reference No</label></div>
+            <InputText @bind-Value="shipment.Carrier_Booking_Reference_No" disabled=@isView style="width:30vw" class="form-control"/>
 
-            <div><label>Inco Terms</label></div>
-            <InputText @bind-Value="shipment.Inco_Terms" disabled=@isView style="width:30vw" />
+            <div class="form-group"><label>Inco Terms</label></div>
+            <InputText @bind-Value="shipment.Inco_Terms" disabled=@isView style="width:30vw" class="form-control"/>
 
-            <div><label>Controlling Customer Name</label></div>
-            <InputText @bind-Value="shipment.Controlling_Customer_Name" disabled=@isView style="width:30vw" />
+            <div class="form-group"><label>Controlling Customer Name</label></div>
+            <InputText @bind-Value="shipment.Controlling_Customer_Name" disabled=@isView style="width:30vw" class="form-control"/>
 
-            <div><label>Shipper Name</label></div>
-            <InputText @bind-Value="shipment.Shipper_Name" disabled=@isView style="width:30vw" />
+            <div class="form-group"><label>Shipper Name</label></div>
+            <InputText @bind-Value="shipment.Shipper_Name" disabled=@isView style="width:30vw" class="form-control"/>
 
-            <div><label>Consignee Name</label></div>
-            <InputText @bind-Value="shipment.Consignee_Name" disabled=@isView style="width:30vw" />
+            <div class="form-group"><label>Consignee Name</label></div>
+            <InputText @bind-Value="shipment.Consignee_Name" disabled=@isView style="width:30vw" class="form-control"/>
 
-            <div><label>Total No Of Pieces</label></div>
-            <InputNumber @bind-Value="shipment.Total_No_Of_Pieces" disabled=@isView style="width:30vw" />
+            <div class="form-group"><label>Total No Of Pieces</label></div>
+            <InputNumber @bind-Value="shipment.Total_No_Of_Pieces" disabled=@isView style="width:30vw" class="form-control"/>
 
-            <div><label>Package Type</label></div>
-            <InputText @bind-Value="shipment.Package_Type" disabled=@isView style="width:30vw" />
+            <div class="form-group"><label>Package Type</label></div>
+            <InputText @bind-Value="shipment.Package_Type" disabled=@isView style="width:30vw" class="form-control"/>
 
-            <div><label>Total No Of Volume Weight MTQ</label></div>
-            <InputNumber @bind-Value="shipment.Total_No_Of_Volume_Weight_MTQ" disabled=@isView style="width:30vw" />
+            <div class="form-group"><label>Total No Of Volume Weight MTQ</label></div>
+            <InputNumber @bind-Value="shipment.Total_No_Of_Volume_Weight_MTQ" disabled=@isView style="width:30vw" class="form-control"/>
 
-            <div><label>Total No Of Gross Weight KGM</label></div>
-            <InputNumber @bind-Value="shipment.Total_No_Of_Gross_Weight_KGM" disabled=@isView style="width:30vw" />
+            <div class="form-group"><label>Total No Of Gross Weight KGM</label></div>
+            <InputNumber @bind-Value="shipment.Total_No_Of_Gross_Weight_KGM" disabled=@isView style="width:30vw" class="form-control"/>
 
-            <div><label>Description</label></div>
-            <InputText @bind-Value="shipment.Description" disabled=@isView style="width:30vw" multiline="true" rows="5"/>
+            <div class="form-group"><label>Description</label></div>
+            <InputText @bind-Value="shipment.Description" disabled=@isView style="width:30vw" multiline="true" rows="5" class="form-control" />
 
-            <div><label>Shipment Note</label></div>
-            <InputText @bind-Value="shipment.Shipment_Note" disabled=@isView style="width:30vw" />
+            <div class="form-group"><label>Shipment Note</label></div>
+            <InputText @bind-Value="shipment.Shipment_Note" disabled=@isView style="width:30vw" class="form-control" />
         </div>
      </div>
 
@@ -154,7 +154,7 @@
 
 @if (tab3)
 {
-    <EditForm Model="sc" OnSubmit="AddShipmentCharge" Enhance>
+    <EditForm Model="sc" OnSubmit="AddEditShipmentCharge" Enhance>
         <div class="row">
             <div class="col-md-12">
                 <div class="form-group">
@@ -170,11 +170,6 @@
                 <div class="form-group">
                     <label class="control-label">Creditor Name</label>
                     <InputText @bind-Value="sc.Creditor_Name" disabled="@isView" class="form-control" />
-                </div>
-
-                <div class="form-group">
-                     <label class="control-label">Charge Ex Rate</label>
-                     <InputNumber @bind-Value="sc.Charge_Ex_Rate" disabled="@isView" class="form-control" />
                 </div>
 
                  <div class="form-group">
@@ -227,17 +222,12 @@
                  <label class="control-label">Lane ID</label>
                  <InputText @bind-Value="sc.Lane_ID" disabled="@isView" class="form-control" />
              </div>
-
-            <div class="form-group">
-                <label class="control-label">Remarks</label>
-                <InputText @bind-Value="sc.Remarks" disabled="@isView" class="form-control" multiline="true" rows="5" />
-            </div>
         </div>
     </div>
 
     <div class="row pt-2 pb-4">
         <div class="col-md-12">
-            <button class="btn btn-primary" type="submit" disabled="@isView">Save</button>
+            <button class="btn btn-primary" type="submit" disabled="@isView">@(isEditingShipmentCharge ? "Edit Shipment Charge" : "Add Shipment Charge")</button>
         </div>
     </div>
 </EditForm>
@@ -250,7 +240,7 @@
         <PropertyColumn Title="Creditor Name" Property="@(c => c.Creditor_Name)" Sortable="true" />
         <PropertyColumn Title="OS Charge Currency" Property="@(c => c.OS_Charge_Currency)" Sortable="true" />
         <PropertyColumn Title="Charge Currency" Property="@(c => c.Charge_Currency)" Sortable="true" />
-        <PropertyColumn Title="Charge Ex Rate" Property="@(c => c.Charge_Ex_Rate)" Sortable="true" />
+        <PropertyColumn Title="Charge Ex Rate" Property="@(c => CalculateExchangeRate(c))" Sortable="true" />
         <PropertyColumn Title="VAT Code" Property="@(c => c.VAT_Code)" Sortable="true" />
         <PropertyColumn Title="Charge Est Cost VAT OS Amount" Property="@(c => c.Charge_Est_Cost_VAT_OS_Amount)" Sortable="true" />
         <PropertyColumn Title="Charge Est Cost Net OS Amount" Property="@(c => c.Charge_Est_Cost_Net_OS_Amount)" Sortable="true" />
@@ -259,13 +249,14 @@
         <PropertyColumn Title="Charge Est Cost Net Amount" Property="@(c => c.Charge_Est_Cost_Net_Amount)" Sortable="true" />
         <PropertyColumn Title="Charge Est Cost Gross Amount" Property="@(c => c.Charge_Est_Cost_Net_Amount + c.Charge_Est_Cost_VAT_Amount)" Sortable="true" />
         <PropertyColumn Title="Lane ID" Property="@(c => c.Lane_ID)" Sortable="true" />
-        <PropertyColumn Title="Remarks" Property="@(c => c.Remarks)" Sortable="true" />
+        <PropertyColumn Title="Remarks" Property="@(c => c.Remarks)" Sortable="true" Class="remarks-col"/>
         <TemplateColumn Title="Actions">
+            <button class="btn btn-sm btn-success" @onclick="() => EditShipmentCharge(context)">Edit</button>
             <button class="btn btn-sm btn-danger" @onclick="() => DeleteShipmentCharge(context.Shipment_Job_No, context.Charge_Name)" disabled=@isView>Delete</button>
         </TemplateColumn>
     </QuickGrid>
     </div>
-    <button class="btn btn-primary mt-4" @onclick="InsertShipmentCharge" disabled=@chargesPresent>Save</button>
+    <button class="btn btn-primary mt-4" @onclick="SaveShipmentCharge" disabled=@chargesPresent>Save</button>
 }
 
 <style>
@@ -294,6 +285,10 @@
     .active-tab-button {
         background-color: #2b2d33;
         color: white;
+    }
+
+    .remarks-col {
+        min-width: 300px;
     }
 </style>
 
@@ -332,8 +327,7 @@
     Container container { get; set; } = new();
     ShipmentCharge sc { get; set; } = new();
 
-    List<ShipmentCharge> chargesTemp = new();
-    IQueryable<ShipmentCharge> charges = Enumerable.Empty<ShipmentCharge>().AsQueryable();
+    bool isEditingShipmentCharge = false;
 
     async Task UpdateShipment()
     {
@@ -398,15 +392,27 @@
         StateHasChanged();
     }
 
-    async Task AddShipmentCharge()
+    async Task AddEditShipmentCharge()
     {
-        chargesTemp.Add(sc);
+        if (isEditingShipmentCharge)
+        {
+            int index = chargesTemp.FindIndex(i => i.Charge_Name == sc.Charge_Name);
+            if (index != -1)
+            {
+                chargesTemp[index] = sc;
+            }
+        } else
+        {
+            chargesTemp.Add(sc);
+        }
         charges = chargesTemp.AsQueryable();
         StateHasChanged();
         sc = new ShipmentCharge();
+        isEditingShipmentCharge = false;
+        chargesPresent = false;
     }
 
-    async Task InsertShipmentCharge()
+    async Task SaveShipmentCharge()
     {
         if (!chargesTemp.Any())
         {
@@ -454,13 +460,33 @@
         }
     }
 
-    //fetching shipment and containers data
+    async Task EditShipmentCharge(ShipmentCharge scInput)
+    {
+        sc = scInput;
+        isEditingShipmentCharge = true;
+    }
+
+    decimal CalculateExchangeRate(ShipmentCharge sc)
+    {
+        if (sc.Charge_Est_Cost_Net_Amount > 0 && sc.Charge_Est_Cost_Net_OS_Amount > 0)
+        {
+            return Math.Round(sc.Charge_Est_Cost_Net_Amount / sc.Charge_Est_Cost_Net_OS_Amount, 8);
+        } else
+        {
+            return (decimal) sc.Charge_Ex_Rate;
+        }
+    }
+
+    //fetching shipment, containers, and shipmentcharges data
     [Parameter]
     public string Shipment_Job_No { get; set; }
     bool isView = false;
     bool chargesPresent = false;
 
     IQueryable<Container> containers = Enumerable.Empty<Container>().AsQueryable();
+    
+    List<ShipmentCharge> chargesTemp = new();
+    IQueryable<ShipmentCharge> charges = Enumerable.Empty<ShipmentCharge>().AsQueryable();
 
     protected override async Task OnInitializedAsync()
     {

@@ -233,17 +233,15 @@ namespace _4PL.Data
             {
                 if (containerTypeCounterMap.ContainsKey(r.Container_Type))
                 {
-                    int containerCount = containerTypeCounterMap[r.Container_Type]; Console.WriteLine("before remove " + string.Join(", ", containerTypeNoRatecards.Keys.ToList()));
+                    int containerCount = containerTypeCounterMap[r.Container_Type]; 
                     containerTypeNoRatecards.Remove(r.Container_Type);
-                    Console.WriteLine(r.Container_Type);
-                    Console.WriteLine(containerTypeCounterMap.ContainsKey(r.Container_Type));
-                    Console.WriteLine("after remove " + string.Join(", ", containerTypeNoRatecards.Keys.ToList()));
                     List<Charge> charges = _dbcontext.GetChargesFromRatecardId(r.Id.ToString(), 0, 100);
                     foreach (Charge c in charges)
                     {
                         if (chargeCostMap.ContainsKey(c.Charge_Description))
                         {
                             ShipmentCharge temp = chargeCostMap[c.Charge_Description];
+                            temp.Remarks += $"\n {containerCount} {r.Container_Type} @ {c.OS_Unit_Price} {c.OS_Currency}/Container";
                             if (string.Equals(c.Calculation_Base, "Per Container", StringComparison.CurrentCultureIgnoreCase))
                             {
 
@@ -266,6 +264,7 @@ namespace _4PL.Data
                             newCharge.Charge_Currency = c.Currency;
                             newCharge.Creditor_Name = r.Creditor_Name;
                             newCharge.Lane_ID = r.Lane_ID;
+                            newCharge.Remarks = $"{c.Charge_Code}: {containerCount} {r.Container_Type} @ {c.OS_Unit_Price} {c.OS_Currency}/Container";
                             if (string.Equals(c.Calculation_Base, "Per Container", StringComparison.CurrentCultureIgnoreCase))
                             {
                                 newCharge.Charge_Est_Cost_Net_OS_Amount += c.OS_Unit_Price * containerCount;
