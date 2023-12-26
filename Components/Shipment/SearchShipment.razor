@@ -227,9 +227,9 @@
             this.Place_Of_Discharge_Name = "";
             this.Vessel_Name = "";
             this.Voyage_No = "";
-            this.ETD_Date_From = DateTime.Now;
+            this.ETD_Date_From = new DateTime(DateTime.Now.Year, 1, 1);
             this.ETD_Date_To = DateTime.Now;
-            this.ETA_Date_From = DateTime.Now;
+            this.ETA_Date_From = new DateTime(DateTime.Now.Year, 1, 1);
             this.ETA_Date_To = DateTime.Now;
         }
     }
