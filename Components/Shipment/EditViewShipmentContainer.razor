@@ -239,7 +239,7 @@
 
     <button class="btn btn-success" @onclick="HandleAutoRating" disabled=@chargesPresent>Auto Rating</button>
     <div class="result-container py-4" style="max-width:80vw">
-    <QuickGrid Items="@charges">
+    <QuickGrid Items="@charges" Pagination="@pagination">
         <PropertyColumn Title="Charge Code" Property="@(c => c.Charge_Code)" Sortable="true" />
         <PropertyColumn Title="Charge Name" Property="@(c => c.Charge_Name)" Sortable="true" />
         <PropertyColumn Title="Creditor Name" Property="@(c => c.Creditor_Name)" Sortable="true" />
@@ -260,6 +260,7 @@
             <button class="btn btn-sm btn-danger" @onclick="() => DeleteShipmentCharge(context.Shipment_Job_No, context.Charge_Name)" disabled=@isView>Delete</button>
         </TemplateColumn>
     </QuickGrid>
+    <Paginator State="@pagination" />
     </div>
     <button class="btn btn-primary mt-4" @onclick="SaveShipmentCharge" disabled=@(chargesPresent || isView)>Save</button>
 }
@@ -378,6 +379,7 @@
     Container container { get; set; } = new();
     ShipmentCharge sc { get; set; } = new();
 
+    PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
     bool isEditingShipmentCharge = false;
 
     async Task UpdateShipment()
