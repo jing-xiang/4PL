@@ -231,56 +231,55 @@ namespace _4PL.Data
             //for loop the ratecard ids, multiply by # of containers for each charge, add to dictionary accordingly
             foreach (RateCard r in ratecards)
             {
-                int containerCount = 0;
                 if (containerTypeCounterMap.ContainsKey(r.Container_Type))
                 {
-                    containerCount = containerTypeCounterMap[r.Container_Type];
-                }
-                Console.WriteLine("before remove " + string.Join(", ", containerTypeNoRatecards.Keys.ToList()));
-                containerTypeNoRatecards.Remove(r.Container_Type);
-                Console.WriteLine(r.Container_Type);
-                Console.WriteLine(containerTypeCounterMap.ContainsKey(r.Container_Type));
-                Console.WriteLine("after remove " + string.Join(", ", containerTypeNoRatecards.Keys.ToList()));
-                List<Charge> charges = _dbcontext.GetChargesFromRatecardId(r.Id.ToString(), 0, 100);
-                foreach (Charge c in charges)
-                {
-                    if (chargeCostMap.ContainsKey(c.Charge_Description))
+                    int containerCount = containerTypeCounterMap[r.Container_Type]; Console.WriteLine("before remove " + string.Join(", ", containerTypeNoRatecards.Keys.ToList()));
+                    containerTypeNoRatecards.Remove(r.Container_Type);
+                    Console.WriteLine(r.Container_Type);
+                    Console.WriteLine(containerTypeCounterMap.ContainsKey(r.Container_Type));
+                    Console.WriteLine("after remove " + string.Join(", ", containerTypeNoRatecards.Keys.ToList()));
+                    List<Charge> charges = _dbcontext.GetChargesFromRatecardId(r.Id.ToString(), 0, 100);
+                    foreach (Charge c in charges)
                     {
-                        ShipmentCharge temp = chargeCostMap[c.Charge_Description];
-                        if (string.Equals(c.Calculation_Base, "Per Container", StringComparison.CurrentCultureIgnoreCase))
+                        if (chargeCostMap.ContainsKey(c.Charge_Description))
                         {
-                            
-                            temp.Charge_Est_Cost_Net_OS_Amount += c.OS_Unit_Price * containerCount;
-                            temp.Charge_Est_Cost_Net_Amount += c.Unit_Price * containerCount;
-                        } else
-                        {
-                            temp.Charge_Est_Cost_Net_OS_Amount += c.OS_Unit_Price;
-                            temp.Charge_Est_Cost_Net_Amount += c.Unit_Price;
-                        }
-                        chargeCostMap[c.Charge_Description] = temp;
-                    } else
-                    {
-                        ShipmentCharge newCharge = new();
-                        newCharge.Charge_Name = c.Charge_Description;
-                        newCharge.Charge_Code = c.Charge_Code;
-                        newCharge.OS_Charge_Currency = c.OS_Currency;
-                        newCharge.Charge_Currency = c.Currency;
-                        newCharge.Creditor_Name = r.Creditor_Name;
-                        newCharge.Lane_ID = r.Lane_ID;
-                        if (string.Equals(c.Calculation_Base, "Per Container", StringComparison.CurrentCultureIgnoreCase))
-                        {
-                            newCharge.Charge_Est_Cost_Net_OS_Amount += c.OS_Unit_Price * containerCount;
-                            newCharge.Charge_Est_Cost_Net_Amount += c.Unit_Price * containerCount;
+                            ShipmentCharge temp = chargeCostMap[c.Charge_Description];
+                            if (string.Equals(c.Calculation_Base, "Per Container", StringComparison.CurrentCultureIgnoreCase))
+                            {
+
+                                temp.Charge_Est_Cost_Net_OS_Amount += c.OS_Unit_Price * containerCount;
+                                temp.Charge_Est_Cost_Net_Amount += c.Unit_Price * containerCount;
+                            }
+                            else
+                            {
+                                temp.Charge_Est_Cost_Net_OS_Amount += c.OS_Unit_Price;
+                                temp.Charge_Est_Cost_Net_Amount += c.Unit_Price;
+                            }
+                            chargeCostMap[c.Charge_Description] = temp;
                         }
                         else
                         {
-                            newCharge.Charge_Est_Cost_Net_OS_Amount += c.OS_Unit_Price;
-                            newCharge.Charge_Est_Cost_Net_Amount += c.Unit_Price;
+                            ShipmentCharge newCharge = new();
+                            newCharge.Charge_Name = c.Charge_Description;
+                            newCharge.Charge_Code = c.Charge_Code;
+                            newCharge.OS_Charge_Currency = c.OS_Currency;
+                            newCharge.Charge_Currency = c.Currency;
+                            newCharge.Creditor_Name = r.Creditor_Name;
+                            newCharge.Lane_ID = r.Lane_ID;
+                            if (string.Equals(c.Calculation_Base, "Per Container", StringComparison.CurrentCultureIgnoreCase))
+                            {
+                                newCharge.Charge_Est_Cost_Net_OS_Amount += c.OS_Unit_Price * containerCount;
+                                newCharge.Charge_Est_Cost_Net_Amount += c.Unit_Price * containerCount;
+                            }
+                            else
+                            {
+                                newCharge.Charge_Est_Cost_Net_OS_Amount += c.OS_Unit_Price;
+                                newCharge.Charge_Est_Cost_Net_Amount += c.Unit_Price;
+                            }
+                            chargeCostMap[c.Charge_Description] = newCharge;
                         }
-                        chargeCostMap[c.Charge_Description] = newCharge;
                     }
                 }
-
             }
 
             List<ShipmentCharge> shipmentCharges = new();
