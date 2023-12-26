@@ -256,12 +256,12 @@
         <PropertyColumn Title="Lane ID" Property="@(c => c.Lane_ID)" Sortable="true" />
         <PropertyColumn Title="Remarks" Property="@(c => c.Remarks)" Sortable="true" Class="remarks-col"/>
         <TemplateColumn Title="Actions">
-            <button class="btn btn-sm btn-success" @onclick="() => EditShipmentCharge(context)">Edit</button>
+            <button class="btn btn-sm btn-success" @onclick="() => EditShipmentCharge(context)" disabled=@isView>Edit</button>
             <button class="btn btn-sm btn-danger" @onclick="() => DeleteShipmentCharge(context.Shipment_Job_No, context.Charge_Name)" disabled=@isView>Delete</button>
         </TemplateColumn>
     </QuickGrid>
     </div>
-    <button class="btn btn-primary mt-4" @onclick="SaveShipmentCharge" disabled=@chargesPresent>Save</button>
+    <button class="btn btn-primary mt-4" @onclick="SaveShipmentCharge" disabled=@(chargesPresent || isView)>Save</button>
 }
 
 @if (tab4)
