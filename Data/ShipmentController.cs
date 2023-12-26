@@ -43,8 +43,8 @@ namespace _4PL.Data
         [HttpPost("CreateShipments")]
         public IActionResult insertExceltoSnowflake ([FromBody] string fileNameWithoutExtension)
         {
-            Dictionary<string, Tuple<Shipment,  List<Container>>> dict = ReadExcelFile(fileNameWithoutExtension);
-            Dictionary<string, Tuple<Shipment, List<Container>>> newdict = new();
+            Dictionary<string, Shipment> dict = ReadExcelFile(fileNameWithoutExtension);
+            Dictionary<string, Shipment> newdict = new();
             
             int output = 0;
             HashSet<string> shipments = _dbcontext.fetchAllShipments();
@@ -65,16 +65,17 @@ namespace _4PL.Data
                 return Ok(output.ToString());
             } else
             {
-                foreach (var kvp in newdict)
+                _dbcontext.InsertShipments(newdict.Values.ToList());
+                /*foreach (var kvp in newdict)
                 {
-                    Shipment shipment = kvp.Value.Item1;
+                    Shipment shipment = kvp.Value;
                     _dbcontext.InsertShipment(shipment);
-                    List<Container> containers = kvp.Value.Item2;
+                    List<Container> containers = shipment.Container_List;
                     foreach (var container in containers)
                     {
                         _dbcontext.InsertContainer(container);
                     }
-                }
+                }*/
                 return Ok(output.ToString());
             }
         }
@@ -331,9 +332,9 @@ namespace _4PL.Data
             return Ok(numDeleted > 0 ? true : false);
         }
 
-        private Dictionary<string, Tuple<Shipment , List<Container>>> ReadExcelFile(string fileNameWithoutExtension)
+        private Dictionary<string, Shipment> ReadExcelFile(string fileNameWithoutExtension)
         {
-        Dictionary<string, Tuple<Shipment, List<Container>>> shipmentData = new Dictionary<string, Tuple<Shipment, List<Container>>>();
+        Dictionary<string, Shipment> shipmentData = new Dictionary<string, Shipment>();
 
         Excel.Application xlApp;
         Excel.Workbook xlWorkBook;
@@ -450,10 +451,10 @@ namespace _4PL.Data
 
             if (!shipmentData.ContainsKey(jobNo))
             {
-                shipmentData[jobNo] = new Tuple<Shipment, List<Container>>(s, new List<Container>());
+                shipmentData[jobNo] = s;
             }
 
-            shipmentData[jobNo].Item2.Add(c);
+            shipmentData[jobNo].Container_List.Add(c);
         }
 
         xlWorkBook.Close(true, misValue, misValue);
