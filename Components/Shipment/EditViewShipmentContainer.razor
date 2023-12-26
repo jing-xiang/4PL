@@ -517,6 +517,7 @@
     {
         sc = scInput;
         isEditingShipmentCharge = true;
+        await JS.InvokeVoidAsync("window.scrollTo", 0, 0);
     }
 
     async Task CancelShipmentChargeEdit()
