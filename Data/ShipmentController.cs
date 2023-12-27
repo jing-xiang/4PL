@@ -247,13 +247,13 @@ namespace _4PL.Data
                             {
                                 temp.Charge_Est_Cost_Net_OS_Amount += c.OS_Unit_Price * containerCount;
                                 temp.Charge_Est_Cost_Net_Amount += c.Unit_Price * containerCount;
-                                temp.Remarks += $"\n {containerCount} {r.Container_Type} @ {c.OS_Unit_Price} {c.OS_Currency}/Container";
+                                temp.Remarks += $", {containerCount} {r.Container_Type} @ {c.OS_Unit_Price} {c.OS_Currency}/Container";
                             }
                             else
                             {
                                 temp.Charge_Est_Cost_Net_OS_Amount += c.OS_Unit_Price;
                                 temp.Charge_Est_Cost_Net_Amount += c.Unit_Price;
-                                temp.Remarks += $"\n {containerCount} {r.Container_Type} @ {c.OS_Unit_Price} {c.OS_Currency}";
+                                temp.Remarks += $", {containerCount} {r.Container_Type} @ {c.OS_Unit_Price} {c.OS_Currency}";
                             }
                             chargeCostMap[c.Charge_Description] = temp;
                         }

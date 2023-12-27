@@ -1881,7 +1881,7 @@ namespace _4PL.Data
                         s.Master_BL_No = reader.GetString(reader.GetOrdinal("MASTER_BL_NO"));
                         s.Container_Mode = reader.GetString(reader.GetOrdinal("CONTAINER_MODE"));
                         s.Place_Of_Loading_ID = reader.GetString(reader.GetOrdinal("PLACE_OF_LOADING_ID"));
-                        s.Place_Of_Loading_Name = reader.GetString(reader.GetOrdinal("PLACE_OF_LOADING_ID"));
+                        s.Place_Of_Loading_Name = reader.GetString(reader.GetOrdinal("PLACE_OF_LOADING_NAME"));
                         s.Place_Of_Discharge_ID = reader.GetString(reader.GetOrdinal("PLACE_OF_DISCHARGE_ID"));
                         s.Place_Of_Discharge_Name = reader.GetString(reader.GetOrdinal("PLACE_OF_DISCHARGE_NAME"));
                         s.Vessel_Name = reader.GetString(reader.GetOrdinal("VESSEL_NAME"));
