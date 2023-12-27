@@ -447,16 +447,23 @@
 
     async Task AddEditShipmentCharge()
     {
+        int index = chargesTemp.FindIndex(i => i.Charge_Name.Equals(sc.Charge_Name, StringComparison.OrdinalIgnoreCase));
         if (isEditingShipmentCharge)
         {
-            int index = chargesTemp.FindIndex(i => i.Charge_Name == sc.Charge_Name);
             if (index != -1)
             {
                 chargesTemp[index] = sc;
             }
         } else
         {
-            chargesTemp.Add(sc);
+            if (index == -1)
+            {
+                chargesTemp.Add(sc);
+            } else
+            {
+                await JS.InvokeVoidAsync("alert", $"Charge already exists.");
+            }
+
         }
         charges = chargesTemp.AsQueryable();
         StateHasChanged();
@@ -544,7 +551,7 @@
     bool chargesPresent = false;
 
     IQueryable<Container> containers = Enumerable.Empty<Container>().AsQueryable();
-    
+
     List<ShipmentCharge> chargesTemp = new();
     IQueryable<ShipmentCharge> charges = Enumerable.Empty<ShipmentCharge>().AsQueryable();
 
@@ -568,6 +575,7 @@
             charges = chargesTemp.AsQueryable();
             StateHasChanged();
         }
+        NavManager.LocationChanged += HandleLocationChanged;
     }
 
     async Task<List<Container>> getContainerData()
@@ -612,5 +620,17 @@
         var result = await HttpClient.GetFromJsonAsync<List<ActualShipmentCharge>>($"{NavManager.BaseUri}api/shipment/FetchActualCharges/{Shipment_Job_No}");
         actualCharges = result.AsQueryable();
         StateHasChanged();
+    }
+
+    private async void HandleLocationChanged(object sender, LocationChangedEventArgs e)
+    {
+        if (!chargesPresent)
+        {
+            var confirmed = await JS.InvokeAsync<bool>("confirm", "Some charges have not been saved. Are you sure you want to leave the page?");
+            if (!confirmed)
+            {
+                return;
+            }
+        }
     }
 }
