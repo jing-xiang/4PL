@@ -30,7 +30,7 @@
             this.Charge_Est_Cost_Net_OS_Amount = 0;
             this.Charge_Est_Cost_Net_Amount = 0;
             this.Lane_ID = "";
-            this.Remarks = "FREETEXT";
+            this.Remarks = "";
             this.Charge_Est_Cost_VAT_OS_Amount = 0;
             this.Charge_Est_Cost_VAT_Amount = 0;
         }

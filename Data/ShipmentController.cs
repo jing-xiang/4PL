@@ -43,8 +43,8 @@ namespace _4PL.Data
         [HttpPost("CreateShipments")]
         public IActionResult insertExceltoSnowflake ([FromBody] string fileNameWithoutExtension)
         {
-            Dictionary<string, Tuple<Shipment,  List<Container>>> dict = ReadExcelFile(fileNameWithoutExtension);
-            Dictionary<string, Tuple<Shipment, List<Container>>> newdict = new();
+            Dictionary<string, Shipment> dict = ReadExcelFile(fileNameWithoutExtension);
+            Dictionary<string, Shipment> newdict = new();
             
             int output = 0;
             HashSet<string> shipments = _dbcontext.fetchAllShipments();
@@ -65,16 +65,17 @@ namespace _4PL.Data
                 return Ok(output.ToString());
             } else
             {
-                foreach (var kvp in newdict)
+                _dbcontext.InsertShipments(newdict.Values.ToList());
+                /*foreach (var kvp in newdict)
                 {
-                    Shipment shipment = kvp.Value.Item1;
+                    Shipment shipment = kvp.Value;
                     _dbcontext.InsertShipment(shipment);
-                    List<Container> containers = kvp.Value.Item2;
+                    List<Container> containers = shipment.Container_List;
                     foreach (var container in containers)
                     {
                         _dbcontext.InsertContainer(container);
                     }
-                }
+                }*/
                 return Ok(output.ToString());
             }
         }
@@ -231,56 +232,57 @@ namespace _4PL.Data
             //for loop the ratecard ids, multiply by # of containers for each charge, add to dictionary accordingly
             foreach (RateCard r in ratecards)
             {
-                int containerCount = 0;
                 if (containerTypeCounterMap.ContainsKey(r.Container_Type))
                 {
-                    containerCount = containerTypeCounterMap[r.Container_Type];
-                }
-                Console.WriteLine("before remove " + string.Join(", ", containerTypeNoRatecards.Keys.ToList()));
-                containerTypeNoRatecards.Remove(r.Container_Type);
-                Console.WriteLine(r.Container_Type);
-                Console.WriteLine(containerTypeCounterMap.ContainsKey(r.Container_Type));
-                Console.WriteLine("after remove " + string.Join(", ", containerTypeNoRatecards.Keys.ToList()));
-                List<Charge> charges = _dbcontext.GetChargesFromRatecardId(r.Id.ToString(), 0, 100);
-                foreach (Charge c in charges)
-                {
-                    if (chargeCostMap.ContainsKey(c.Charge_Description))
+                    int containerCount = containerTypeCounterMap[r.Container_Type]; 
+                    containerTypeNoRatecards.Remove(r.Container_Type);
+                    List<Charge> charges = _dbcontext.GetChargesFromRatecardId(r.Id.ToString(), 0, 100);
+                    foreach (Charge c in charges)
                     {
-                        ShipmentCharge temp = chargeCostMap[c.Charge_Description];
-                        if (string.Equals(c.Calculation_Base, "Per Container", StringComparison.CurrentCultureIgnoreCase))
+                        if (chargeCostMap.ContainsKey(c.Charge_Description))
                         {
+                            ShipmentCharge temp = chargeCostMap[c.Charge_Description];
                             
-                            temp.Charge_Est_Cost_Net_OS_Amount += c.OS_Unit_Price * containerCount;
-                            temp.Charge_Est_Cost_Net_Amount += c.Unit_Price * containerCount;
-                        } else
-                        {
-                            temp.Charge_Est_Cost_Net_OS_Amount += c.OS_Unit_Price;
-                            temp.Charge_Est_Cost_Net_Amount += c.Unit_Price;
-                        }
-                        chargeCostMap[c.Charge_Description] = temp;
-                    } else
-                    {
-                        ShipmentCharge newCharge = new();
-                        newCharge.Charge_Name = c.Charge_Description;
-                        newCharge.Charge_Code = c.Charge_Code;
-                        newCharge.OS_Charge_Currency = c.OS_Currency;
-                        newCharge.Charge_Currency = c.Currency;
-                        newCharge.Creditor_Name = r.Creditor_Name;
-                        newCharge.Lane_ID = r.Lane_ID;
-                        if (string.Equals(c.Calculation_Base, "Per Container", StringComparison.CurrentCultureIgnoreCase))
-                        {
-                            newCharge.Charge_Est_Cost_Net_OS_Amount += c.OS_Unit_Price * containerCount;
-                            newCharge.Charge_Est_Cost_Net_Amount += c.Unit_Price * containerCount;
+                            if (string.Equals(c.Calculation_Base, "Per Container", StringComparison.CurrentCultureIgnoreCase))
+                            {
+                                temp.Charge_Est_Cost_Net_OS_Amount += c.OS_Unit_Price * containerCount;
+                                temp.Charge_Est_Cost_Net_Amount += c.Unit_Price * containerCount;
+                                temp.Remarks += $"\n {containerCount} {r.Container_Type} @ {c.OS_Unit_Price} {c.OS_Currency}/Container";
+                            }
+                            else
+                            {
+                                temp.Charge_Est_Cost_Net_OS_Amount += c.OS_Unit_Price;
+                                temp.Charge_Est_Cost_Net_Amount += c.Unit_Price;
+                                temp.Remarks += $"\n {containerCount} {r.Container_Type} @ {c.OS_Unit_Price} {c.OS_Currency}";
+                            }
+                            chargeCostMap[c.Charge_Description] = temp;
                         }
                         else
                         {
-                            newCharge.Charge_Est_Cost_Net_OS_Amount += c.OS_Unit_Price;
-                            newCharge.Charge_Est_Cost_Net_Amount += c.Unit_Price;
+                            ShipmentCharge newCharge = new();
+                            newCharge.Charge_Name = c.Charge_Description;
+                            newCharge.Charge_Code = c.Charge_Code;
+                            newCharge.OS_Charge_Currency = c.OS_Currency;
+                            newCharge.Charge_Currency = c.Currency;
+                            newCharge.Creditor_Name = r.Creditor_Name;
+                            newCharge.Lane_ID = r.Lane_ID;
+                          
+                            if (string.Equals(c.Calculation_Base, "Per Container", StringComparison.CurrentCultureIgnoreCase))
+                            {
+                                newCharge.Charge_Est_Cost_Net_OS_Amount += c.OS_Unit_Price * containerCount;
+                                newCharge.Charge_Est_Cost_Net_Amount += c.Unit_Price * containerCount;
+                                newCharge.Remarks = $"{c.Charge_Code}: {containerCount} {r.Container_Type} @ {c.OS_Unit_Price} {c.OS_Currency}/Container";
+                            }
+                            else
+                            {
+                                newCharge.Charge_Est_Cost_Net_OS_Amount += c.OS_Unit_Price;
+                                newCharge.Charge_Est_Cost_Net_Amount += c.Unit_Price;
+                                newCharge.Remarks = $"{c.Charge_Code}: {containerCount} {r.Container_Type} @ {c.OS_Unit_Price} {c.OS_Currency}";
+                            }
+                            chargeCostMap[c.Charge_Description] = newCharge;
                         }
-                        chargeCostMap[c.Charge_Description] = newCharge;
                     }
                 }
-
             }
 
             List<ShipmentCharge> shipmentCharges = new();
@@ -333,9 +335,9 @@ namespace _4PL.Data
             return Ok(numDeleted > 0 ? true : false);
         }
 
-        private Dictionary<string, Tuple<Shipment , List<Container>>> ReadExcelFile(string fileNameWithoutExtension)
+        private Dictionary<string, Shipment> ReadExcelFile(string fileNameWithoutExtension)
         {
-        Dictionary<string, Tuple<Shipment, List<Container>>> shipmentData = new Dictionary<string, Tuple<Shipment, List<Container>>>();
+        Dictionary<string, Shipment> shipmentData = new Dictionary<string, Shipment>();
 
         Excel.Application xlApp;
         Excel.Workbook xlWorkBook;
@@ -452,10 +454,10 @@ namespace _4PL.Data
 
             if (!shipmentData.ContainsKey(jobNo))
             {
-                shipmentData[jobNo] = new Tuple<Shipment, List<Container>>(s, new List<Container>());
+                shipmentData[jobNo] = s;
             }
 
-            shipmentData[jobNo].Item2.Add(c);
+            shipmentData[jobNo].Container_List.Add(c);
         }
 
         xlWorkBook.Close(true, misValue, misValue);

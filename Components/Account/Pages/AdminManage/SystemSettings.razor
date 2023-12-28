@@ -25,7 +25,7 @@
                 <PropertyColumn Title="Type" Class="setting" Property="@(s => s.SettingType)" Sortable="false" />
                 <PropertyColumn Title="Current" Class="setting" Property="@(s => s.Value)" Sortable="false" />
                 <TemplateColumn Title="New">
-                    <input type="text" class="w-auto form-control" @bind="context.Value"/>
+                    <input type="text" class="w-auto form-control" autocomplete="off" @bind="context.Value" />
                 </TemplateColumn>
                 <TemplateColumn Title="" >
                     <button type="submit" class="btn btn-outline-secondary" @onclick="() => UpdateSetting(context)">
