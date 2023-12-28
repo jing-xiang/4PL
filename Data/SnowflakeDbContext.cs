@@ -1569,7 +1569,8 @@ namespace _4PL.Data
          * Container Type Reference
          * 1. Create a container type
          * 2. Delete a container type
-         * 3. Show list of container types (based on search parameters) 
+         * 3. Show list of container types (based on search parameters)
+         * 4. Show all container types (if search parameter is empty)
         **/
 
         public async Task<String> CreateContainerType(string containerType)
@@ -1595,19 +1596,11 @@ namespace _4PL.Data
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
                 conn.Open();
-                var createdContainerType = "Error in creating new container type";
                 using (IDbCommand command = conn.CreateCommand())
                 {
                     command.CommandText = $@"CALL DELETE_CONTAINER_TYPE (:Container_Type)";
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Container_Type", Value = containerType, DbType = DbType.String });
-                    // try UPDATE procedure 
-
-                    //command.CommandText = $@"CALL CREATE_CONTAINER_TYPE (:Container_Type)";
-                    //command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Container_Type", Value = containerType, DbType = DbType.String });
-                    //createdContainerType = command.ExecuteScalar().ToString();
-                    //Debug.WriteLine($"result of DB call: {createdContainerType}");
-
-
+                    
                     var result = command.ExecuteScalar();
                     Debug.WriteLine($"result of DB call: {result}");
                     if (result != DBNull.Value)
@@ -1620,7 +1613,6 @@ namespace _4PL.Data
                     }
 
                 }
-                //return createdContainerType != null ? 1: 0;
             }
         }
 
@@ -1672,6 +1664,152 @@ namespace _4PL.Data
             }
         }
 
+        /**
+         * Charge Reference
+         * 1. Create a charge
+         * 2. Delete a charge
+         * 3. Show list of charges (based on search parameters - charge code) 
+         * 4. Show list of charges (based on search parameters - charge description)
+         * 5. Update charge (old charge code, new charge code) 
+        **/
+        public async Task<String> CreateCharge(string chargeCode, string chargeDescription)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                var createdChargeDescription = "Error in creating new charge";
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = $@"CALL CREATE_CHARGE (:Charge_Code, :Charge_Description)";
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Charge_Code", Value = chargeCode, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Charge_Description", Value = chargeDescription, DbType = DbType.String });
+                    createdChargeDescription = command.ExecuteScalar().ToString();
+
+                }
+                return createdChargeDescription;
+
+            }
+        }
+
+        public async Task<int> DeleteChargeFromDescription(string chargeDescription)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = $@"CALL DELETE_CHARGE (:Charge_Description)";
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Charge_Description", Value = chargeDescription, DbType = DbType.String });
+
+                    var result = command.ExecuteScalar();
+                    Debug.WriteLine($"result of DB call: {result}");
+                    if (result != DBNull.Value)
+                    {
+                        return Int32.Parse(result.ToString());
+                    }
+                    else
+                    {
+                        throw new Exception($"Failed to delete charge with description: {chargeDescription}");
+                    }
+
+                }
+            }
+        }
+
+        public async Task<List<ChargeReference>> FetchAllCharges()
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                List<ChargeReference> charges = new List<ChargeReference>();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = $@"CALL FETCH_ALL_CHARGES()"; // Create in snowflake 
+                    // Changed to stored procedure
+                    IDataReader reader = command.ExecuteReader();
+
+                    while (reader.Read())
+                    {
+                        ChargeReference ct = new ChargeReference();
+                        ct.Charge_Code = reader.GetString(reader.GetOrdinal("CHARGE_CODE"));
+                        ct.Charge_Description = reader.GetString(reader.GetOrdinal("CHARGE_DESCRIPTION"));
+                        charges.Add(ct);
+                    }
+
+                }
+                return charges;
+            }
+        }
+
+        public async Task<List<ChargeReference>> FetchChargesByDescription(string chargeDescription)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                List<ChargeReference> charges = new List<ChargeReference>();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = $@"CALL FETCH_CHARGES_BY_DESCRIPTION (:Charge_Description)"; // Create in snowflake
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Charge_Description", Value = chargeDescription, DbType = DbType.String });
+                    IDataReader reader = command.ExecuteReader();
+
+                    while (reader.Read())
+                    {
+                        ChargeReference ct = new ChargeReference();
+                        ct.Charge_Code = reader.GetString(reader.GetOrdinal("CHARGE_CODE"));
+                        ct.Charge_Description = reader.GetString(reader.GetOrdinal("CHARGE_DESCRIPTION"));
+                        charges.Add(ct);
+                    }
+
+                }
+                return charges;
+            }
+        }
+
+        public async Task<List<ChargeReference>> FetchChargesByCode(string chargeCode)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                List<ChargeReference> charges = new List<ChargeReference>();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = $@"CALL FETCH_CHARGES_BY_CODE (:Charge_Code)"; // Create in snowflake
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Charge_Code", Value = chargeCode, DbType = DbType.String });
+                    IDataReader reader = command.ExecuteReader();
+
+                    while (reader.Read())
+                    {
+                        ChargeReference ct = new ChargeReference();
+                        ct.Charge_Code = reader.GetString(reader.GetOrdinal("CHARGE_CODE"));
+                        ct.Charge_Description = reader.GetString(reader.GetOrdinal("CHARGE_DESCRIPTION"));
+                        charges.Add(ct);
+                    }
+
+                }
+                return charges;
+            }
+        }
+
+        public async Task<String> UpdateChargeCode(string chargeDescription, string oldChargeCode, string newChargeCode)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                var updatedChargeDescription = $"Error in updating charge: {chargeDescription}";
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = $@"CALL UPDATE_CHARGE_CODE (:Charge_Description, :Old_Charge_Code, :New_Charge_Code)"; // Change snowflake stored procedure 
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Charge_Description", Value = chargeDescription, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Old_Charge_Code", Value = oldChargeCode, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "New_Charge_Code", Value = newChargeCode, DbType = DbType.String });
+                    updatedChargeDescription = command.ExecuteScalar().ToString();
+
+                }
+                return updatedChargeDescription;
+
+            }
+        }
 
         public string InsertShipments(List<Shipment> shipments)
         {
