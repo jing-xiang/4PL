@@ -12,6 +12,7 @@
 
 @rendermode InteractiveServer
 
+<NavigationLock ConfirmExternalNavigation="@shouldConfirmExternalNavigation" OnBeforeInternalNavigation="OnBeforeInternalNavigation"></NavigationLock>
 @if (isView)
 {
     <h4>Shipment Container</h4>
@@ -125,9 +126,9 @@
 }
 @if (tab2)
 {
-    <EditForm Model="container" OnSubmit="InsertContainer" Enhance>
+    <EditForm Model="container" OnSubmit="SaveContainer" Enhance>
          <label>Container No</label>
-         <InputText @bind-Value="container.Container_No" disabled=@isView />
+         <InputText @bind-Value="container.Container_No" disabled=@(isView||isEditingContainer) />
 
          <label>Container Type</label>
          <InputText @bind-Value="container.Container_Type" disabled=@isView />
@@ -137,7 +138,11 @@
 
          <label>Seal No 2</label>
          <InputText @bind-Value="container.Seal_No_2" disabled=@isView />
-         <button class ="btn btn-primary" type="submit" disabled=@(isView||chargesPresent)>Save</button>
+         @if (isEditingContainer)
+            {
+                <button class="btn btn-outline-dark" type="button" disabled="@isView" @onclick="CancelEditContainer" style="margin-left: 5px">Cancel</button>
+            }
+        <button class="btn btn-primary" type="submit" disabled=@(isView||chargesPresent) style="margin-left: 5px">Save</button>
      </EditForm>
 
     <div class="result-container py-4" style="max-width:80vw">
@@ -147,6 +152,7 @@
             <PropertyColumn Title="Seal No 1" Property="@(c => c.Seal_No_1)" Sortable="true" />
             <PropertyColumn Title="Seal No 2" Property="@(c => c.Seal_No_2)" Sortable="true" />
             <TemplateColumn Title="Actions">
+                <button class="btn btn-sm btn-success" @onclick="() => EditContainer(context)" disabled=@(isView||chargesPresent)>Edit</button>
                 <button class="btn btn-sm btn-danger" @onclick="() => DeleteContainer(context.Shipment_Job_No, context.Container_No)" disabled=@isView>Delete</button>
             </TemplateColumn>
         </QuickGrid>
@@ -165,7 +171,7 @@
 
                 <div class="form-group">
                     <label class="control-label">Charge Name</label>
-                    <InputText @bind-Value="sc.Charge_Name" disabled="@isView" class="form-control" />
+                    <InputText @bind-Value="sc.Charge_Name" disabled=@(isView||isEditingShipmentCharge) class="form-control" />
                 </div>
 
                 <div class="form-group">
@@ -380,6 +386,7 @@
     ShipmentCharge sc { get; set; } = new();
 
     PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
+    bool isEditingContainer = false;
     bool isEditingShipmentCharge = false;
 
     async Task UpdateShipment()
@@ -389,7 +396,7 @@
         NavManager.NavigateTo("/shipment");
     }
 
-    async Task InsertContainer()
+    async Task SaveContainer()
     {
         if (shipment.Job_No == "")
         {
@@ -403,7 +410,13 @@
         {
             container.Shipment_Job_No = shipment.Job_No;
             var response = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/Shipment/CreateContainer/", container);
-            await JS.InvokeVoidAsync("alert", "Successfully Added");
+            if (isEditingContainer)
+            {
+                await JS.InvokeVoidAsync("alert", "Successfully Edited");
+            } else
+            {
+                await JS.InvokeVoidAsync("alert", "Successfully Added");
+            }
             var result = await getContainerData();
             containers = result.AsQueryable();
             StateHasChanged();
@@ -430,6 +443,18 @@
         {
             Console.WriteLine("Error deleting container");
         }
+    }
+
+    async Task EditContainer(Container containerInput)
+    {
+        container = containerInput;
+        isEditingContainer = true;
+    }
+
+    async Task CancelEditContainer()
+    {
+        container = new();
+        isEditingContainer = false;
     }
 
     async Task HandleAutoRating()
@@ -549,6 +574,7 @@
     public string Shipment_Job_No { get; set; }
     bool isView = false;
     bool chargesPresent = false;
+    bool shouldConfirmExternalNavigation => !chargesPresent;
 
     IQueryable<Container> containers = Enumerable.Empty<Container>().AsQueryable();
 
@@ -575,7 +601,6 @@
             charges = chargesTemp.AsQueryable();
             StateHasChanged();
         }
-        NavManager.LocationChanged += HandleLocationChanged;
     }
 
     async Task<List<Container>> getContainerData()
@@ -622,14 +647,16 @@
         StateHasChanged();
     }
 
-    private async void HandleLocationChanged(object sender, LocationChangedEventArgs e)
+    private async void OnBeforeInternalNavigation(LocationChangingContext context)
     {
+        Console.WriteLine("Location changing...");
         if (!chargesPresent)
         {
-            var confirmed = await JS.InvokeAsync<bool>("confirm", "Some charges have not been saved. Are you sure you want to leave the page?");
-            if (!confirmed)
+            var isConfirmed = await JS.InvokeAsync<bool>("confirm", "Some charges have not been saved. Are you sure you want to leave the page?");
+
+            if (!isConfirmed)
             {
-                return;
+                context.PreventNavigation();
             }
         }
     }

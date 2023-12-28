@@ -36,16 +36,19 @@
                     <li>
                         File: @file.Name
 
-                        @if (@numShipments == "0")
+                        @if (FileUpload(uploadResults, file.Name, out var result))
                         {
-                            <div class="text-danger"> All shipments already exist!</div>
-                        }
-
-                        else if (FileUpload(uploadResults, file.Name, out var result))
-                        {
-                            <div class="text-success">
-                                @numShipments New Shipment(s) Uploaded
-                            </div>
+                            if (uploadResult.StartsWith("Error"))
+                            {
+                                <div class="text-danger">
+                                    @uploadResult
+                                </div>
+                            } else
+                            {
+                                <div class="text-success">
+                                    @uploadResult
+                                </div>
+                            }
                         }
                         else
                         {
@@ -81,7 +84,7 @@
     private int maxAllowedFiles = 1;
     private bool shouldRender;
     private string? message;
-    public string numShipments = "";
+    public string uploadResult = "";
     private bool isLoading = false;
     protected override bool ShouldRender() => shouldRender;
 
@@ -172,7 +175,7 @@
                 {
                     uploadResults = uploadResults.Concat(newUploadResults).ToList();
                     HttpResponseMessage result = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/Shipment/CreateShipments/", uploadResults[0].StoredFileName);
-                    numShipments = result.Content.ReadAsStringAsync().Result;
+                    uploadResult = result.Content.ReadAsStringAsync().Result;
                 }
 
             }

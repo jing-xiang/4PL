@@ -44,40 +44,18 @@ namespace _4PL.Data
         public IActionResult insertExceltoSnowflake ([FromBody] string fileNameWithoutExtension)
         {
             Dictionary<string, Shipment> dict = ReadExcelFile(fileNameWithoutExtension);
-            Dictionary<string, Shipment> newdict = new();
-            
-            int output = 0;
-            HashSet<string> shipments = _dbcontext.fetchAllShipments();
-
-            foreach (var kvp in dict)
+            var response = _dbcontext.InsertShipments(dict.Values.ToList());
+               
+            var returnOutput = "";
+            if (response.Any())
             {
-                string Job_No = kvp.Key;
-                if (!shipments.Contains(Job_No))
-                {
-                    output++;
-                    newdict[Job_No] = dict[Job_No];
-                }
-
-            }
-
-            if (output == 0)
-            {
-                return Ok(output.ToString());
+                returnOutput += "Error uploading file. \n";
+                returnOutput += $"Existing Shipments: {string.Join(", ", response)}";
             } else
             {
-                _dbcontext.InsertShipments(newdict.Values.ToList());
-                /*foreach (var kvp in newdict)
-                {
-                    Shipment shipment = kvp.Value;
-                    _dbcontext.InsertShipment(shipment);
-                    List<Container> containers = shipment.Container_List;
-                    foreach (var container in containers)
-                    {
-                        _dbcontext.InsertContainer(container);
-                    }
-                }*/
-                return Ok(output.ToString());
+                returnOutput +=  dict.ToList().Count + " new shipment(s) uploaded.";
             }
+            return Ok(returnOutput);
         }
 
         [HttpPost("UpdateShipment")]
