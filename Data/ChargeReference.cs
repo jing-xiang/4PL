@@ -7,7 +7,14 @@ public class ChargeReference
 
     public ChargeReference(string charge_Code, string charge_Description)
     {
-        Charge_Code = charge_Code;
-        Charge_Description = charge_Description;
+        this.Charge_Code = charge_Code;
+        this.Charge_Description = charge_Description;
+    }
+
+    // Default constructor without parameters
+    public ChargeReference()
+    {
+        this.Charge_Code = "";
+        this.Charge_Description = "";
     }
 }
