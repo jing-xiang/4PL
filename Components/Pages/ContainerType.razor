@@ -19,13 +19,13 @@
         <label class="label-control">Add Container Type</label>
         <InputText @bind-Value="addContainerTypeReference.Container_Type" class="form-control" autocomplete="off"></InputText>
         <button type="submit" class="btn btn-primary my-2">Add</button>
-
     </EditForm>
     <EditForm Model="searchContainerTypeReference" OnSubmit="FetchContainerTypes" Enhance>
         <label class="label-control">Search Container Type</label>
         <InputText @bind-Value="searchContainerTypeReference.Container_Type" class="form-control" autocomplete="off"></InputText>
         <button type="submit" class="btn btn-primary my-2">Search</button>
     </EditForm>
+    <br />
     <QuickGrid Items="@ContainerTypesQueryable" @ref="grid" Pagination="pagination">
         <PropertyColumn Title="Container Type" Property="@(c => c.Container_Type)" Sortable="true" InitialSortDirection="SortDirection.Ascending"></PropertyColumn>
         <TemplateColumn Title="Action">
