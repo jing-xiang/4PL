@@ -5,7 +5,7 @@ namespace _4PL.Data;
 public class ContainerTypeReference
 
 {
-    [Key] // TBC
+    [Key] 
     public string Container_Type { get; set; }
 
     public ContainerTypeReference(string container_Type)
@@ -13,7 +13,7 @@ public class ContainerTypeReference
         this.Container_Type = container_Type;
     }
 
-    // Default constructor without parameters (TBC)
+    // Default constructor without parameters
     public ContainerTypeReference()
     {
         this.Container_Type = ""; 
