@@ -1,0 +1,148 @@
+﻿@page "/container-type"
+@using System.Diagnostics
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using _4PL.Data
+@inject IConfiguration Configuration
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject NavigationManager NavManager
+
+@rendermode InteractiveServer
+
+<PageTitle>Container Type</PageTitle>
+
+<h3 class="container">Container Type</h3>
+<div class="container">
+
+    <EditForm Model="addContainerTypeReference" OnSubmit="AddContainerType" Enhance>
+        <label class="label-control">Add Container Type</label>
+        <InputText @bind-Value="addContainerTypeReference.Container_Type" class="form-control" autocomplete="off"></InputText>
+        <button type="submit" class="btn btn-primary my-2">Add</button>
+
+    </EditForm>
+    <EditForm Model="searchContainerTypeReference" OnSubmit="FetchContainerTypes" Enhance>
+        <label class="label-control">Search Container Type</label>
+        <InputText @bind-Value="searchContainerTypeReference.Container_Type" class="form-control" autocomplete="off"></InputText>
+        <button type="submit" class="btn btn-primary my-2">Search</button>
+    </EditForm>
+    <QuickGrid Items="@ContainerTypesQueryable" @ref="grid" Pagination="pagination">
+        <PropertyColumn Title="Container Type" Property="@(c => c.Container_Type)" Sortable="true" InitialSortDirection="SortDirection.Ascending"></PropertyColumn>
+        <TemplateColumn Title="Action">
+            <button @onclick="@(() => DeleteContainerType(context.Container_Type))" class="btn btn-danger">Delete</button>
+        </TemplateColumn>
+    </QuickGrid>
+    <Paginator State="@pagination" />
+
+</div>
+
+
+
+@code {
+    IQueryable<ContainerTypeReference> ContainerTypesQueryable = Enumerable.Empty<ContainerTypeReference>().AsQueryable();
+
+    [SupplyParameterFromForm]
+    ContainerTypeReference addContainerTypeReference { get; set; } = new();
+    [SupplyParameterFromForm]
+    ContainerTypeReference searchContainerTypeReference { get; set; } = new();
+    // static List<ContainerTypeReference> containerTypesList = new(); 
+
+    QuickGrid<ContainerTypeReference>? grid;
+    PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
+
+    async Task AddContainerType()
+    {
+        searchContainerTypeReference = new(); // clear if there were previous searches
+        string containerType = addContainerTypeReference.Container_Type.Trim();// trim leading and trailing spaces
+        if (containerType == "")
+        {
+            await JS.InvokeVoidAsync("alert", "Please fill in a container type");
+        }
+        // containerTypesList.Add(containerTypeReference);
+        // ConvertListToQueryable();
+        HttpResponseMessage response = await Http.PostAsJsonAsync<string>($"{Configuration["ApiBaseUrl"]}/api/ContainerType/CreateContainerType/{containerType}", containerType);
+        string result = response.Content.ReadAsStringAsync().Result;
+        if (result == "Error - duplicate primary keys")
+        {
+            await JS.InvokeVoidAsync("alert", "Container type already exists");
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", $"Successfully added container type: {result}");
+            // Navigation?
+            StateHasChanged();
+            //NavManager.NavigateTo("/container-type");
+        }
+        addContainerTypeReference = new();
+    }
+
+    async Task DeleteContainerType(string containerType)
+    {
+        string confirmMessage = $"Confirm delete container type: {containerType}?";
+        bool confirmed = await JS.InvokeAsync<bool>("confirm", confirmMessage);
+        if (confirmed)
+        {
+            string searchTerm = searchContainerTypeReference.Container_Type;
+            Debug.WriteLine($">>> Logging: {containerType}");
+
+            HttpResponseMessage result = await Http.DeleteAsync($"{Configuration["ApiBaseUrl"]}/api/ContainerType/DeleteContainerType/{containerType}");
+            // result = await Http.PostAsJsonAsync<string>($"{Configuration["ApiBaseUrl"]}/api/ContainerType/DeleteContainerType/{containerType}", containerType);
+
+            Debug.WriteLine($"Logging: {result.StatusCode}");
+
+            if (result.Content.ReadAsStringAsync().Result == "true")
+            {
+                await JS.InvokeVoidAsync("alert", $"Successfully deleted container type: {containerType}");
+                // Refresh and display
+                // NavManager.NavigateTo("/container-type");
+                await FetchContainerTypes();
+
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", $"Failed to delete container type: {containerType} -- Does not exist");
+            }
+            //addContainerTypeReference = new(); 
+        }
+
+    }
+
+    async Task FetchContainerTypes()
+    {
+        string containerType = searchContainerTypeReference.Container_Type.Trim(); // remove leading and trailing white spaces
+        List<ContainerTypeReference> items = new List<ContainerTypeReference>();
+        if (containerType == "")
+        {
+            items = await Http.GetFromJsonAsync<List<ContainerTypeReference>>($"{Configuration["ApiBaseUrl"]}/api/ContainerType/FetchAllContainerTypes");
+        }
+        else
+        {
+            items = await Http.GetFromJsonAsync<List<ContainerTypeReference>>($"{Configuration["ApiBaseUrl"]}/api/ContainerType/FetchContainerTypes/{containerType}");
+        }
+        if (containerType == "" && !items.Any())
+        {
+            await JS.InvokeVoidAsync("alert", $"No search results found");
+        }
+        else if (!items.Any())
+        {
+            await JS.InvokeVoidAsync("alert", $"No search results found for container type: {containerType}");
+        }
+        ContainerTypesQueryable = items.AsQueryable();
+        // Refresh and display
+        StateHasChanged();
+    }
+
+    // protected override void OnInitialized()
+    // {
+    //     ConvertListToQueryable();
+    // }
+
+    // private void ConvertListToQueryable()
+    // {
+    //     if (containerTypesList is null) return;
+    //     foreach (var ct in containerTypesList)
+    //     {
+    //         ContainerTypesQueryable = ContainerTypesQueryable.Concat(new[] { ct }.AsQueryable());
+    //     }
+    // }
+
+}

@@ -2,6 +2,7 @@ using Snowflake.Data.Client;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
 using System.Text;
+using System.Diagnostics;
 
 namespace _4PL.Data
 {
@@ -1563,7 +1564,114 @@ namespace _4PL.Data
 
             return res;
         }
-      
+
+        /**
+         * Container Type Reference
+         * 1. Create a container type
+         * 2. Delete a container type
+         * 3. Show list of container types (based on search parameters) 
+        **/
+
+        public async Task<String> CreateContainerType(string containerType)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                var createdContainerType = "Error in creating new container type"; 
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = $@"CALL CREATE_CONTAINER_TYPE (:Container_Type)";
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Container_Type", Value = containerType, DbType = DbType.String });
+                    createdContainerType = command.ExecuteScalar().ToString();
+
+                }
+                return createdContainerType;
+
+            }
+        }
+
+        public async Task<int> DeleteContainerType(string containerType)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                var createdContainerType = "Error in creating new container type";
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = $@"CALL DELETE_CONTAINER_TYPE (:Container_Type)";
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Container_Type", Value = containerType, DbType = DbType.String });
+                    // try UPDATE procedure 
+
+                    //command.CommandText = $@"CALL CREATE_CONTAINER_TYPE (:Container_Type)";
+                    //command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Container_Type", Value = containerType, DbType = DbType.String });
+                    //createdContainerType = command.ExecuteScalar().ToString();
+                    //Debug.WriteLine($"result of DB call: {createdContainerType}");
+
+
+                    var result = command.ExecuteScalar();
+                    Debug.WriteLine($"result of DB call: {result}");
+                    if (result != DBNull.Value)
+                    {
+                        return Int32.Parse(result.ToString());
+                    }
+                    else
+                    {
+                        throw new Exception($"Failed to delete container type {containerType}");
+                    }
+
+                }
+                //return createdContainerType != null ? 1: 0;
+            }
+        }
+
+        public async Task<List<ContainerTypeReference>> FetchContainerTypes(string containerType) 
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                List<ContainerTypeReference> containerTypes = new List<ContainerTypeReference>();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = $@"CALL FETCH_CONTAINER_TYPES (:Container_Type)";
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Container_Type", Value = containerType, DbType = DbType.String });
+                    IDataReader reader = command.ExecuteReader(); 
+
+                    while (reader.Read())
+                    {
+                        ContainerTypeReference ct = new ContainerTypeReference();
+                        ct.Container_Type = reader.GetString(reader.GetOrdinal("CONTAINER_TYPE"));
+                        containerTypes.Add(ct);
+                    }
+
+                }
+                return containerTypes; 
+            }
+        }
+
+        public async Task<List<ContainerTypeReference>> FetchAllContainerTypes()
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                List<ContainerTypeReference> containerTypes = new List<ContainerTypeReference>();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = $@"CALL FETCH_ALL_CONTAINER_TYPES()"; 
+                    // Changed to stored procedure
+                    IDataReader reader = command.ExecuteReader();
+
+                    while (reader.Read())
+                    {
+                        ContainerTypeReference ct = new ContainerTypeReference();
+                        ct.Container_Type = reader.GetString(reader.GetOrdinal("CONTAINER_TYPE"));
+                        containerTypes.Add(ct);
+                    }
+
+                }
+                return containerTypes;
+            }
+        }
+
         public string InsertShipment(Shipment shipment)
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
