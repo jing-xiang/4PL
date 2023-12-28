@@ -3,7 +3,6 @@
 namespace _4PL.Data;
 
 public class ContainerTypeReference
-
 {
     [Key] 
     public string Container_Type { get; set; }
@@ -16,8 +15,7 @@ public class ContainerTypeReference
     // Default constructor without parameters
     public ContainerTypeReference()
     {
-        this.Container_Type = ""; 
+        this.Container_Type = "";
     }
-
 
 }
