@@ -2,6 +2,8 @@
 using System.Security.Cryptography;
 using System.Data;
 using Components.Account;
+using System.Text.RegularExpressions;
+using Microsoft.IdentityModel.Tokens;
 
 namespace _4PL.Data
 {
@@ -306,13 +308,23 @@ namespace _4PL.Data
         {
             try
             {
-                if (setting.SettingType == "MAX FAILED ATTEMPTS" || setting.SettingType == "MAX DAYS BEFORE LOCKED" || setting.SettingType == "EMAIL PORT")
+                if (setting.Value.IsNullOrEmpty())
                 {
-                    if (!int.TryParse(setting.Value, out int result))
-                    {
-                        return BadRequest($"{setting.SettingType} must be a number.");
-                    }
+                    return BadRequest("Field cannot be empty.");
                 }
+
+                if ((setting.SettingType == "MAX FAILED ATTEMPTS" 
+                    || setting.SettingType == "MAX DAYS BEFORE LOCKED" 
+                    || setting.SettingType == "EMAIL PORT") && (!int.TryParse(setting.Value, out int result)))
+                {
+                        return BadRequest($"{setting.SettingType} must be a number.");
+                }
+
+                if (setting.SettingType == "EMAIL SERVER" && !Regex.IsMatch(setting.Value, @"^[^@\s]+\.[^@\s]+\.[^@\s]+$"))
+                {
+                    return BadRequest("Invalid Email Server Provided.");
+                }
+
                 _dbContext.UpdateSetting(setting);
                 return Ok($"{setting.SettingType} updated.");
             }
