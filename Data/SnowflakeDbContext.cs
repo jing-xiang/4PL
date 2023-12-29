@@ -48,30 +48,20 @@ namespace _4PL.Data
                 {
                     throw new DuplicateNameException("Account already exists.");
                 }
-                using (IDbCommand command1 = conn.CreateCommand())
-                {
-                    command1.CommandText = $"SELECT * FROM access_model";
-                    using (var reader = command1.ExecuteReader())
-                    {
-
-                        while (reader.Read())
-                        {
-                            //fetch access rights
-                            var accesstype = reader.GetString(0);
-                            //append to array
-                            access_types.Add(accesstype);
-                            Console.WriteLine(accesstype);
-                        }
-                    }
-                }
-                    for (int i = 0; i < access_types.Count; i++)
-                        {
-                            IDbCommand command2 = conn.CreateCommand();
-                            command2.CommandText = $"INSERT INTO access_control (email, access_type, is_accessible) VALUES ('{user.Email}', '{access_types[i]}', false)";
-                            command2.ExecuteScalar();
-                        }
             }
-        
+        }
+
+        public bool CheckIsValidUser(string email)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                Console.WriteLine("connection opened");
+                IDbCommand command = conn.CreateCommand();
+                command.CommandText = $"CALL CHECK_DUPLICATE('{email}')";
+                Console.WriteLine("command executing");
+                return Convert.ToBoolean(command.ExecuteScalar());
+            }
         }
 
         public async Task<IDataReader> GetEmailSettings()
@@ -102,6 +92,7 @@ namespace _4PL.Data
                     {
                         SettingType = reader.GetString(0),
                         Value = reader.GetString(1),
+                        New = reader.GetString(1)
                     };
                     settings.Add(setting);
                 }
@@ -117,7 +108,7 @@ namespace _4PL.Data
                 IDbCommand command = conn.CreateCommand();
                 command.CommandText = "CALL UPDATE_SYSTEM_SETTING(:setting_type, :new_value)";
                 command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "setting_type", Value = setting.SettingType, DbType = DbType.String });
-                command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "new_value", Value = setting.Value, DbType = DbType.String });
+                command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "new_value", Value = setting.New, DbType = DbType.String });
 
                 command.ExecuteScalar();
             }
@@ -413,179 +404,6 @@ namespace _4PL.Data
                 command.ExecuteScalar();
             }
         }
-
-        public async Task<bool[]> FetchAccessRights(string email)
-        {
-            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
-            {
-                conn.Open();
-                ApplicationUser currUser = new ApplicationUser();
-                using (IDbCommand command = conn.CreateCommand())
-                {
-                    command.CommandText = $"SELECT * FROM access_control WHERE email = '{email}'";
-                    using (var reader = command.ExecuteReader())
-                    {
-                        //new list
-                        List<bool> accessRights = new List<bool>(); 
-                        while (reader.Read())
-                        {
-                            //fetch access rights
-                            var right = reader.GetBoolean(2);
-                            Console.WriteLine("access rights fetched");
-                            //append to array
-                            accessRights.Add(right);
-                        }
-                            return accessRights.ToArray();
-                    }
-                }
-            }
-        }
-
-        public async Task<string[]> FetchAccessRightsHeadings(string email)
-        {
-            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
-            {
-                conn.Open();
-                ApplicationUser currUser = new ApplicationUser();
-                using (IDbCommand command = conn.CreateCommand())
-                {
-                    command.CommandText = $"SELECT * FROM access_control WHERE email = '{email}'";
-                    using (var reader = command.ExecuteReader())
-                    {
-                        List<string> headings = new List<string>();
-                        while (reader.Read())
-                        {
-                            //fetch access rights
-                            var heading = reader.GetString(1);
-                            Console.WriteLine("headings fetched");
-                            //append to array
-                            headings.Add(heading);
-                        }
-                        return headings.ToArray();
-                    }
-                }
-            }
-        }
-
-        public async Task<string[]> FetchAvailableAccounts()
-        {
-            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
-            {
-                conn.Open();
-                ApplicationUser currUser = new ApplicationUser();
-                using (IDbCommand command = conn.CreateCommand())
-                {
-                    command.CommandText = $"SELECT * FROM user_information";
-                    using (var reader = command.ExecuteReader())
-                    {
-                        List<string> availableAccounts = new List<string>();
-                        while (reader.Read())
-                        {
-                            //fetch access rights
-                            var email = reader.GetString(0);
-                            Console.WriteLine("available accounts fetched");
-                            //append to array
-                            availableAccounts.Add(email);
-                            Console.WriteLine(email);
-                        }
-                        return availableAccounts.ToArray();
-                    }
-                }
-            }
-        }
-        
-        public async Task CopyAccessRights(string email, string[] access_type, bool[] is_accessible)
-        {
-            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
-            {
-                conn.Open();
-                using (IDbCommand command = conn.CreateCommand())
-                {
-                        command.CommandText = $"DELETE FROM access_control WHERE email = '{email}'";
-                        command.ExecuteScalar();
-                    command.CommandText = $"INSERT INTO access_control (email, access_type, is_accessible) VALUES";
-                    for (int i = 0; i < access_type.Length; i++)
-                    {
-                        command.CommandText +=  $"('{email}', '{access_type[i]}', {is_accessible[i]})";
-                        if (i < access_type.Length - 1)
-                        {
-                            command.CommandText += ",";
-                        }
-                    }
-                    command.ExecuteScalar();
-                }
-            }
-        }
-
-        public async Task DeleteAccessRights(string email, string access_type)
-        {
-            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
-            {
-                conn.Open();
-                using (IDbCommand command = conn.CreateCommand())
-                {
-                    command.CommandText = $"DELETE FROM access_control WHERE email = '{email}' AND access_type = '{access_type}'";
-                    command.ExecuteScalar();
-                    Console.WriteLine("access rights deleted");
-                }
-            }
-        }
-
-        public async Task SaveAccessRights(List<string> parameterList, string[] access_type)
-        {
-            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
-            {
-                conn.Open();
-                using (IDbCommand command = conn.CreateCommand())
-                {
-                    command.CommandText = $"DELETE FROM access_control WHERE email = '{parameterList[0]}'";
-                    command.ExecuteScalar();
-                    Console.WriteLine("access rights deleted");
-                    command.CommandText = $"INSERT INTO access_control (email, access_type, is_accessible) VALUES";
-                    for (int i = 1; i < parameterList.Count; i++)
-                    {
-                         command.CommandText += $"('{parameterList[0]}', '{access_type[i-1]}', '{parameterList[i]}')";
-                        if (i < parameterList.Count - 1)
-                        {
-                            command.CommandText += ",";
-                        }
-                    }
-                    command.ExecuteScalar();
-                    Console.WriteLine("access rights saved");
-                }
-            }
-        }
-
-        public async Task AddAccessRights(string access_type, string description, string[] accounts)
-        {
-            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
-            {
-                conn.Open();
-                using (IDbCommand command = conn.CreateCommand())
-                {
-                    command.CommandText = $"UPDATE access_model SET description = '{description}' WHERE access_type = '{access_type}'";
-                    int rowsAffected = command.ExecuteNonQuery();
-
-                    if (rowsAffected == 0)
-                    {
-                        command.CommandText = $"INSERT INTO access_model (access_type, description) VALUES ('{access_type}', '{description}')";
-                        command.ExecuteScalar();
-                        for (int i = 0; i < accounts.Length; i++)
-                        {
-                            command.CommandText = $"INSERT INTO access_control (email, access_type, is_accessible) VALUES ('{accounts[i]}', '{access_type}', false)";
-                            command.ExecuteScalar();
-                        }
-                        Console.WriteLine("access rights added");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"Access type '{access_type}' description updated.");
-                    }
-                }
-            }
-        }
-
-
 
         /*
          * Ratecard
