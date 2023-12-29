@@ -29,5 +29,15 @@
             this.Seal_No_2 = "";
         }
 
+        public Container(Container cont)
+        {
+            this.Id = cont.Id;
+            this.Shipment_Job_No = cont.Shipment_Job_No;
+            this.Container_No = cont.Container_No;
+            this.Container_Type = cont.Container_Type;
+            this.Seal_No_1 = cont.Seal_No_1;
+            this.Seal_No_2 = cont.Seal_No_2;
+        }
+
     }
 }

@@ -162,18 +162,18 @@
 
     async Task<List<Shipment>> getShipmentData()
     {
-        string Job_No = string.IsNullOrEmpty(shipment.Job_No) ? "%" : shipment.Job_No;
-        string Master_BL_No = string.IsNullOrEmpty(shipment.Master_BL_No) ? "%" : shipment.Master_BL_No;
-        string Place_Of_Loading_Name = string.IsNullOrEmpty(shipment.Place_Of_Loading_Name) ? "%" : shipment.Place_Of_Loading_Name;
-        string Place_Of_Discharge_Name = string.IsNullOrEmpty(shipment.Place_Of_Discharge_Name) ? "%" : shipment.Place_Of_Discharge_Name;
-        string Vessel_Name = string.IsNullOrEmpty(shipment.Vessel_Name) ? "%" : shipment.Vessel_Name;
-        string Voyage_No = string.IsNullOrEmpty(shipment.Voyage_No) ? "%" : shipment.Voyage_No;
+        string Job_No = string.IsNullOrEmpty(shipment.Job_No) ? "%" : "%" + shipment.Job_No + "%";
+        string Master_BL_No = string.IsNullOrEmpty(shipment.Master_BL_No) ? "%" : "%" + shipment.Master_BL_No + "%";
+        string Place_Of_Loading_Name = string.IsNullOrEmpty(shipment.Place_Of_Loading_Name) ? "%" : "%" + shipment.Place_Of_Loading_Name + "%";
+        string Place_Of_Discharge_Name = string.IsNullOrEmpty(shipment.Place_Of_Discharge_Name) ? "%" : "%" + shipment.Place_Of_Discharge_Name + "%";
+        string Vessel_Name = string.IsNullOrEmpty(shipment.Vessel_Name) ? "%" : "%" + shipment.Vessel_Name + "%";
+        string Voyage_No = string.IsNullOrEmpty(shipment.Voyage_No) ? "%" : "%" + shipment.Voyage_No + "%";
         DateTime ETD_Date_From = shipment.ETD_Date_From;
         DateTime ETD_Date_To = shipment.ETD_Date_To;
         DateTime ETA_Date_From = shipment.ETA_Date_From;
         DateTime ETA_Date_To = shipment.ETA_Date_To;
-        string Container_No = string.IsNullOrEmpty(container.Container_No) ? "%" : container.Container_No;
-        string Container_Type = string.IsNullOrEmpty(container.Container_Type) ? "%" : container.Container_Type;
+        string Container_No = string.IsNullOrEmpty(container.Container_No) ? "%" : "%" + container.Container_No + "%";
+        string Container_Type = string.IsNullOrEmpty(container.Container_Type) ? "%" : container.Container_Type + "%";
 
         return await HttpClient.GetFromJsonAsync<List<Shipment>>($"{NavManager.BaseUri}api/Shipment/Search?Job_No={Job_No}&Master_BL_No={Master_BL_No}&Place_Of_Loading_Name={Place_Of_Loading_Name}&Place_Of_Discharge_Name={Place_Of_Discharge_Name}&Vessel_Name={Vessel_Name}&Voyage_No={Voyage_No}&Container_No={Container_No}&Container_Type={Container_Type}&ETD_Date_From={ETD_Date_From}&ETD_Date_To={ETD_Date_To}&ETA_Date_From={ETA_Date_From}&ETA_Date_To={ETA_Date_To}");
     }
