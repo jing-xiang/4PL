@@ -20,7 +20,8 @@ namespace _4PL.Data
         public string Hash { get; set; } = "";
         public byte[] Salt { get; set; } = new byte[10];
         public string Token { get; set; } = "";
-
+        public List<AccessRight> AccessRights { get; set; } = new();
+        
         public ApplicationUser() { }
 
         public ApplicationUser(string name, string email, int failedAttempts, bool isLoocked, DateTime lastReset)

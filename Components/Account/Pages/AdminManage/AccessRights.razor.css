@@ -1,0 +1,70 @@
+﻿.grid {
+    height: 24rem;
+    width: 100%;
+    overflow-y: auto;
+}
+
+.grid-rights {
+    width: 100%;
+    overflow-y: auto;
+}
+
+.button-view {
+    width: 100px;
+    flex-wrap: wrap;
+    margin:3px;
+}
+
+::deep thead {
+    position: sticky;
+    width: auto;
+    top: 0;
+    border-bottom: 1px solid;
+    background-color: rgb(240, 240, 240);
+}
+
+::deep thead .email {
+    width: 700px;
+    overflow-wrap: initial;
+}
+
+::deep thead .name {
+    width: 500px;
+    flex-wrap: wrap;
+}
+
+::deep thead .access {
+    width: 1000px;
+    overflow-wrap: initial;
+}
+
+::deep thead .permission {
+    width: 200px;
+    flex-wrap: wrap;
+}
+
+::deep thead .button-view {
+    width: 600px;
+    flex-wrap: wrap;
+}
+
+::deep thead .button-update {
+    width: 125px;
+    align-items:center;
+    flex-wrap: wrap;
+}
+
+::deep tr:nth-child(even) {
+    background: rgba(240,240,240);
+}
+
+.page-size-chooser {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.page-size-chooser select {
+    margin: 0 0.5rem;
+    padding: 0.2rem 0.5rem;
+}
