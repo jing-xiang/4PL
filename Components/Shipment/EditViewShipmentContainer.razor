@@ -16,7 +16,7 @@
 
 @rendermode InteractiveServer
 
-<NavigationLock ConfirmExternalNavigation="@shouldConfirmExternalNavigation" OnBeforeInternalNavigation="OnBeforeInternalNavigation"></NavigationLock>
+<NavigationLock ConfirmExternalNavigation="@unsavedChanges" OnBeforeInternalNavigation="OnBeforeInternalNavigation"></NavigationLock>
 @if (isView)
 {
     <h4>Shipment Container</h4>
@@ -130,18 +130,18 @@
 }
 @if (tab2)
 {
-    <EditForm Model="container" OnSubmit="SaveContainer" Enhance>
+    <EditForm Model="tempContainer" OnSubmit="SaveContainer" Enhance>
          <label>Container No</label>
-         <InputText @bind-Value="container.Container_No" disabled=@(isView||isEditingContainer) />
+         <InputText @bind-Value="tempContainer.Container_No" disabled=@(isView||isEditingContainer) />
 
          <label>Container Type</label>
-         <InputText @bind-Value="container.Container_Type" disabled=@isView />
+         <InputText @bind-Value="tempContainer.Container_Type" disabled=@isView />
 
          <label>Seal No 1</label>
-         <InputText @bind-Value="container.Seal_No_1" disabled=@isView />
+         <InputText @bind-Value="tempContainer.Seal_No_1" disabled=@isView />
 
          <label>Seal No 2</label>
-         <InputText @bind-Value="container.Seal_No_2" disabled=@isView />
+        <InputText @bind-Value="tempContainer.Seal_No_2" disabled=@isView />
          @if (isEditingContainer)
             {
                 <button class="btn btn-outline-dark" type="button" disabled="@isView" @onclick="CancelEditContainer" style="margin-left: 5px">Cancel</button>
@@ -272,7 +272,7 @@
     </QuickGrid>
     <Paginator State="@pagination" />
     </div>
-    <button class="btn btn-primary mt-4" @onclick="SaveShipmentCharge" disabled=@(chargesPresent || isView)>Save</button>
+    <button class="btn btn-primary mt-4" @onclick="SaveShipmentCharge" disabled=@(!unsavedChanges && chargesPresent || isView)>Save</button>
 }
 
 @if (tab4)
@@ -389,6 +389,9 @@
     Container container { get; set; } = new();
     ShipmentCharge sc { get; set; } = new();
 
+    Container tempContainer = new();
+    ShipmentCharge tempSc = new();
+
     PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
     bool isEditingContainer = false;
     bool isEditingShipmentCharge = false;
@@ -409,12 +412,13 @@
         {
             await JS.InvokeVoidAsync("alert", "Please fill in the Shipment Job No");
         }
-        else if (container.Container_No == "")
+        else if (tempContainer.Container_No == "")
         {
             await JS.InvokeVoidAsync("alert", "Please fill in the Container No");
         }
         else
         {
+            container = tempContainer;
             container.Shipment_Job_No = shipment.Job_No;
             var response = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/Shipment/CreateContainer/", container);
             if (isEditingContainer)
@@ -454,18 +458,30 @@
 
     async Task EditContainer(Container containerInput)
     {
-        container = containerInput;
+        Console.WriteLine("container input");
+        Console.WriteLine(containerInput.Container_No);
+        Console.WriteLine(containerInput.Container_Type);
+        tempContainer = new Container(containerInput);
         isEditingContainer = true;
     }
 
     async Task CancelEditContainer()
     {
-        container = new();
+        tempContainer = new();
         isEditingContainer = false;
     }
 
     async Task HandleAutoRating()
     {
+        if (unsavedChanges)
+        {
+            var isConfirmed = await JS.InvokeAsync<bool>("confirm", "Some charges have not been saved. Are you sure you want to perform auto rating?");
+
+            if (!isConfirmed)
+            {
+                return;
+            }
+        }
         Tuple<List<ShipmentCharge>, List<string>> temp = await getShipmentCharges();
         chargesTemp = temp.Item1;
         List<string> containerTypeNoRatecards = temp.Item2;
@@ -475,6 +491,7 @@
         } 
         charges = chargesTemp.AsQueryable();
         StateHasChanged();
+        unsavedChanges = true;
     }
 
     async Task AddEditShipmentCharge()
@@ -501,7 +518,7 @@
         StateHasChanged();
         sc = new ShipmentCharge();
         isEditingShipmentCharge = false;
-        chargesPresent = false;
+        unsavedChanges = true;
     }
 
     async Task SaveShipmentCharge()
@@ -517,6 +534,7 @@
         var response = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/Shipment/CreateShipmentCharges/", chargesTemp);
         await JS.InvokeVoidAsync("alert", $"All charges of shipment {shipment.Job_No} have been saved");
         chargesPresent = true;
+        unsavedChanges = false;
     }
 
     async Task DeleteShipmentCharge(string Shipment_Job_No, string Charge_Name)
@@ -554,7 +572,7 @@
 
     async Task EditShipmentCharge(ShipmentCharge scInput)
     {
-        sc = scInput;
+        sc = new(scInput);
         isEditingShipmentCharge = true;
         await JS.InvokeVoidAsync("window.scrollTo", 0, 0);
     }
@@ -581,7 +599,7 @@
     public string Shipment_Job_No { get; set; }
     bool isView = false;
     bool chargesPresent = false;
-    bool shouldConfirmExternalNavigation => !chargesPresent;
+    bool unsavedChanges = false;
 
     IQueryable<Container> containers = Enumerable.Empty<Container>().AsQueryable();
 
@@ -611,7 +629,6 @@
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
         currEmail = user.FindFirst(c => c.Type == ClaimTypes.Email)?.Value;
-        Console.Write("currEmail: " + currEmail);
     }
 
     async Task<List<Container>> getContainerData()
