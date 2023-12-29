@@ -1567,47 +1567,6 @@ namespace _4PL.Data
             return res;
         }
 
-        public List<string> InsertShipments(List<Shipment> shipments)
-        {
-            Console.WriteLine("method called");
-            List<string> existingShipments = new();
-            string jsonShipments = JsonConvert.SerializeObject(shipments);
-
-            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
-            {
-                conn.Open();
-                var command = conn.CreateCommand();
-
-                command.CommandText = "CALL sp_insert_shipments (:shipments_list)";
-                command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "shipments_list", Value = jsonShipments, DbType = DbType.String });
-
-                try
-                {
-                    Console.WriteLine("test1");
-                    var result = command.ExecuteScalar().ToString();
-                    Console.WriteLine("result" + result);
-                    var response = JsonConvert.DeserializeObject<Dictionary<string, object>>(result);
-                    
-                    if (response.ContainsKey("existingShipments"))
-                    {
-                        Console.WriteLine("test2");
-                        existingShipments = JsonConvert.DeserializeObject<List<string>>(response["existingShipments"].ToString());
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine("An error occured: " +  ex.Message);
-                }
-                finally
-                {
-                    conn.Close();
-                }
-                Console.WriteLine("existingshipments: " + existingShipments);
-                return existingShipments;
-            }
-        }
-
-
         public async Task<String> CreateContainerType(string containerType)
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
@@ -1705,6 +1664,46 @@ namespace _4PL.Data
 
                 }
                 return containerTypes;
+            }
+        }
+
+        public List<string> InsertShipments(List<Shipment> shipments)
+        {
+            Console.WriteLine("method called");
+            List<string> existingShipments = new();
+            string jsonShipments = JsonConvert.SerializeObject(shipments);
+
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                var command = conn.CreateCommand();
+
+                command.CommandText = "CALL sp_insert_shipments (:shipments_list)";
+                command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "shipments_list", Value = jsonShipments, DbType = DbType.String });
+
+                try
+                {
+                    Console.WriteLine("test1");
+                    var result = command.ExecuteScalar().ToString();
+                    Console.WriteLine("result" + result);
+                    var response = JsonConvert.DeserializeObject<Dictionary<string, object>>(result);
+
+                    if (response.ContainsKey("existingShipments"))
+                    {
+                        Console.WriteLine("test2");
+                        existingShipments = JsonConvert.DeserializeObject<List<string>>(response["existingShipments"].ToString());
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("An error occured: " + ex.Message);
+                }
+                finally
+                {
+                    conn.Close();
+                }
+                Console.WriteLine("existingshipments: " + existingShipments);
+                return existingShipments;
             }
         }
 
