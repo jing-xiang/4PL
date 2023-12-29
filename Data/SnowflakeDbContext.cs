@@ -2017,6 +2017,8 @@ namespace _4PL.Data
                         s.Total_No_Of_Gross_Weight_KGM = reader.GetDouble(reader.GetOrdinal("TOTAL_NO_OF_GROSS_WEIGHT_KGM"));
                         s.Description = reader.GetString(reader.GetOrdinal("DESCRIPTION"));
                         s.Shipment_Note = reader.GetString(reader.GetOrdinal("SHIPMENT_NOTE"));
+                        s.Last_Modified_At = reader.GetDateTime(reader.GetOrdinal("LAST_MODIFIED_AT"));
+                        s.Last_Modified_By = reader.GetString(reader.GetOrdinal("LAST_MODIFIED_BY"));
                     }
                 }
                 return s;

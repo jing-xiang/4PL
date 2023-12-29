@@ -16,7 +16,7 @@
 
 @rendermode InteractiveServer
 
-<NavigationLock ConfirmExternalNavigation="@unsavedChanges" OnBeforeInternalNavigation="OnBeforeInternalNavigation"></NavigationLock>
+<NavigationLock ConfirmExternalNavigation="@unsavedChanges"></NavigationLock>
 @if (isView)
 {
     <h4>Shipment Container</h4>
@@ -398,11 +398,21 @@
 
     async Task UpdateShipment()
     {
-        shipment.Last_Modified_By = currEmail;
-        shipment.Last_Modified_At = DateTime.Now;
-        var response = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/Shipment/UpdateShipment/", shipment);
-        await JS.InvokeVoidAsync("alert", "Successfully Updated");
-        NavManager.NavigateTo("/shipment");
+        Shipment latestShipment = await getShipmentData();
+        Console.WriteLine("updateshipmenttest");
+        Console.WriteLine(latestShipment.Last_Modified_At);
+        Console.WriteLine(shipment.Last_Modified_At);
+        if (latestShipment.Last_Modified_At != shipment.Last_Modified_At)
+        {
+            await JS.InvokeVoidAsync("alert", "The shipment has just recently been updated. Please reload to view the latest update.");
+        } else
+        {
+            shipment.Last_Modified_By = currEmail;
+            shipment.Last_Modified_At = DateTime.Now;
+            var response = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/Shipment/UpdateShipment/", shipment);
+            await JS.InvokeVoidAsync("alert", "Successfully Updated");
+            NavManager.NavigateTo("/shipment");
+        }
     }
 
     async Task SaveContainer()
