@@ -1,6 +1,9 @@
 ﻿@page "/shipment/edit"
 @page "/shipment/view"
 
+@using System.Security.Claims
+@using _4PL.Components.Account.Shared
+@using Microsoft.AspNetCore.Identity
 @using Newtonsoft.Json
 @using _4PL.Data
 @using Microsoft.AspNetCore.Components.QuickGrid
@@ -9,6 +12,7 @@
 @inject IJSRuntime JS
 @inject NavigationManager NavManager
 @inject HttpClient HttpClient
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 @rendermode InteractiveServer
 
@@ -388,9 +392,12 @@
     PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
     bool isEditingContainer = false;
     bool isEditingShipmentCharge = false;
+    private string? currEmail;
 
     async Task UpdateShipment()
     {
+        shipment.Last_Modified_By = currEmail;
+        shipment.Last_Modified_At = DateTime.Now;
         var response = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/Shipment/UpdateShipment/", shipment);
         await JS.InvokeVoidAsync("alert", "Successfully Updated");
         NavManager.NavigateTo("/shipment");
@@ -601,6 +608,10 @@
             charges = chargesTemp.AsQueryable();
             StateHasChanged();
         }
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        currEmail = user.FindFirst(c => c.Type == ClaimTypes.Email)?.Value;
+        Console.Write("currEmail: " + currEmail);
     }
 
     async Task<List<Container>> getContainerData()

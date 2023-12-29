@@ -36,6 +36,8 @@ namespace _4PL.Data
         [HttpPost("CreateShipment")]
         public IActionResult insertFormtoSnowflake([FromBody] Shipment shipment)
         {
+            Console.WriteLine("test");
+            Console.WriteLine(shipment.ToString());
             string uploadMessage = _dbcontext.InsertShipment(shipment);
             return Ok(uploadMessage);
         }

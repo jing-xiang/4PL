@@ -3,6 +3,7 @@
 @using System.Net.Http.Headers
 @using System.Text.Json
 @using _4PL.Data
+@using System.Security.Claims
 
 @inject NavigationManager NavManager
 @inject IHttpClientFactory ClientFactory
@@ -79,6 +80,9 @@
 
 
 @code {
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
     private List<File> files = new();
     private List<UploadResult> uploadResults = new();
     private int maxAllowedFiles = 1;
