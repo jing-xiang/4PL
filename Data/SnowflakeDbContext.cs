@@ -67,14 +67,14 @@ namespace _4PL.Data
                         }
                     }
                 }
-                    for (int i = 0; i < access_types.Count; i++)
-                        {
-                            IDbCommand command2 = conn.CreateCommand();
-                            command2.CommandText = $"INSERT INTO access_control (email, access_type, is_accessible) VALUES ('{user.Email}', '{access_types[i]}', false)";
-                            command2.ExecuteScalar();
-                        }
+                for (int i = 0; i < access_types.Count; i++)
+                {
+                    IDbCommand command2 = conn.CreateCommand();
+                    command2.CommandText = $"INSERT INTO access_control (email, access_type, is_accessible) VALUES ('{user.Email}', '{access_types[i]}', false)";
+                    command2.ExecuteScalar();
+                }
             }
-        
+
         }
 
         public async Task<IDataReader> GetEmailSettings()
@@ -82,7 +82,7 @@ namespace _4PL.Data
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
                 conn.Open();
-                
+
                 IDbCommand command = conn.CreateCommand();
                 command.CommandText = "CALL GET_EMAIL_SETTINGS()";
                 return command.ExecuteReader();
@@ -292,7 +292,7 @@ namespace _4PL.Data
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
                 conn.Open();
-                IDbCommand command = conn.CreateCommand(); 
+                IDbCommand command = conn.CreateCommand();
                 command.CommandText = $"CALL RESET_PASSWORD(:email, :password, :salt, :reset_date)";
                 command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "email", Value = user.Email, DbType = DbType.String });
                 command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "password", Value = user.Hash, DbType = DbType.String });
@@ -429,7 +429,7 @@ namespace _4PL.Data
                     using (var reader = command.ExecuteReader())
                     {
                         //new list
-                        List<bool> accessRights = new List<bool>(); 
+                        List<bool> accessRights = new List<bool>();
                         while (reader.Read())
                         {
                             //fetch access rights
@@ -438,7 +438,7 @@ namespace _4PL.Data
                             //append to array
                             accessRights.Add(right);
                         }
-                            return accessRights.ToArray();
+                        return accessRights.ToArray();
                     }
                 }
             }
@@ -496,7 +496,7 @@ namespace _4PL.Data
                 }
             }
         }
-        
+
         public async Task CopyAccessRights(string email, string[] access_type, bool[] is_accessible)
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
@@ -504,12 +504,12 @@ namespace _4PL.Data
                 conn.Open();
                 using (IDbCommand command = conn.CreateCommand())
                 {
-                        command.CommandText = $"DELETE FROM access_control WHERE email = '{email}'";
-                        command.ExecuteScalar();
+                    command.CommandText = $"DELETE FROM access_control WHERE email = '{email}'";
+                    command.ExecuteScalar();
                     command.CommandText = $"INSERT INTO access_control (email, access_type, is_accessible) VALUES";
                     for (int i = 0; i < access_type.Length; i++)
                     {
-                        command.CommandText +=  $"('{email}', '{access_type[i]}', {is_accessible[i]})";
+                        command.CommandText += $"('{email}', '{access_type[i]}', {is_accessible[i]})";
                         if (i < access_type.Length - 1)
                         {
                             command.CommandText += ",";
@@ -547,7 +547,7 @@ namespace _4PL.Data
                     command.CommandText = $"INSERT INTO access_control (email, access_type, is_accessible) VALUES";
                     for (int i = 1; i < parameterList.Count; i++)
                     {
-                         command.CommandText += $"('{parameterList[0]}', '{access_type[i-1]}', '{parameterList[i]}')";
+                        command.CommandText += $"('{parameterList[0]}', '{access_type[i - 1]}', '{parameterList[i]}')";
                         if (i < parameterList.Count - 1)
                         {
                             command.CommandText += ",";
@@ -766,12 +766,12 @@ namespace _4PL.Data
                             //)";
                             //command.Parameters.Clear();
                             command.Parameters.Add(new SnowflakeDbParameter { ParameterName = $"id{i}", Value = charge.Id, DbType = DbType.Guid });
-                                                                                               
+
                             command.Parameters.Add(new SnowflakeDbParameter { ParameterName = $"transaction_id{i}", Value = transactionId, DbType = DbType.Guid });
                             command.Parameters.Add(new SnowflakeDbParameter { ParameterName = $"ratecard_id{i}", Value = ratecardId, DbType = DbType.Guid });
-                                                                                               
+
                             command.Parameters.Add(new SnowflakeDbParameter { ParameterName = $"created_at{i}", Value = DateTime.Now, DbType = DbType.DateTime });
-                                                                                               
+
                             command.Parameters.Add(new SnowflakeDbParameter { ParameterName = $"charge_description{i}", Value = charge.Charge_Description, DbType = DbType.String });
                             command.Parameters.Add(new SnowflakeDbParameter { ParameterName = $"calculation_base{i}", Value = charge.Calculation_Base, DbType = DbType.String });
                             command.Parameters.Add(new SnowflakeDbParameter { ParameterName = $"minimum{i}", Value = charge.Min, DbType = DbType.Double });
@@ -946,7 +946,7 @@ namespace _4PL.Data
          */
         public List<RateCard> GetRatecardsFromTransactionId(string transactionId, long offset, long limit)
         {
-            List<RateCard> ratecards = new List<RateCard> ();
+            List<RateCard> ratecards = new List<RateCard>();
 
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
@@ -1031,7 +1031,7 @@ namespace _4PL.Data
          * Retrieves charges from ratecard ID
          * 
          */
-        public List<Charge> GetChargesFromRatecardId(string ratecardId, long offset=0, long limit=1000)
+        public List<Charge> GetChargesFromRatecardId(string ratecardId, long offset = 0, long limit = 1000)
         {
             List<Charge> charges = new List<Charge>();
 
@@ -1572,7 +1572,7 @@ namespace _4PL.Data
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
                 conn.Open();
-                var createdContainerType = "Error in creating new container type"; 
+                var createdContainerType = "Error in creating new container type";
                 using (IDbCommand command = conn.CreateCommand())
                 {
                     command.CommandText = $@"CALL CREATE_CONTAINER_TYPE (:Container_Type)";
@@ -1619,7 +1619,7 @@ namespace _4PL.Data
             }
         }
 
-        public async Task<List<ContainerTypeReference>> FetchContainerTypes(string containerType) 
+        public async Task<List<ContainerTypeReference>> FetchContainerTypes(string containerType)
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
@@ -1629,7 +1629,7 @@ namespace _4PL.Data
                 {
                     command.CommandText = $@"CALL FETCH_CONTAINER_TYPES (:Container_Type)";
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Container_Type", Value = containerType, DbType = DbType.String });
-                    IDataReader reader = command.ExecuteReader(); 
+                    IDataReader reader = command.ExecuteReader();
 
                     while (reader.Read())
                     {
@@ -1639,7 +1639,7 @@ namespace _4PL.Data
                     }
 
                 }
-                return containerTypes; 
+                return containerTypes;
             }
         }
 
@@ -1651,7 +1651,7 @@ namespace _4PL.Data
                 List<ContainerTypeReference> containerTypes = new List<ContainerTypeReference>();
                 using (IDbCommand command = conn.CreateCommand())
                 {
-                    command.CommandText = $@"CALL FETCH_ALL_CONTAINER_TYPES()"; 
+                    command.CommandText = $@"CALL FETCH_ALL_CONTAINER_TYPES()";
                     // Changed to stored procedure
                     IDataReader reader = command.ExecuteReader();
 
@@ -1899,8 +1899,7 @@ namespace _4PL.Data
             }
         }
 
-        public List<Shipment> fetchShipments(string Job_No, string Master_BL_No, string Place_Of_Loading_Name, string Place_Of_Discharge_Name, string Vessel_Name, string Voyage_No, string Container_No, string Container_Type,
-             DateTime ETD_Date_From, DateTime ETD_Date_To, DateTime ETA_Date_From, DateTime ETA_Date_To)
+        public List<Shipment> fetchShipments(Tuple<ShipmentSearchModel, Container> tpl)
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
@@ -1908,6 +1907,8 @@ namespace _4PL.Data
                 List<Shipment> result = new List<Shipment>();
                 using (IDbCommand command = conn.CreateCommand())
                 {
+                    ShipmentSearchModel shipment = tpl.Item1;
+                    Container container = tpl.Item2;
                     command.CommandText = @$"SELECT DISTINCT s.* 
                         FROM DEV_RL_DB.HWL_4PL.SHIPMENT s
                         JOIN  DEV_RL_DB.HWL_4PL.SHIPMENT_CONTAINER c ON s.JOB_NO = c.SHIPMENT_JOB_NO
@@ -1924,18 +1925,18 @@ namespace _4PL.Data
                         AND :ETA_Date_From <= s.ETA_Date
                         AND s.ETA_Date <= :ETA_Date_To";
 
-                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Job_No", Value = Job_No, DbType = DbType.String });
-                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Master_BL_No", Value = Master_BL_No, DbType = DbType.String });
-                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Place_Of_Loading_Name", Value = Place_Of_Loading_Name, DbType = DbType.String });
-                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Place_Of_Discharge_Name", Value = Place_Of_Discharge_Name, DbType = DbType.String });
-                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Vessel_Name", Value = Vessel_Name, DbType = DbType.String });
-                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Voyage_No", Value = Voyage_No, DbType = DbType.String });
-                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Container_No", Value = Container_No, DbType = DbType.String });
-                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Container_Type", Value = Container_Type, DbType = DbType.String });
-                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "ETD_Date_From", Value = ETD_Date_From, DbType = DbType.Date });
-                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "ETD_Date_To", Value = ETD_Date_To, DbType = DbType.Date });
-                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "ETA_Date_From", Value = ETA_Date_From, DbType = DbType.Date });
-                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "ETA_Date_To", Value = ETA_Date_To, DbType = DbType.Date });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Job_No", Value = shipment.Job_No, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Master_BL_No", Value = shipment.Master_BL_No, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Place_Of_Loading_Name", Value = shipment.Place_Of_Loading_Name, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Place_Of_Discharge_Name", Value = shipment.Place_Of_Discharge_Name, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Vessel_Name", Value = shipment.Vessel_Name, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Voyage_No", Value = shipment.Voyage_No, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Container_No", Value = container.Container_No, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Container_Type", Value = container.Container_Type, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "ETD_Date_From", Value = shipment.ETD_Date_From, DbType = DbType.Date });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "ETD_Date_To", Value = shipment.ETD_Date_To, DbType = DbType.Date });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "ETA_Date_From", Value = shipment.ETA_Date_From, DbType = DbType.Date });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "ETA_Date_To", Value = shipment.ETA_Date_To, DbType = DbType.Date });
 
                     IDataReader reader = command.ExecuteReader();
 
@@ -2299,5 +2300,5 @@ namespace _4PL.Data
         }
 
     }
-    
+
 }
