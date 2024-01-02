@@ -1,0 +1,230 @@
+﻿@page "/Admin/AccessModel"
+
+@using System.ComponentModel.DataAnnotations;
+@using System.Text;
+@using System.Text.Encodings.Web;
+@using Microsoft.AspNetCore.WebUtilities;
+@using _4PL.Data;
+@using Snowflake.Data;
+@using Newtonsoft.Json;
+@using Microsoft.AspNetCore.Components.QuickGrid
+
+@inject NavigationManager NavigationManager
+@inject IdentityRedirectManager RedirectManager
+@inject IConfiguration Configuration
+@inject HttpClient HttpClient
+@inject ILogger<AccessRights> Logger
+@inject IJSRuntime JSRuntime
+@rendermode InteractiveServer
+
+<PageTitle>Access Model</PageTitle>
+
+<div class="row">
+    <div class="col-md-10 overflow-auto">
+        @if (isLoaded)
+        {
+            <h3>Access Model Management</h3>
+            <hr />
+            <h3>Add Access Type</h3>
+            <hr />
+            <EditForm Model="AddInput" method="post" OnValidSubmit="AddAccessRight" FormName="addAccessType">
+                <DataAnnotationsValidator />
+                @if (!string.IsNullOrEmpty(addMessage))
+                {
+                    <div align="center" style="margin-bottom:10px" class="alert alert-@messageType">@addMessage</div>
+                }
+
+                <div style="display: flex; align-items:center">
+                    <InputText @bind-Value="AddInput.AccessType" style="margin-right:5px" class="form-control" autocomplete="off" placeholder="Access Type" />
+                    <InputText @bind-Value="AddInput.Description" style="margin-right:5px" class="form-control" autocomplete="off" placeholder="Description" />
+                    <button type="submit" class="w-40 btn btn-primary">Add</button>
+                </div>
+                <ValidationSummary class="mt-2 text-danger" role="alert" />
+            </EditForm>
+            <hr />
+            <h3>Current Access Model</h3>
+            <hr />
+            <div class="grid" tabindex="-1">
+                <QuickGrid Items="@accessModel">
+                    <PropertyColumn Title="Access Type" Property="@(t => t.AccessType)" Class="access" Sortable="true" />
+                    <PropertyColumn Title="Description" Property="@(t => t.Description)" Class="description" Sortable="true" />
+                    <TemplateColumn Title="" Class="button-view">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <button type="submit" class="button-view btn btn-sm btn-warning" @onclick="() => ViewRight(context)">
+                                    Edit
+                                </button>
+                            </div>
+                            <div class="col-md-6">
+                                <button type="submit" class="button-view btn btn-sm btn-outline-danger" @onclick="() => DeleteAccessRight(context.AccessType)">
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                     </TemplateColumn>
+                </QuickGrid>
+            </div>
+            @if (currRight != null)
+            {
+                <hr />
+                <h3>Edit Details for <strong>@currRight.AccessType</strong></h3>
+                <hr />
+                <EditForm Model="EditInput" method="post" OnValidSubmit="EditAccessRight" FormName="editAccessRight">
+                    <DataAnnotationsValidator />
+                    @if (!string.IsNullOrEmpty(editMessage))
+                    {
+                        <div align="center" style="margin-bottom:10px" class="alert alert-@messageType">@editMessage</div>
+                    }
+                    <div class="mb-2">
+                        <strong>Access Type</strong>
+                        <InputText @bind-Value="EditInput.AccessType" style="margin-right:5px" class="form-control" autocomplete="off" placeholder="New Access Type" />
+                    </div>
+                    <div class="mb-2">
+                        <strong>Description</strong>
+                        <InputText @bind-Value="EditInput.Description" style="margin-right:5px" class="form-control" autocomplete="off" placeholder="New Description" />
+                    </div>
+                    <button type="submit" class="mb-4 w-40 btn btn-primary">Update</button>
+
+                    <ValidationSummary class="mt-2 text-danger" role="alert" />
+                </EditForm>
+            }
+        }
+        else
+        {
+            <p>Loading...</p>
+        }
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    private AddAccessRightModel AddInput { get; set; } = new();
+    private EditAccessRightModel EditInput { get; set; } = new();
+
+    private string? addMessage;
+    private string? editMessage;
+    private string? deleteMessage;
+    private string? messageType = "success";
+    private string? apiBaseUrl;
+    private bool isLoaded;
+
+    AccessRight currRight;
+    IQueryable<AccessRight>? accessModel;
+
+    protected override async Task OnInitializedAsync()
+    {
+        apiBaseUrl = Configuration["ApiBaseUrl"];
+        await LoadAccessModel();
+        isLoaded = true;
+    }
+
+    private void ResetStrings()
+    {
+        addMessage = null;
+        deleteMessage = null;
+    }
+
+    private async Task LoadAccessModel()
+    {
+        var result = await HttpClient.GetFromJsonAsync<List<AccessRight>>($"{apiBaseUrl}/api/AccessRights/FetchAccessTypes");
+        accessModel = result.AsQueryable();
+    }
+
+    private async Task AddAccessRight()
+    {
+        ResetStrings();
+        bool isValidType = await HttpClient.GetFromJsonAsync<bool>($"{apiBaseUrl}/api/AccessRights/CheckIsValidType={AddInput.AccessType}");
+        if (!isValidType)
+        {
+            addMessage = "Access type already exists.";
+            messageType = "danger";
+            return;
+        }
+
+        AccessRight newRight = new()
+            {
+                AccessType = AddInput.AccessType.ToUpper(),
+                Description = AddInput.Description
+            };
+
+        var response = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/AccessRights/AddNewAccessRight", newRight);
+        if (!response.IsSuccessStatusCode)
+        {
+            messageType = "danger";
+        }
+        addMessage = await response.Content.ReadAsStringAsync();
+        await LoadAccessModel();
+    }
+
+    private void ViewRight(AccessRight curr)
+    {
+        currRight = curr;
+        EditInput.AccessType = curr.AccessType;
+        EditInput.Description = curr.Description;
+    }
+
+    private async Task EditAccessRight()
+    {
+        ResetStrings();
+        if (EditInput.AccessType == currRight.AccessType && EditInput.Description == currRight.Description)
+        {
+            editMessage = "No changes found.";
+            messageType = "danger";
+            return;
+        }
+
+        string confirmMessage = $"Are you sure you want to update this access right?";
+        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", confirmMessage);
+        if (!confirmed) { return; }
+
+        currRight.UpdatedAccessType = EditInput.AccessType;
+        currRight.UpdatedDescription = EditInput.Description;
+
+        var response = await HttpClient.PutAsJsonAsync($"{apiBaseUrl}/api/AccessRights/UpdateAccessRight", currRight);
+        if (!response.IsSuccessStatusCode)
+        {
+            messageType = "danger";
+        }
+        editMessage = await response.Content.ReadAsStringAsync();
+        await LoadAccessModel();
+    }
+
+    private async Task DeleteAccessRight(string accessType)
+    {
+        ResetStrings();
+        string confirmMessage = $"Are you sure you want to delete this access right {accessType.ToUpper()}?";
+        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", confirmMessage);
+        if (!confirmed) { return; }
+
+        var response = await HttpClient.DeleteAsync($"{apiBaseUrl}/api/AccessRights/DeleteAccessRight={accessType}");
+        if (!response.IsSuccessStatusCode)
+        {
+            messageType = "danger";
+        }
+        addMessage = await response.Content.ReadAsStringAsync();
+        await LoadAccessModel();
+    }
+
+    private sealed class AddAccessRightModel
+    {
+        [Required]
+        [Display(Name = "Access Type")]
+        public string AccessType { get; set; } = "";
+
+        [Required]
+        [Display(Name = "Description")]
+        public string Description { get; set; } = "";
+    }
+
+    private sealed class EditAccessRightModel
+    {
+        [Display(Name = "Edited Access Type")]
+        public string AccessType { get; set; } = "";
+
+        [Display(Name = "Edited Description")]
+        public string Description { get; set; } = "";
+    }
+}
