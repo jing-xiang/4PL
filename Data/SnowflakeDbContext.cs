@@ -1642,16 +1642,16 @@ namespace _4PL.Data
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
                 conn.Open();
-                var updatedChargeDescription = $"Error in updating charge: {chargeDescription}";
+                var updatedChargeCode = $"Error in updating charge: {chargeDescription}";
                 using (IDbCommand command = conn.CreateCommand())
                 {
                     command.CommandText = $@"CALL UPDATE_CHARGE_CODE (:Charge_Description, :New_Charge_Code)"; // TODO: Change snowflake stored procedure 
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Charge_Description", Value = chargeDescription, DbType = DbType.String });
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "New_Charge_Code", Value = newChargeCode, DbType = DbType.String });
-                    updatedChargeDescription = command.ExecuteScalar().ToString();
+                    updatedChargeCode = command.ExecuteScalar().ToString();
 
                 }
-                return updatedChargeDescription;
+                return updatedChargeCode;
 
             }
         }

@@ -110,21 +110,21 @@ public class ChargeController : Controller
         }
     }
 
-    //[HttpPost("UpdateChargeCode")]
-    //public async Task<ActionResult<string>> UpdateChargeCode([FromBody] string chargeDescription, [FromBody] string newChargeCode) // TBC: FromBody
-    //{
-    //    try
-    //    {
-    //        string result = await _dbContext.UpdateChargeCode(chargeDescription, newChargeCode);
-    //        return Ok(result);
+    [HttpPost("UpdateChargeCode")]
+    public async Task<ActionResult<string>> UpdateChargeCode([FromBody] ChargeReference updatedCharge) // Cannot have more than one attribute in body
+    {
+        try
+        {
+            string updatedChargeCode = await _dbContext.UpdateChargeCode(updatedCharge.Charge_Description, updatedCharge.Charge_Code);
+            return Ok(updatedChargeCode);
 
-    //    }
-    //    catch (Exception ex)
-    //    {
-    //        return StatusCode(500, $"{ex.GetType().Name}: {ex.Message}");
-    //    }
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"{ex.GetType().Name}: {ex.Message}");
+        }
 
-    //}
+    }
 
 
 }

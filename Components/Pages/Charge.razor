@@ -43,10 +43,17 @@
     <QuickGrid Items="@ChargesQueryable" @ref="grid" Pagination="pagination">
         <PropertyColumn Title="Charge Code" Property="@(c => c.Charge_Code)" Sortable="true" InitialSortDirection="SortDirection.Ascending"></PropertyColumn>
         <PropertyColumn Title="Charge Description" Property="@(c => c.Charge_Description)" Sortable="true" InitialSortDirection="SortDirection.Ascending"></PropertyColumn>
-        <TemplateColumn Title="Action">
-            <button @onclick="@(() => UpdateCharge(context.Charge_Description))" class="btn btn-success">Edit</button>
+        <TemplateColumn Title="Actions">
+            <button @onclick="@(() => editTab = !editTab)" class="btn btn-success">Edit</button>
             <button @onclick="@(() => DeleteCharge(context.Charge_Description))" class="btn btn-danger">Delete</button>
         </TemplateColumn>
+        @if (editTab)
+        {
+            <TemplateColumn Title="Edit Charge Code">
+                <InputText @bind-Value="newChargeCode" placeholder="New Charge Code" class="form-control" autocomplete="off"></InputText>
+                <button @onclick="@(() => UpdateCharge(context))" class="btn btn-primary">Update</button>
+            </TemplateColumn>
+        }
     </QuickGrid>
     <Paginator State="@pagination" />
 
@@ -56,6 +63,8 @@
 
 @code {
     IQueryable<ChargeReference> ChargesQueryable = Enumerable.Empty<ChargeReference>().AsQueryable();
+    private bool editTab = false; // to toggle edit tab 
+    private string newChargeCode = ""; 
 
     [SupplyParameterFromForm]
     ChargeReference addChargeReference { get; set; } = new();
@@ -84,7 +93,7 @@
         else if (addChargeReference.Charge_Description == "")
         {
             await JS.InvokeVoidAsync("alert", "Please fill in a charge description");
-            return;
+            return; 
         }
         // containerTypesList.Add(containerTypeReference);
         // ConvertListToQueryable();
@@ -160,14 +169,23 @@
             items = await Http.GetFromJsonAsync<List<ChargeReference>>($"{Configuration["ApiBaseUrl"]}/api/Charge/FetchChargesByBoth/{chargeCode}/{chargeDescription}");
             if (!items.Any()) await JS.InvokeVoidAsync("alert", $"No search results found for charge code: {chargeCode} and charge description: {chargeDescription}");
         }
-        
+
         ChargesQueryable = items.AsQueryable();
         // Refresh and display
         StateHasChanged();
     }
 
     // TODO: Add an Update/Edit charge function that calls the API 
-    async Task UpdateCharge(string chargeDescription) { 
+    async Task UpdateCharge(ChargeReference currentCharge) { 
+        newChargeCode = newChargeCode.Trim(); 
+        if (newChargeCode == "" || newChargeCode == currentCharge.Charge_Code)
+        {
+            await JS.InvokeVoidAsync("alert", $"Please fill in a valid new charge code"); 
+            return;
+        }
+        currentCharge.Charge_Code = newChargeCode; 
+        HttpResponseMessage result = await Http.PostAsJsonAsync<ChargeReference>($"{Configuration["ApiBaseUrl"]}/api/Charge/UpdateChargeCode", currentCharge);
+        StateHasChanged(); 
 
     }
 
