@@ -23,11 +23,11 @@ public class ChargeController : Controller
     **/
 
     [HttpPost("CreateCharge")]
-    public async Task<ActionResult<string>> CreateCharge([FromBody] string chargeCode, [FromBody] string chargeDescription) // TBC: FromBody
+    public async Task<ActionResult<string>> CreateCharge([FromBody] ChargeReference charge) // TBC: FromBody
     {
         try
         {
-            string result = await _dbContext.CreateCharge(chargeCode, chargeDescription);
+            string result = await _dbContext.CreateCharge(charge.Charge_Code, charge.Charge_Description);
             return Ok(result);
 
         } catch (Exception ex) {
@@ -66,7 +66,7 @@ public class ChargeController : Controller
     }
 
 
-    [HttpGet("FetchCharges/d={chargeDescription}")]
+    [HttpGet("FetchChargesByDescription/{chargeDescription}")]
     public async Task<ActionResult<List<ChargeReference>>> FetchChargesByDescription(string chargeDescription) // GET request should not have body 
     {
         try
@@ -80,7 +80,7 @@ public class ChargeController : Controller
         }
     }
 
-    [HttpGet("FetchCharges/c={chargeCode}")]
+    [HttpGet("FetchChargesByCode/{chargeCode}")]
     public async Task<ActionResult<List<ChargeReference>>> FetchChargesByCode(string chargeCode) // GET request should not have body 
     {
         try
@@ -95,21 +95,36 @@ public class ChargeController : Controller
         }
     }
 
-    [HttpPost("UpdateChargeCode")]
-    public async Task<ActionResult<string>> UpdateChargeCode([FromBody] string chargeDescription, [FromBody] string oldChargeCode, [FromBody] string newChargeCode) // TBC: FromBody
+    [HttpGet("FetchChargesByBoth/{chargeCode}/{chargeDescription}")]
+    public async Task<ActionResult<List<ChargeReference>>> FetchChargesByBoth(string chargeCode, string chargeDescription) // GET request should not have body 
     {
         try
         {
-            string result = await _dbContext.UpdateChargeCode(chargeDescription, oldChargeCode, newChargeCode);
-            return Ok(result);
-
+            List<ChargeReference> chargeReferences = await _dbContext.FetchChargesByBoth(chargeCode, chargeDescription);
+            Debug.WriteLine($"Logging: {chargeReferences}");
+            return Ok(chargeReferences);
         }
         catch (Exception ex)
         {
             return StatusCode(500, $"{ex.GetType().Name}: {ex.Message}");
         }
-
     }
+
+    //[HttpPost("UpdateChargeCode")]
+    //public async Task<ActionResult<string>> UpdateChargeCode([FromBody] string chargeDescription, [FromBody] string newChargeCode) // TBC: FromBody
+    //{
+    //    try
+    //    {
+    //        string result = await _dbContext.UpdateChargeCode(chargeDescription, newChargeCode);
+    //        return Ok(result);
+
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        return StatusCode(500, $"{ex.GetType().Name}: {ex.Message}");
+    //    }
+
+    //}
 
 
 }

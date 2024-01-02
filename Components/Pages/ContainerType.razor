@@ -82,7 +82,6 @@
         bool confirmed = await JS.InvokeAsync<bool>("confirm", confirmMessage);
         if (confirmed)
         {
-            string searchTerm = searchContainerTypeReference.Container_Type;
             Debug.WriteLine($">>> Logging: {containerType}");
 
             HttpResponseMessage result = await Http.DeleteAsync($"{Configuration["ApiBaseUrl"]}/api/ContainerType/DeleteContainerType/{containerType}");

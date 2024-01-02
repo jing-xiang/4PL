@@ -1544,7 +1544,7 @@ namespace _4PL.Data
                 List<ChargeReference> charges = new List<ChargeReference>();
                 using (IDbCommand command = conn.CreateCommand())
                 {
-                    command.CommandText = $@"CALL FETCH_ALL_CHARGES()"; // Create in snowflake 
+                    command.CommandText = $@"CALL FETCH_ALL_CHARGES()";  
                     // Changed to stored procedure
                     IDataReader reader = command.ExecuteReader();
 
@@ -1569,7 +1569,7 @@ namespace _4PL.Data
                 List<ChargeReference> charges = new List<ChargeReference>();
                 using (IDbCommand command = conn.CreateCommand())
                 {
-                    command.CommandText = $@"CALL FETCH_CHARGES_BY_DESCRIPTION (:Charge_Description)"; // Create in snowflake
+                    command.CommandText = $@"CALL FETCH_CHARGES_BY_DESCRIPTION (:Charge_Description)"; 
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Charge_Description", Value = chargeDescription, DbType = DbType.String });
                     IDataReader reader = command.ExecuteReader();
 
@@ -1594,7 +1594,7 @@ namespace _4PL.Data
                 List<ChargeReference> charges = new List<ChargeReference>();
                 using (IDbCommand command = conn.CreateCommand())
                 {
-                    command.CommandText = $@"CALL FETCH_CHARGES_BY_CODE (:Charge_Code)"; // Create in snowflake
+                    command.CommandText = $@"CALL FETCH_CHARGES_BY_CODE (:Charge_Code)"; 
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Charge_Code", Value = chargeCode, DbType = DbType.String });
                     IDataReader reader = command.ExecuteReader();
 
@@ -1611,7 +1611,33 @@ namespace _4PL.Data
             }
         }
 
-        public async Task<String> UpdateChargeCode(string chargeDescription, string oldChargeCode, string newChargeCode)
+        public async Task<List<ChargeReference>> FetchChargesByBoth(string chargeCode, string chargeDescription)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                List<ChargeReference> charges = new List<ChargeReference>();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = $@"CALL FETCH_CHARGES_BY_BOTH (:Charge_Code, :Charge_Description)"; 
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Charge_Code", Value = chargeCode, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Charge_Description", Value = chargeDescription, DbType = DbType.String });
+                    IDataReader reader = command.ExecuteReader();
+
+                    while (reader.Read())
+                    {
+                        ChargeReference ct = new ChargeReference();
+                        ct.Charge_Code = reader.GetString(reader.GetOrdinal("CHARGE_CODE"));
+                        ct.Charge_Description = reader.GetString(reader.GetOrdinal("CHARGE_DESCRIPTION"));
+                        charges.Add(ct);
+                    }
+
+                }
+                return charges;
+            }
+        }
+
+        public async Task<String> UpdateChargeCode(string chargeDescription, string newChargeCode)
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
@@ -1619,9 +1645,8 @@ namespace _4PL.Data
                 var updatedChargeDescription = $"Error in updating charge: {chargeDescription}";
                 using (IDbCommand command = conn.CreateCommand())
                 {
-                    command.CommandText = $@"CALL UPDATE_CHARGE_CODE (:Charge_Description, :Old_Charge_Code, :New_Charge_Code)"; // Change snowflake stored procedure 
+                    command.CommandText = $@"CALL UPDATE_CHARGE_CODE (:Charge_Description, :New_Charge_Code)"; // TODO: Change snowflake stored procedure 
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Charge_Description", Value = chargeDescription, DbType = DbType.String });
-                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Old_Charge_Code", Value = oldChargeCode, DbType = DbType.String });
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "New_Charge_Code", Value = newChargeCode, DbType = DbType.String });
                     updatedChargeDescription = command.ExecuteScalar().ToString();
 

@@ -17,14 +17,26 @@
 
     <EditForm Model="addChargeReference" OnSubmit="CreateCharge" Enhance>
         <label class="label-control">Add Charge</label>
-        <InputText @bind-Value="addChargeReference.Charge_Code" class="form-control" autocomplete="off"></InputText>
-        <InputText @bind-Value="addChargeReference.Charge_Description" class="form-control" autocomplete="off"></InputText>
+        <div class="row">
+            <div class="col-md-6">
+                <InputText @bind-Value="addChargeReference.Charge_Code" placeholder="Charge Code" class="form-control" autocomplete="off"></InputText>
+            </div>
+            <div class="col-md-6">
+                <InputText @bind-Value="addChargeReference.Charge_Description" placeholder="Charge Description" class="form-control" autocomplete="off"></InputText>
+            </div>
+        </div>      
         <button type="submit" class="btn btn-primary my-2">Add</button>
     </EditForm>
     <EditForm Model="searchChargeReference" OnSubmit="FetchCharges" Enhance>
         <label class="label-control">Search Charge</label>
-        <InputText @bind-Value="searchChargeReference.Charge_Code" class="form-control" autocomplete="off"></InputText>
-        <InputText @bind-Value="searchChargeReference.Charge_Description" class="form-control" autocomplete="off"></InputText>
+        <div class="row">
+            <div class="col-md-6">
+                <InputText @bind-Value="searchChargeReference.Charge_Code" placeholder="Charge Code" class="form-control" autocomplete="off"></InputText>
+            </div>
+            <div class="col-md-6">
+                <InputText @bind-Value="searchChargeReference.Charge_Description" placeholder="Charge Description" class="form-control" autocomplete="off"></InputText>
+            </div>
+         </div>
         <button type="submit" class="btn btn-primary my-2">Search</button>
     </EditForm>
     <br />
@@ -32,6 +44,7 @@
         <PropertyColumn Title="Charge Code" Property="@(c => c.Charge_Code)" Sortable="true" InitialSortDirection="SortDirection.Ascending"></PropertyColumn>
         <PropertyColumn Title="Charge Description" Property="@(c => c.Charge_Description)" Sortable="true" InitialSortDirection="SortDirection.Ascending"></PropertyColumn>
         <TemplateColumn Title="Action">
+            <button @onclick="@(() => UpdateCharge(context.Charge_Description))" class="btn btn-success">Edit</button>
             <button @onclick="@(() => DeleteCharge(context.Charge_Description))" class="btn btn-danger">Delete</button>
         </TemplateColumn>
     </QuickGrid>
@@ -56,23 +69,23 @@
     async Task CreateCharge()
     {
         searchChargeReference = new(); // clear if there were previous searches
-        string chargeCode = addChargeReference.Charge_Code.Trim();// trim leading and trailing spaces
-        string chargeDescription = addChargeReference.Charge_Description.Trim();// trim leading and trailing spaces
-        if (chargeCode == "" && chargeDescription == "")
+        addChargeReference.Charge_Code = addChargeReference.Charge_Code.Trim();// trim leading and trailing spaces
+        addChargeReference.Charge_Description = addChargeReference.Charge_Description.Trim();// trim leading and trailing spaces
+        if (addChargeReference.Charge_Code == "" && addChargeReference.Charge_Description == "")
         {
             await JS.InvokeVoidAsync("alert", "Please fill in a charge code and description");
         }
-        else if (chargeCode == "")
+        else if (addChargeReference.Charge_Code == "")
         {
             await JS.InvokeVoidAsync("alert", "Please fill in a charge code");
         }
-        else if (chargeDescription == "")
+        else if (addChargeReference.Charge_Description == "")
         {
             await JS.InvokeVoidAsync("alert", "Please fill in a charge description");
         }
         // containerTypesList.Add(containerTypeReference);
         // ConvertListToQueryable();
-        HttpResponseMessage response = await Http.PostAsJsonAsync<string>($"{Configuration["ApiBaseUrl"]}/api/Charge/CreateCharge", chargeCode);
+        HttpResponseMessage response = await Http.PostAsJsonAsync($"{Configuration["ApiBaseUrl"]}/api/Charge/CreateCharge", addChargeReference);
         string result = response.Content.ReadAsStringAsync().Result;
         if (result == "Error - duplicate primary keys")
         {
@@ -94,7 +107,6 @@
         bool confirmed = await JS.InvokeAsync<bool>("confirm", confirmMessage);
         if (confirmed)
         {
-            string searchTerm = searchChargeReference.Charge_Description; // TBC
             Debug.WriteLine($">>> Logging: {chargeDescription}");
 
             HttpResponseMessage result = await Http.DeleteAsync($"{Configuration["ApiBaseUrl"]}/api/Charge/DeleteCharge/{chargeDescription}");
@@ -121,28 +133,39 @@
 
     async Task FetchCharges()
     {
-        // TODO: how to pick between charge code and description search term? 
+        // check between charge code and description search term
+        string chargeCode = searchChargeReference.Charge_Code.Trim();
         string chargeDescription = searchChargeReference.Charge_Description.Trim(); // remove leading and trailing white spaces
         List<ChargeReference> items = new List<ChargeReference>();
-        if (chargeDescription == "")
+        if (chargeCode == "" && chargeDescription == "")
         {
             items = await Http.GetFromJsonAsync<List<ChargeReference>>($"{Configuration["ApiBaseUrl"]}/api/Charge/FetchAllCharges");
+            if (!items.Any()) await JS.InvokeVoidAsync("alert", $"No search results found");
         }
-        else
+        else if (chargeCode == "" && chargeDescription != "")
         {
             items = await Http.GetFromJsonAsync<List<ChargeReference>>($"{Configuration["ApiBaseUrl"]}/api/Charge/FetchChargesByDescription/{chargeDescription}");
+            if (!items.Any()) await JS.InvokeVoidAsync("alert", $"No search results found for charge description: {chargeDescription}");
         }
-        if (chargeDescription == "" && !items.Any())
+        else if (chargeCode != "" && chargeDescription == "")
         {
-            await JS.InvokeVoidAsync("alert", $"No search results found");
+            items = await Http.GetFromJsonAsync<List<ChargeReference>>($"{Configuration["ApiBaseUrl"]}/api/Charge/FetchChargesByCode/{chargeCode}");
+            if (!items.Any()) await JS.InvokeVoidAsync("alert", $"No search results found for charge code: {chargeCode}");
+
         }
-        else if (!items.Any())
-        {
-            await JS.InvokeVoidAsync("alert", $"No search results found for container type: {chargeDescription}");
+        else { 
+            items = await Http.GetFromJsonAsync<List<ChargeReference>>($"{Configuration["ApiBaseUrl"]}/api/Charge/FetchChargesByBoth/{chargeCode}/{chargeDescription}");
+            if (!items.Any()) await JS.InvokeVoidAsync("alert", $"No search results found for charge code: {chargeCode} and charge description: {chargeDescription}");
         }
+        
         ChargesQueryable = items.AsQueryable();
         // Refresh and display
         StateHasChanged();
+    }
+
+    // TODO: Add an Update/Edit charge function that calls the API 
+    async Task UpdateCharge(string chargeDescription) { 
+
     }
 
     // protected override void OnInitialized()
