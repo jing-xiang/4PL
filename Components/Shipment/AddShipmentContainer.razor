@@ -1,5 +1,8 @@
 ﻿@page "/shipment/add"
 
+@using System.Security.Claims
+@using _4PL.Components.Account.Shared
+@using Microsoft.AspNetCore.Identity
 @using _4PL.Data
 @using Microsoft.AspNetCore.Components.QuickGrid
 @using Microsoft.AspNetCore.WebUtilities
@@ -7,6 +10,7 @@
 @inject IJSRuntime JS
 @inject NavigationManager NavManager
 @inject HttpClient HttpClient
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 @rendermode InteractiveServer
 
@@ -185,9 +189,13 @@
     }
 
     //posting form input
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
     [SupplyParameterFromForm]
     Shipment shipment { get; set; } = new();
     Container container { get; set; } = new();
+    private string? currEmail;
 
     async Task InsertShipment()
     {
@@ -196,15 +204,20 @@
             await JS.InvokeVoidAsync("alert", "Please fill in the Shipment Job No");
         } else
         {
+            shipment.Last_Modified_By = currEmail;
+            shipment.Last_Modified_At = DateTime.Now;
             HttpResponseMessage result = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/Shipment/CreateShipment/", shipment);
             string response = result.Content.ReadAsStringAsync().Result;
             if (response.Equals("Error"))
             {
                 await JS.InvokeVoidAsync("alert", "Shipment already exists");
-            } else
+            } else if (response.Equals("Success"))
             {
                 await JS.InvokeVoidAsync("alert", "Successfully Added");
                 NavManager.NavigateTo("/shipment");
+            } else
+            {
+                await JS.InvokeVoidAsync("alert", response);
             }
         }
     }
@@ -259,6 +272,9 @@
         var result = await getContainerData();
         containers = result.AsQueryable();
         StateHasChanged();
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        currEmail = user.FindFirst(c => c.Type == ClaimTypes.Email)?.Value;
     }
 
     async Task<List<Container>> getContainerData()

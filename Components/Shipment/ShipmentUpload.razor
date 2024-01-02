@@ -3,10 +3,12 @@
 @using System.Net.Http.Headers
 @using System.Text.Json
 @using _4PL.Data
+@using System.Security.Claims
 
 @inject NavigationManager NavManager
 @inject IHttpClientFactory ClientFactory
 @inject HttpClient HttpClient
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 @rendermode InteractiveServer
 
@@ -36,16 +38,19 @@
                     <li>
                         File: @file.Name
 
-                        @if (@numShipments == "0")
+                        @if (FileUpload(uploadResults, file.Name, out var result))
                         {
-                            <div class="text-danger"> All shipments already exist!</div>
-                        }
-
-                        else if (FileUpload(uploadResults, file.Name, out var result))
-                        {
-                            <div class="text-success">
-                                @numShipments New Shipment(s) Uploaded
-                            </div>
+                            if (uploadResult.StartsWith("Error"))
+                            {
+                                <div class="text-danger">
+                                    @uploadResult
+                                </div>
+                            } else
+                            {
+                                <div class="text-success">
+                                    @uploadResult
+                                </div>
+                            }
                         }
                         else
                         {
@@ -76,14 +81,18 @@
 
 
 @code {
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
     private List<File> files = new();
     private List<UploadResult> uploadResults = new();
     private int maxAllowedFiles = 1;
     private bool shouldRender;
     private string? message;
-    public string numShipments = "";
+    public string uploadResult = "";
     private bool isLoading = false;
     protected override bool ShouldRender() => shouldRender;
+    private string? currEmail;
 
     private async Task OnInputFileChange(InputFileChangeEventArgs e)
     {
@@ -171,8 +180,13 @@
                 if (newUploadResults is not null)
                 {
                     uploadResults = uploadResults.Concat(newUploadResults).ToList();
-                    HttpResponseMessage result = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/Shipment/CreateShipments/", uploadResults[0].StoredFileName);
-                    numShipments = result.Content.ReadAsStringAsync().Result;
+                    string filename = uploadResults[0].StoredFileName;
+                    Tuple<string, string> passToController = new Tuple<string, string>(filename, currEmail);
+                    Console.WriteLine("Passtocontroller");
+                    Console.WriteLine(passToController.Item1);
+                    Console.WriteLine(passToController.Item2);
+                    HttpResponseMessage result = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/Shipment/CreateShipments/", passToController);
+                    uploadResult = result.Content.ReadAsStringAsync().Result;
                 }
 
             }
@@ -194,6 +208,14 @@
             .SingleOrDefault(f => f.FileName == fileName) ?? new();
 
         return result.Uploaded;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        StateHasChanged();
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        currEmail = user.FindFirst(c => c.Type == ClaimTypes.Email)?.Value;
     }
 
     private class File

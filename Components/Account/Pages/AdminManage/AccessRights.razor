@@ -1,9 +1,313 @@
 ﻿@page "/Admin/AccessRights"
 
-<PageTitle>Manage Access Rights</PageTitle>
+@using System.ComponentModel.DataAnnotations;
+@using System.Text;
+@using System.Text.Encodings.Web;
+@using Microsoft.AspNetCore.WebUtilities;
+@using _4PL.Data;
+@using Snowflake.Data;
+@using Newtonsoft.Json;
+@using Microsoft.AspNetCore.Components.QuickGrid
 
-<h3>Access Rights Management</h3>
+@inject NavigationManager NavigationManager
+@inject IdentityRedirectManager RedirectManager
+@inject IConfiguration Configuration
+@inject HttpClient HttpClient
+@inject ILogger<AccessRights> Logger
+@inject IJSRuntime JSRuntime
+@rendermode InteractiveServer
+
+<PageTitle>Access Control</PageTitle>
+
+<div class="row">
+    <div class="col-md-10 overflow-auto">
+        @if (isLoaded)
+        {
+            <h3>Access Rights Management</h3>
+            <hr />
+            <div style="display: flex; align-items:center">
+                <input type="text" class="form-control" style="margin-right:5px" autocomplete="off" @bind="SearchInput.Name" placeholder="Name" />
+                <input type="email" class="form-control" style="margin-right:5px" autocomplete="off" @bind="SearchInput.Email" placeholder="Email" />
+                <button type="submit" @onclick="SearchUsers" class="w-40 btn btn-primary">Search</button>
+            </div>
+            <hr />
+            <h3>Copy Access Rights</h3>
+            <hr />
+            <EditForm Model="CopyInput" method="post" OnValidSubmit="CopyAccessRights" FormName="copyAccessRights">
+                <DataAnnotationsValidator />
+                @if (!string.IsNullOrEmpty(copyMessage))
+                {
+                    <div align="center" style="margin-bottom:10px" class="alert alert-@messageType">@copyMessage</div>
+                }
+
+                <div style="display: flex; align-items:center">
+                    <InputText @bind-Value="CopyInput.FromEmail" style="margin-right:5px" class="form-control" autocomplete="off" placeholder="From Email" />
+                    <InputText @bind-Value="CopyInput.ToEmail" style="margin-right:5px" class="form-control" autocomplete="off" placeholder="Target User Email" />
+                    <button type="submit" class="w-40 btn btn-secondary">Copy</button>
+                </div>
+                <ValidationSummary class="mt-2 text-danger" role="alert" />
+            </EditForm>
+            <hr />
+            <div class="page-size-chooser">
+                Items per page:
+                <select @bind="@userPagination.ItemsPerPage">
+                    <option>5</option>
+                    <option>10</option>
+                    <option>20</option>
+                    <option>50</option>
+                </select>
+            </div>
+            <div class="grid" tabindex="-1">
+                <QuickGrid Items="@users" Pagination="@userPagination">
+                    <PropertyColumn Property="@(u => u.Name)" Class="name" Sortable="true" />
+                    <PropertyColumn Property="@(u => u.Email)" Class="email" Sortable="true" />
+                    <TemplateColumn Title="" Class="button-view">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <button type="submit" class="button-view btn btn-sm btn-secondary" @onclick="() => ViewRights(context.Email)">
+                                    View Rights
+                                </button>
+                            </div>
+                            <div class="col-md-4">
+                                <button type="submit" class="button-view btn btn-sm btn-outline-success" @onclick="() => { CopyInput.FromEmail = context.Email; }">
+                                    Copy From
+                                </button>
+                            </div>
+                            <div class="col-md-4">                       
+                                <button type="submit" class="button-view btn btn-sm btn-outline-warning" @onclick="() => { CopyInput.ToEmail = context.Email; }">
+                                    Copy To
+                                </button>
+                            </div>
+                        </div>
+                    </TemplateColumn>
+                </QuickGrid>
+            </div>
+            <Paginator State="@userPagination" />
+            
+            @if (currUser != null)
+            {
+                <hr />
+                <h3>Manage User Rights for <strong>@currUser.Email</strong></h3>
+                <hr />
+                @if (!string.IsNullOrEmpty(saveMessage))
+                {
+                    <div align="center" style="margin-bottom:10px" class="alert alert-success">@saveMessage</div>
+                }
+                <div align="right" class="mb-2">
+                <button class="btn btn-sm btn-secondary" type="checkbox" @onclick="ResetAccessRights">Reset</button>
+                <button class="btn btn-sm btn-secondary" type="checkbox" @onclick="ToggleAllAccessRights">Toggle All</button>
+                </div>
+                <div class="grid-rights" tabindex="-1">
+                    <QuickGrid Items="@rights">
+                        <PropertyColumn Title="Access Type" Property="@(r => r.AccessType)" Class="access" Sortable="true" />
+                        <TemplateColumn Title="Permission" Class="permission">
+                            @if (context.OriginalRight)
+                            {
+                                <span class="text-success">YES</span>
+                            } else
+                            {
+                                <span class="text-danger">NO</span>
+                            }
+                        </TemplateColumn>
+                        <TemplateColumn Title="Update" Class="button-update">
+                            <link href="_content/Syncfusion.Blazor.Themes/bootstrap5.css" rel="stylesheet" />
+                            <label for="checked" style="padding: 20px 10px 10px 0"></label>
+                            <SfSwitch @bind-Checked="context.UpdatedRight" OnLabel="Yes" OffLabel="No"></SfSwitch>
+                        </TemplateColumn>
+                    </QuickGrid>
+                </div>
+                <div align="right">
+                    <button type="button" class=" mt-2 btn btn-sm btn-success" @onclick="() => SaveAccessRights()">Save Access Rights</button>
+                </div>
+
+            }
+            <hr />
+        }
+        else {
+            <p>Loading...</p>
+        }
+    </div>
+</div>
 
 @code {
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
 
+    [SupplyParameterFromForm]
+    private SearchModel SearchInput { get; set; } = new();
+    private CopyModel CopyInput { get; set; } = new();
+
+    private string? copyMessage;
+    private string? saveMessage;
+    private string? errorMessage;
+    private string? deleteMessage;
+    private string? messageType = "success";
+    private string? apiBaseUrl;
+    private bool isLoaded;
+    private bool isCopySuccessful;
+
+
+    ApplicationUser? currUser;
+    IQueryable<ApplicationUser>? users;
+    PaginationState userPagination = new PaginationState { ItemsPerPage = 10 };
+
+    protected override async Task OnInitializedAsync()
+    {
+        apiBaseUrl = Configuration["ApiBaseUrl"];
+        await LoadUsers();
+        isLoaded = true;
+    }
+
+    private async Task LoadUsers()
+    {
+        var result = await HttpClient.GetFromJsonAsync<List<ApplicationUser>>($"{apiBaseUrl}/api/Snowflake/GetAllUsers");
+        users = result.AsQueryable();
+    }
+
+    private void ResetStrings()
+    {
+        copyMessage = null;
+        saveMessage = null;
+        errorMessage = null;
+        deleteMessage = null;
+    }
+
+    private async Task SearchUsers()
+    {
+        ResetStrings();
+        List<ApplicationUser>? update = new();
+        if (SearchInput.Name == "" && SearchInput.Email == "")
+        {
+            await LoadUsers();
+            return;
+        }
+        else if (SearchInput.Email == "")
+        {
+            update = await HttpClient.GetFromJsonAsync<List<ApplicationUser>>($"{apiBaseUrl}/api/Snowflake/f=name/v={SearchInput.Name}");
+        }
+        else if (SearchInput.Name == "")
+        {
+            update = await HttpClient.GetFromJsonAsync<List<ApplicationUser>>($"{apiBaseUrl}/api/Snowflake/f=email/v={SearchInput.Email}");
+        }
+        else
+        {
+            update = await HttpClient.GetFromJsonAsync<List<ApplicationUser>>($"{apiBaseUrl}/api/Snowflake/n={SearchInput.Name}/e={SearchInput.Email}");
+        }
+
+        users = update.AsQueryable();
+        return;
+    }
+
+    // Managing Access Rights
+
+    IQueryable<AccessRight>? rights;
+    int flag = 0;
+
+    private async Task ViewRights(string email)
+    {
+        ResetStrings();
+        currUser = await HttpClient.GetFromJsonAsync<ApplicationUser>($"{apiBaseUrl}/api/Snowflake/e={email}");
+        CopyInput.FromEmail = currUser.Email;
+        await FetchRights(email);
+    }
+
+    public async Task FetchRights(string email)
+    {
+        var template = await HttpClient.GetFromJsonAsync<List<AccessRight>>($"{apiBaseUrl}/api/AccessRights/FetchAccessTypes");
+        var result = await HttpClient.GetFromJsonAsync<List<string>>($"{apiBaseUrl}/api/AccessRights/FetchAccessRights={email}");
+        foreach (AccessRight right in template)
+        {
+            if (result.Contains(right.AccessType))
+            {
+                right.OriginalRight = true;
+                right.UpdatedRight = true;
+            }
+        }
+        rights = template.AsQueryable();
+    }
+
+    public async Task ResetAccessRights()
+    {
+        foreach (AccessRight right in rights)
+        {
+            right.reset();
+        }
+    }
+
+    public void ToggleAllAccessRights()
+    {
+        foreach (AccessRight right in rights)
+        {
+            right.UpdatedRight = flag == 0;
+        }
+        flag = flag == 0 ? 1 : 0;
+    }
+
+    public async Task SaveAccessRights()
+    {
+        string confirmMessage = $"Are you sure you want save your changes?";
+        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", confirmMessage);
+        if (!confirmed) { return; }
+
+        currUser.AccessRights = rights.ToList();
+        var response = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/AccessRights/SaveAccessRights", currUser);
+        saveMessage = await response.Content.ReadAsStringAsync();
+        await FetchRights(currUser.Email);
+    }
+
+    public async Task CopyAccessRights()
+    {
+        messageType = "danger";
+        if (CopyInput.FromEmail == CopyInput.ToEmail) {
+            copyMessage = "Emails must be different.";
+            return; 
+        }
+
+        bool isValidFromUser = await HttpClient.GetFromJsonAsync<bool>($"{apiBaseUrl}/api/Snowflake/CheckIsValidUser={CopyInput.FromEmail}");
+        bool isValidToUser = await HttpClient.GetFromJsonAsync<bool>($"{apiBaseUrl}/api/Snowflake/CheckIsValidUser={CopyInput.ToEmail}");
+        Console.WriteLine("users checked");
+        if (!isValidFromUser || !isValidToUser) { 
+            copyMessage = "Invalid user email provided.";
+            return;
+        };
+
+        string confirmMessage = $"Are you sure you want to copy all access rights from '{CopyInput.FromEmail}' to '{CopyInput.ToEmail}'?";
+        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", confirmMessage);
+        if (!confirmed) { return; }
+
+        List<string> copyPair = new();
+        copyPair.Add(CopyInput.FromEmail);
+        copyPair.Add(CopyInput.ToEmail);
+        var response = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/AccessRights/CopyAccessRights", copyPair);
+        if (response.IsSuccessStatusCode)
+        {
+            messageType = "success";
+        }
+        copyMessage = await response.Content.ReadAsStringAsync();
+    }
+
+    private sealed class SearchModel
+    {
+        public string Name { get; set; } = "";
+
+        [EmailAddress]
+        [Display(Name = "Email")]
+        public string Email { get; set; } = "";
+    }
+
+    private sealed class CopyModel
+    {
+        public string Name { get; set; } = "";
+
+        [Required]
+        [EmailAddress]
+        [Display(Name = "From User Email")]
+        public string FromEmail { get; set; } = "";
+
+        [Required]
+        [EmailAddress]
+        [Display(Name = "Target User Email")]
+        public string ToEmail { get; set; } = "";
+
+    }
 }

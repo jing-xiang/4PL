@@ -46,6 +46,22 @@ namespace _4PL.Data
             }
         }
 
+        [HttpGet("CheckIsValidUser={email}")]
+        public async Task<ActionResult<bool>> CheckIsValidUser(string email)
+        {
+            try
+            {
+                Console.WriteLine("check is valid request received");
+                bool result = _dbContext.CheckIsValidUser(email);
+                Console.WriteLine("check is valid request fulfilled");
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal Server Error: {ex.Message}");
+            }
+        }
+
         [HttpGet("e={userEmail}")]
         public async Task<IActionResult> VerifyUserExist(string userEmail)
         {

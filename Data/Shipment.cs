@@ -30,6 +30,8 @@ namespace _4PL.Data
         public string Description { get; set; }
         public string Shipment_Note { get; set; }
         public List<Container> Container_List {  get; set; }
+        public DateTime Last_Modified_At { get; set; }
+        public string Last_Modified_By { get; set; }
 
         public Shipment(
             string Job_No,
@@ -57,7 +59,10 @@ namespace _4PL.Data
             double Total_No_Of_Gross_Weight_KGM,
             string Description,
             string Shipment_Note,
-            List<Container> Container_List
+            List<Container> Container_List,
+            DateTime Last_Modified_At,
+            string Last_Modified_By
+
         )
         {
             this.Job_No = Job_No;
@@ -70,7 +75,7 @@ namespace _4PL.Data
             this.Vessel_Name = Vessel_Name;
             this.Voyage_No = Voyage_No;
             this.ETD_Date = ETD_Date;
-            this.ETA_Date =ETA_Date;
+            this.ETA_Date = ETA_Date;
             this.Carrier_Matchcode = Carrier_Matchcode;
             this.Carrier_Name = Carrier_Name;
             this.Carrier_Contract_No = Carrier_Contract_No;
@@ -86,6 +91,8 @@ namespace _4PL.Data
             this.Description = Description;
             this.Shipment_Note = Shipment_Note;
             this.Container_List = Container_List;
+            this.Last_Modified_At = Last_Modified_At;
+            this.Last_Modified_By = Last_Modified_By;
         }
 
         public Shipment()
@@ -116,6 +123,8 @@ namespace _4PL.Data
             this.Description = "";
             this.Shipment_Note = "";
             this.Container_List = new List<Container>();
+            this.Last_Modified_At = DateTime.Now;
+            this.Last_Modified_By = "";
         }
     }
 

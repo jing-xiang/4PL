@@ -4,5 +4,6 @@
     {
         public string? SettingType { get; set; }
         public string? Value { get; set; }
+        public string? New {  get; set; }
     }
 }
