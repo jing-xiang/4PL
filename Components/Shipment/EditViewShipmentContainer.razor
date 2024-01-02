@@ -396,22 +396,28 @@
     bool isEditingShipmentCharge = false;
     private string? currEmail;
 
-    async Task UpdateShipment()
+    async Task<bool> isMostUpdatedShipment()
     {
         Shipment latestShipment = await getShipmentData();
         Console.WriteLine("updateshipmenttest");
         Console.WriteLine(latestShipment.Last_Modified_At);
         Console.WriteLine(shipment.Last_Modified_At);
-        if (latestShipment.Last_Modified_At != shipment.Last_Modified_At)
-        {
-            await JS.InvokeVoidAsync("alert", "The shipment has just recently been updated. Please reload to view the latest update.");
-        } else
+        return latestShipment.Last_Modified_At == shipment.Last_Modified_At;
+    }
+
+    async Task UpdateShipment()
+    {
+        bool isUpdated = await isMostUpdatedShipment();
+        if (isUpdated)
         {
             shipment.Last_Modified_By = currEmail;
             shipment.Last_Modified_At = DateTime.Now;
             var response = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/Shipment/UpdateShipment/", shipment);
             await JS.InvokeVoidAsync("alert", "Successfully Updated");
             NavManager.NavigateTo("/shipment");
+        } else
+        {
+            await JS.InvokeVoidAsync("alert", "The shipment has just recently been updated. Please reload to view the latest update.");
         }
     }
 
@@ -427,19 +433,30 @@
         }
         else
         {
-            container = tempContainer;
-            container.Shipment_Job_No = shipment.Job_No;
-            var response = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/Shipment/CreateContainer/", container);
-            if (isEditingContainer)
+            bool isUpdated = await isMostUpdatedShipment();
+            if (isUpdated)
             {
-                await JS.InvokeVoidAsync("alert", "Successfully Edited");
+                container = tempContainer;
+                container.Shipment_Job_No = shipment.Job_No;
+                var response = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/Shipment/CreateContainer/", container);
+                shipment.Last_Modified_By = currEmail;
+                shipment.Last_Modified_At = DateTime.Now;
+                var response2 = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/Shipment/UpdateShipment/", shipment);
+                if (isEditingContainer)
+                {
+                    await JS.InvokeVoidAsync("alert", "Successfully Edited");
+                }
+                else
+                {
+                    await JS.InvokeVoidAsync("alert", "Successfully Added");
+                }
+                var result = await getContainerData();
+                containers = result.AsQueryable();
+                StateHasChanged();
             } else
             {
-                await JS.InvokeVoidAsync("alert", "Successfully Added");
+                await JS.InvokeVoidAsync("alert", "The shipment has just recently been updated. Please reload to view the latest update.");
             }
-            var result = await getContainerData();
-            containers = result.AsQueryable();
-            StateHasChanged();
         }
     }
 
@@ -450,18 +467,28 @@
 
     async Task DeleteContainer(string Shipment_Job_No, string Container_No)
     {
-        var response = await HttpClient.DeleteAsync($"{NavManager.BaseUri}api/shipment/DeleteContainer/{Shipment_Job_No}/{Container_No}");
-        if (response.IsSuccessStatusCode)
+        bool isUpdated = await isMostUpdatedShipment();
+        if (isUpdated)
         {
-            var result = await getContainerData();
-            containers = result.AsQueryable();
-            StateHasChanged();
-            await JS.InvokeVoidAsync("alert", $"Container {Container_No} has been deleted");
-            StateHasChanged();
-        }
-        else
+            var response = await HttpClient.DeleteAsync($"{NavManager.BaseUri}api/shipment/DeleteContainer/{Shipment_Job_No}/{Container_No}");
+            if (response.IsSuccessStatusCode)
+            {
+                shipment.Last_Modified_By = currEmail;
+                shipment.Last_Modified_At = DateTime.Now;
+                var response2 = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/Shipment/UpdateShipment/", shipment);
+                var result = await getContainerData();
+                containers = result.AsQueryable();
+                StateHasChanged();
+                await JS.InvokeVoidAsync("alert", $"Container {Container_No} has been deleted");
+                StateHasChanged();
+            }
+            else
+            {
+                Console.WriteLine("Error deleting container");
+            }
+        } else
         {
-            Console.WriteLine("Error deleting container");
+            await JS.InvokeVoidAsync("alert", "The shipment has just recently been updated. Please reload to view the latest update.");
         }
     }
 
@@ -535,47 +562,70 @@
         if (!chargesTemp.Any())
         {
             await JS.InvokeVoidAsync("alert", $"No charges to be saved for shipment {shipment.Job_No}, Please click the Auto Rating button to find all relevant charges");
-        }
-        foreach (ShipmentCharge sc in chargesTemp)
+        } else
         {
-            sc.Shipment_Job_No = shipment.Job_No;
+            bool isUpdated = await isMostUpdatedShipment();
+            if (isUpdated)
+            {
+                foreach (ShipmentCharge sc in chargesTemp)
+                {
+                    sc.Shipment_Job_No = shipment.Job_No;
+                }
+                var response = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/Shipment/CreateShipmentCharges/", chargesTemp);
+                shipment.Last_Modified_By = currEmail;
+                shipment.Last_Modified_At = DateTime.Now;
+                var response2 = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/Shipment/UpdateShipment/", shipment);
+                await JS.InvokeVoidAsync("alert", $"All charges of shipment {shipment.Job_No} have been saved");
+                chargesPresent = true;
+                unsavedChanges = false;
+            } else
+            {
+                await JS.InvokeVoidAsync("alert", "The shipment has just recently been updated. Please reload to view the latest update.");
+            }
         }
-        var response = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/Shipment/CreateShipmentCharges/", chargesTemp);
-        await JS.InvokeVoidAsync("alert", $"All charges of shipment {shipment.Job_No} have been saved");
-        chargesPresent = true;
-        unsavedChanges = false;
+
     }
 
     async Task DeleteShipmentCharge(string Shipment_Job_No, string Charge_Name)
     {
-        List<ShipmentCharge> chargesOld = await getShipmentChargesInitial();
-        if (!chargesOld.Any())
+        bool isUpdated = await isMostUpdatedShipment();
+        if (isUpdated)
         {
-            chargesTemp.RemoveAll(c => c.Charge_Name == Charge_Name && c.Shipment_Job_No == Shipment_Job_No);
-            charges = chargesTemp.AsQueryable();
-        }
-        else
-        {
-            chargesTemp.RemoveAll(c => c.Charge_Name == Charge_Name && c.Shipment_Job_No == Shipment_Job_No);
-            charges = chargesTemp.AsQueryable();
-            string encodedChargeName = Uri.EscapeDataString(Charge_Name);
-
-            var response = await HttpClient.DeleteAsync($"{NavManager.BaseUri}api/shipment/DeleteShipmentCharge/{Shipment_Job_No}/{encodedChargeName}");
-            if (response.IsSuccessStatusCode)
+            List<ShipmentCharge> chargesOld = await getShipmentChargesInitial();
+            if (!chargesOld.Any())
             {
-                chargesTemp = await getShipmentChargesInitial();
-                if (!chargesTemp.Any())
-                {
-                    chargesPresent = false;
-                }
+                chargesTemp.RemoveAll(c => c.Charge_Name == Charge_Name && c.Shipment_Job_No == Shipment_Job_No);
                 charges = chargesTemp.AsQueryable();
-                StateHasChanged();
-                await JS.InvokeVoidAsync("alert", $"Charge {Charge_Name} has been deleted");
             }
             else
             {
-                Console.WriteLine("Error deleting shipment charge");
+                chargesTemp.RemoveAll(c => c.Charge_Name == Charge_Name && c.Shipment_Job_No == Shipment_Job_No);
+                charges = chargesTemp.AsQueryable();
+                string encodedChargeName = Uri.EscapeDataString(Charge_Name);
+
+                var response = await HttpClient.DeleteAsync($"{NavManager.BaseUri}api/shipment/DeleteShipmentCharge/{Shipment_Job_No}/{encodedChargeName}");
+                if (response.IsSuccessStatusCode)
+                {
+                    chargesTemp = await getShipmentChargesInitial();
+                    if (!chargesTemp.Any())
+                    {
+                        chargesPresent = false;
+                    }
+                    shipment.Last_Modified_By = currEmail;
+                    shipment.Last_Modified_At = DateTime.Now;
+                    var response2 = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/Shipment/UpdateShipment/", shipment);
+                    charges = chargesTemp.AsQueryable();
+                    StateHasChanged();
+                    await JS.InvokeVoidAsync("alert", $"Charge {Charge_Name} has been deleted");
+                }
+                else
+                {
+                    Console.WriteLine("Error deleting shipment charge");
+                }
             }
+        } else
+        {
+            await JS.InvokeVoidAsync("alert", "The shipment has just recently been updated. Please reload to view the latest update.");
         }
     }
 
