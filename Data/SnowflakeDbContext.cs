@@ -5,6 +5,7 @@ using System.Text;
 using Newtonsoft.Json;
 using System.Security.Cryptography;
 using System.Diagnostics;
+using System.Reflection;
 
 namespace _4PL.Data
 {
@@ -1525,7 +1526,7 @@ namespace _4PL.Data
             }
         }
 
-        public string InsertShipment(Shipment shipment)
+        /*public string InsertShipment(Shipment shipment)
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
@@ -1572,6 +1573,55 @@ namespace _4PL.Data
                 }
                 return uploadMessage;
             }
+        }*/
+
+        public string InsertShipment(Shipment shipment)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                string uploadMessage = "Error";
+
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    //Getting all the Shipment's property names that are to be uploaded to snowflake
+                    var properties = typeof(Shipment).GetProperties(BindingFlags.Instance | BindingFlags.Public)
+                        .Where(p => p.CanRead && p.Name != "Container_List")
+                        .ToList();
+
+                    var parameterNames = string.Join(", ", properties.Select(p => $":{p.Name}"));
+
+                    command.CommandText = $"CALL CREATE_SHIPMENT ({parameterNames})";
+
+                    foreach (var property in properties)
+                    {
+                        Console.WriteLine("propertyname: " + property.Name + "val: " + property.GetValue(shipment) + "proptype: " + property.PropertyType);
+                        command.Parameters.Add(new SnowflakeDbParameter
+                        {
+                            ParameterName = $"{property.Name}",
+                            Value = property.GetValue(shipment) ?? DBNull.Value,
+                            DbType = GetDbType(property.PropertyType)
+                        });
+                    }
+
+                    uploadMessage = command.ExecuteScalar().ToString();
+                }
+                return uploadMessage;
+            }
+        }
+
+        private DbType GetDbType(Type propertyType)
+        {
+            if (propertyType == typeof(string))
+                return DbType.String;
+            if (propertyType == typeof(int))
+                return DbType.Int32;
+            if (propertyType == typeof(double))
+                return DbType.Double;
+            if (propertyType == typeof(DateTime))
+                return DbType.DateTime;
+
+            throw new ArgumentException($"Unsupported property type: {propertyType.Name}");
         }
 
 
