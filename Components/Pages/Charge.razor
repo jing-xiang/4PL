@@ -74,14 +74,17 @@
         if (addChargeReference.Charge_Code == "" && addChargeReference.Charge_Description == "")
         {
             await JS.InvokeVoidAsync("alert", "Please fill in a charge code and description");
+            return; 
         }
         else if (addChargeReference.Charge_Code == "")
         {
             await JS.InvokeVoidAsync("alert", "Please fill in a charge code");
+            return; 
         }
         else if (addChargeReference.Charge_Description == "")
         {
             await JS.InvokeVoidAsync("alert", "Please fill in a charge description");
+            return;
         }
         // containerTypesList.Add(containerTypeReference);
         // ConvertListToQueryable();

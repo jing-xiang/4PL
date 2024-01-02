@@ -57,6 +57,7 @@
         if (containerType == "")
         {
             await JS.InvokeVoidAsync("alert", "Please fill in a container type");
+            return; 
         }
         // containerTypesList.Add(containerTypeReference);
         // ConvertListToQueryable();
