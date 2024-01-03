@@ -4,6 +4,26 @@
     overflow-y: auto;
 }
 
+.heading {
+    background-color: rgb(230, 230, 230);
+    height: 3rem;
+    padding: 7px;
+    text-align: center;
+}
+
+.subheading {
+    background-color: rgb(240, 240, 240);
+    height: 40px;
+    padding: 6px;
+    padding-left: 12px;
+}
+
+.button-view {
+    width: 100px;
+    flex-wrap: wrap;
+    margin: 3px;
+}
+
 ::deep thead {
     position: sticky;
     width: auto;
@@ -12,18 +32,22 @@
     background-color: rgb(240, 240, 240);
 }
 
+::deep tr:where(:hover) {
+    border: 1px solid;
+}
+
 ::deep thead .email {
     width: 800px;
     overflow-wrap: initial;
-    border-bottom: 1px solid;
-    background-color: rgb(240, 240, 240);
 }
 
 ::deep thead .name {
     width: 800px;
     flex-wrap: wrap;
-    border-bottom: 1px solid;
-    background-color: rgb(240, 240, 240);
+}
+
+::deep thead .button-view {
+    flex-wrap: wrap;
 }
 
 ::deep tr:nth-child(even) {

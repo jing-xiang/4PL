@@ -23,10 +23,9 @@
     <div class="col-md-10 overflow-auto">
         @if (isLoaded)
         {
-            <h3>Access Model Management</h3>
+            <h3 class="heading"><strong>ACCESS MODEL MANAGEMENT</strong></h3>
             <hr />
-            <h3>Add Access Type</h3>
-            <hr />
+            <h4 class="subheading">Add Access Type</h4>
             <EditForm Model="AddInput" method="post" OnValidSubmit="AddAccessRight" FormName="addAccessType">
                 <DataAnnotationsValidator />
                 @if (!string.IsNullOrEmpty(addMessage))
@@ -41,8 +40,6 @@
                 </div>
                 <ValidationSummary class="mt-2 text-danger" role="alert" />
             </EditForm>
-            <hr />
-            <h3>Current Access Model</h3>
             <hr />
             <div class="grid" tabindex="-1">
                 <QuickGrid Items="@accessModel">
@@ -67,7 +64,7 @@
             @if (currRight != null)
             {
                 <hr />
-                <h3>Edit Details for <strong>@currRight.AccessType</strong></h3>
+                <h4 class="subheading">Edit Details for <strong>@currRight.AccessType</strong></h4>
                 <hr />
                 <EditForm Model="EditInput" method="post" OnValidSubmit="EditAccessRight" FormName="editAccessRight">
                     <DataAnnotationsValidator />
