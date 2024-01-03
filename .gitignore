@@ -3,8 +3,8 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
-# sensitive
-appsettings.json
+# Ignore appsettings.json
+connectionstring.txt
 
 # User-specific files
 *.rsuser
@@ -365,4 +365,3 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
-/appsettings.json
