@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Snowflake.Data.Client;
 using Syncfusion.Blazor;
+using Microsoft.AspNetCore.Authorization;
+using _4PL.Data.Access_Rights;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,16 +25,13 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     options.AccessDeniedPath = "/Forbidden/";
 });
 
+
 builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddSyncfusionBlazor();
 builder.Services.AddSingleton<SnowflakeDbContext>();
 builder.Services.AddSingleton<AccessRightsDbContext>();
 builder.Services.AddControllers();
 builder.Services.AddHttpClient();
-
-//https://stackoverflow.com/questions/73527777/there-is-no-registered-service-of-type-system-net-http-ihttpclientfactory
-builder.Services.AddHttpClient();
-builder.Services.AddControllers();
 
 builder.WebHost.UseStaticWebAssets();
 

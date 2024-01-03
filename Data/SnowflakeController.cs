@@ -53,9 +53,21 @@ namespace _4PL.Data
         {
             try
             {
-                Console.WriteLine("check is valid request received");
                 bool result = _dbContext.CheckIsValidUser(email);
-                Console.WriteLine("check is valid request fulfilled");
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal Server Error: {ex.Message}");
+            }
+        }
+
+        [HttpGet("CheckAccess{email}&Right={accessRight}")]
+        public IActionResult CheckAccessRights(string email, string accessRight)
+        {
+            try
+            {
+                bool result = _dbContext.CheckAccessRights(email, accessRight);
                 return Ok(result);
             }
             catch (Exception ex)

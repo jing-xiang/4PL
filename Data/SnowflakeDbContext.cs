@@ -60,11 +60,20 @@ namespace _4PL.Data
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
                 conn.Open();
-                Console.WriteLine("connection opened");
                 IDbCommand command = conn.CreateCommand();
                 command.CommandText = $"CALL CHECK_DUPLICATE('{email}')";
-                Console.WriteLine("command executing");
                 return Convert.ToBoolean(command.ExecuteScalar());
+            }
+        }
+
+        public bool CheckAccessRights(string email, string accessRight)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                IDbCommand command = conn.CreateCommand();
+                command.CommandText = $"SELECT COUNT(*) FROM ACCESS_CONTROL WHERE EMAIL = '{email}' AND ACCESS_TYPE = '{accessRight}'";
+                return Convert.ToDecimal(command.ExecuteScalar()) > 0;
             }
         }
 
