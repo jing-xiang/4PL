@@ -3,10 +3,13 @@
 @using Newtonsoft.Json
 @using _4PL.Data
 @using Microsoft.AspNetCore.Components.QuickGrid
+@using System.Security.Claims
+@using _4PL.Components.Account.Shared
 
 @inject IJSRuntime JS
 @inject NavigationManager NavManager
 @inject HttpClient HttpClient
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 @rendermode InteractiveServer
 
@@ -76,6 +79,16 @@
 
 </EditForm>
 
+@if (currViewInitialised)
+{
+    <select @onchange="e => ChangeDisplay(e.Value.ToString())">
+        @foreach (var l in layoutArray)
+        {
+            <option value=@l>@l</option>
+        }
+    </select>
+}
+
 <div class="result-container py-4" style="max-width:80vw">
     <QuickGrid Items="@shipments" Pagination="@pagination">
         <TemplateColumn Title="Job No" >
@@ -83,30 +96,107 @@
                 @context.Job_No
             </a>
         </TemplateColumn>
-        <PropertyColumn Title="Master BL No" Property="@(s => s.Master_BL_No)" Sortable="true" />
-        <PropertyColumn Title="Container Mode" Property="@(s => s.Container_Mode)" Sortable="true" />
-        <PropertyColumn Title="Place Of Loading ID" Property="@(s => s.Place_Of_Loading_ID)" Sortable="true" />
-        <PropertyColumn Title="Place Of Loading Name" Property="@(s => s.Place_Of_Loading_Name)" Sortable="true" />
-        <PropertyColumn Title="Place Of Discharge ID" Property="@(s => s.Place_Of_Discharge_ID)" Sortable="true" />
-        <PropertyColumn Title="Place Of Discharge Name" Property="@(s => s.Place_Of_Discharge_Name)" Sortable="true" />
-        <PropertyColumn Title="Vessel Name" Property="@(s => s.Vessel_Name)" Sortable="true" />
-        <PropertyColumn Title="Voyage No" Property="@(s => s.Voyage_No)" Sortable="true" />
-        <PropertyColumn Title="ETD Date" Property="@(s => s.ETD_Date.Date.ToShortDateString())" Sortable="true" />
-        <PropertyColumn Title="ETA Date" Property="@(s => s.ETA_Date.Date.ToShortDateString())" Sortable="true" />
-        <PropertyColumn Title="Carrier Matchcode" Property="@(s => s.Carrier_Matchcode)" Sortable="true" />
-        <PropertyColumn Title="Carrier Name" Property="@(s => s.Carrier_Name)" Sortable="true" />
-        <PropertyColumn Title="Carrier Contract No" Property="@(s => s.Carrier_Contract_No)" Sortable="true" />
-        <PropertyColumn Title="Carrier Booking Reference No" Property="@(s => s.Carrier_Booking_Reference_No)" Sortable="true" />
-        <PropertyColumn Title="Inco Terms" Property="@(s => s.Inco_Terms)" Sortable="true" />
-        <PropertyColumn Title="Controlling Customer Name" Property="@(s => s.Controlling_Customer_Name)" Sortable="true" />
-        <PropertyColumn Title="Shipper Name" Property="@(s => s.Shipper_Name)" Sortable="true" />
-        <PropertyColumn Title="Consignee Name" Property="@(s => s.Consignee_Name)" Sortable="true" />
-        <PropertyColumn Title="Total No Of Pieces" Property="@(s => s.Total_No_Of_Pieces)" Sortable="true" />
-        <PropertyColumn Title="Package Type" Property="@(s => s.Package_Type)" Sortable="true" />
-        <PropertyColumn Title="Total No Of Volume Weight MTQ" Property="@(s => s.Total_No_Of_Volume_Weight_MTQ)" Sortable="true" />
-        <PropertyColumn Title="Total No Of Gross Weight KGM" Property="@(s => s.Total_No_Of_Gross_Weight_KGM)" Sortable="true" />
-        <PropertyColumn Title="Description" Property="@(s => s.Description)" Sortable="true" />
-        <PropertyColumn Title="Shipment Note" Property="@(s => s.Shipment_Note)" Sortable="true" />
+
+        @if(currViewInitialised)
+        {
+            @if (currView.Contains("Master_BL_No"))
+            {
+                <PropertyColumn Title="Master BL No" Property="@(s => s.Master_BL_No)" Sortable="true" />
+            }
+            @if (currView.Contains("Container_Mode"))
+            {
+                <PropertyColumn Title="Container Mode" Property="@(s => s.Container_Mode)" Sortable="true" />
+            }
+            @if (currView.Contains("Place_Of_Loading_ID"))
+            {
+                <PropertyColumn Title="Place Of Loading ID" Property="@(s => s.Place_Of_Loading_ID)" Sortable="true" />
+            }
+            @if (currView.Contains("Place_Of_Loading_Name"))
+            {
+                <PropertyColumn Title="Place Of Loading Name" Property="@(s => s.Place_Of_Loading_Name)" Sortable="true" />
+            }
+            @if (currView.Contains("Place_Of_Discharge_ID"))
+            {
+                <PropertyColumn Title="Place Of Discharge ID" Property="@(s => s.Place_Of_Discharge_ID)" Sortable="true" />
+            }
+            @if (currView.Contains("Place_Of_Discharge_Name"))
+            {
+                <PropertyColumn Title="Place Of Discharge Name" Property="@(s => s.Place_Of_Discharge_Name)" Sortable="true" />
+            }
+            @if (currView.Contains("Vessel_Name"))
+            {
+                <PropertyColumn Title="Vessel Name" Property="@(s => s.Vessel_Name)" Sortable="true" />
+            }
+            @if (currView.Contains("Voyage_No"))
+            {
+                <PropertyColumn Title="Voyage No" Property="@(s => s.Voyage_No)" Sortable="true" />
+            }
+            @if (currView.Contains("ETD_Date"))
+            {
+                <PropertyColumn Title="ETD Date" Property="@(s => s.ETD_Date.Date.ToShortDateString())" Sortable="true" />
+            }
+            @if (currView.Contains("ETA_Date"))
+            {
+                <PropertyColumn Title="ETA Date" Property="@(s => s.ETA_Date.Date.ToShortDateString())" Sortable="true" />
+            }
+            @if (currView.Contains("Carrier_Matchcode"))
+            {
+                <PropertyColumn Title="Carrier Matchcode" Property="@(s => s.Carrier_Matchcode)" Sortable="true" />
+            }
+            @if (currView.Contains("Carrier_Name"))
+            {
+                <PropertyColumn Title="Carrier Name" Property="@(s => s.Carrier_Name)" Sortable="true" />
+            }
+            @if (currView.Contains("Carrier_Contract_No"))
+            {
+                <PropertyColumn Title="Carrier Contract No" Property="@(s => s.Carrier_Contract_No)" Sortable="true" />
+            }
+            @if (currView.Contains("Carrier_Booking_Reference_No"))
+            {
+                <PropertyColumn Title="Carrier Booking Reference No" Property="@(s => s.Carrier_Booking_Reference_No)" Sortable="true" />
+            }
+            @if (currView.Contains("Inco_Terms"))
+            {
+                <PropertyColumn Title="Inco Terms" Property="@(s => s.Inco_Terms)" Sortable="true" />
+            }
+            @if (currView.Contains("Controlling_Customer_Name"))
+            {
+                <PropertyColumn Title="Controlling Customer Name" Property="@(s => s.Controlling_Customer_Name)" Sortable="true" />
+            }
+            @if (currView.Contains("Shipper_Name"))
+            {
+                <PropertyColumn Title="Shipper Name" Property="@(s => s.Shipper_Name)" Sortable="true" />
+            }
+            @if (currView.Contains("Consignee_Name"))
+            {
+                <PropertyColumn Title="Consignee Name" Property="@(s => s.Consignee_Name)" Sortable="true" />
+            }
+            @if (currView.Contains("Total_No_Of_Pieces"))
+            {
+                <PropertyColumn Title="Total No Of Pieces" Property="@(s => s.Total_No_Of_Pieces)" Sortable="true" />
+            }
+            @if (currView.Contains("Package_Type"))
+            {
+                <PropertyColumn Title="Package Type" Property="@(s => s.Package_Type)" Sortable="true" />
+            }
+            @if (currView.Contains("Total_No_Of_Volume_Weight_MTQ"))
+            {
+                <PropertyColumn Title="Total No Of Volume Weight MTQ" Property="@(s => s.Total_No_Of_Volume_Weight_MTQ)" Sortable="true" />
+            }
+            @if (currView.Contains("Total_No_Of_Gross_Weight_KGM"))
+            {
+                <PropertyColumn Title="Total No Of Gross Weight KGM" Property="@(s => s.Total_No_Of_Gross_Weight_KGM)" Sortable="true" />
+            }
+            @if (currView.Contains("Description"))
+            {
+                <PropertyColumn Title="Description" Property="@(s => s.Description)" Sortable="true" />
+            }
+            @if (currView.Contains("Shipment_Note"))
+            {
+                <PropertyColumn Title="Shipment Note" Property="@(s => s.Shipment_Note)" Sortable="true" />
+            }
+        }
+
         <TemplateColumn Title ="Actions">
             <button class="btn btn-sm btn-success" @onclick="() => navigateEdit(context.Job_No)">Edit</button>
             <button class="btn btn-sm btn-danger" @onclick="() => DeleteShipment(context.Job_No)">Delete</button>
@@ -138,75 +228,115 @@
     }
 </style>
 
-@code {
-    [SupplyParameterFromForm]
-    ShipmentSearchModel shipment { get; set; } = new();
-    Container container { get; set; } = new();
+    @code {
+        [SupplyParameterFromForm]
+        ShipmentSearchModel shipment { get; set; } = new();
+        Container container { get; set; } = new();
 
-    PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
-    IQueryable<Shipment> shipments = Enumerable.Empty<Shipment>().AsQueryable();
+        PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
+        IQueryable<Shipment> shipments = Enumerable.Empty<Shipment>().AsQueryable();
 
+        Dictionary<string, UserProfileLayout> profileLayouts = new();
+        string[]? currView;
+        string[]? layoutArray;
+        bool currViewInitialised = false;
 
-    public async void Search()
-    {
-        var result = await getShipmentData();
-        if (result != null && result.Any())
-        {
-            shipments = result.AsQueryable();
-            StateHasChanged();
-        } else
-        {
-            await JS.InvokeVoidAsync("alert", $"No shipment found");
-        }
-
-    }
-
-    async Task<List<Shipment>> getShipmentData()
-    {
-        ShipmentSearchModel s = new();
-        Container c = new();
-        s.Job_No = string.IsNullOrEmpty(shipment.Job_No) ? "%" : "%" + shipment.Job_No + "%";
-        s.Master_BL_No = string.IsNullOrEmpty(shipment.Master_BL_No) ? "%" : "%" + shipment.Master_BL_No + "%";
-        s.Place_Of_Loading_Name = string.IsNullOrEmpty(shipment.Place_Of_Loading_Name) ? "%" : "%" + shipment.Place_Of_Loading_Name + "%";
-        s.Place_Of_Discharge_Name = string.IsNullOrEmpty(shipment.Place_Of_Discharge_Name) ? "%" : "%" + shipment.Place_Of_Discharge_Name + "%";
-        s.Vessel_Name = string.IsNullOrEmpty(shipment.Vessel_Name) ? "%" : "%" + shipment.Vessel_Name + "%";
-        s.Voyage_No = string.IsNullOrEmpty(shipment.Voyage_No) ? "%" : "%" + shipment.Voyage_No + "%";
-        s.ETD_Date_From = shipment.ETD_Date_From;
-        s.ETD_Date_To = shipment.ETD_Date_To;
-        s.ETA_Date_From = shipment.ETA_Date_From;
-        s.ETA_Date_To = shipment.ETA_Date_To;
-        c.Container_No = string.IsNullOrEmpty(container.Container_No) ? "%" : "%" + container.Container_No + "%";
-        c.Container_Type = string.IsNullOrEmpty(container.Container_Type) ? "%" : container.Container_Type + "%";
-        HttpResponseMessage response =  await HttpClient.PostAsJsonAsync<Tuple<ShipmentSearchModel, Container>>($"{NavManager.BaseUri}api/Shipment/Search/", new Tuple<ShipmentSearchModel, Container>(s, c));
-        var responseContent = await response.Content.ReadAsStringAsync();
-        List<Shipment> result = JsonConvert.DeserializeObject<List<Shipment>>(responseContent);
-        return result;
-    }
-
-
-    private void navigateEdit(string Job_No)
-    {
-        NavManager.NavigateTo($"/shipment/edit?Shipment_Job_No={Job_No}");
-    }
-
-    private void navigateView(string Job_No)
-    {
-        NavManager.NavigateTo($"/shipment/view?Shipment_Job_No={Job_No}");
-    }
-
-    async Task DeleteShipment(string Job_No)
-    {
-        var response = await HttpClient.DeleteAsync($"{NavManager.BaseUri}api/shipment/DeleteShipment/{Job_No}");
-        if (response.IsSuccessStatusCode)
+        public async void Search()
         {
             var result = await getShipmentData();
-            shipments = result.AsQueryable();
-            StateHasChanged();
-            await JS.InvokeVoidAsync("alert", $"Shipment {Job_No} has been deleted");
+            if (result != null && result.Any())
+            {
+                shipments = result.AsQueryable();
+                StateHasChanged();
+            } else
+            {
+                await JS.InvokeVoidAsync("alert", $"No shipment found");
+            }
+
         }
-        else
+
+        async Task<List<Shipment>> getShipmentData()
         {
-            Console.WriteLine("Error deleting shipment");
+            ShipmentSearchModel s = new();
+            Container c = new();
+            s.Job_No = string.IsNullOrEmpty(shipment.Job_No) ? "%" : "%" + shipment.Job_No + "%";
+            s.Master_BL_No = string.IsNullOrEmpty(shipment.Master_BL_No) ? "%" : "%" + shipment.Master_BL_No + "%";
+            s.Place_Of_Loading_Name = string.IsNullOrEmpty(shipment.Place_Of_Loading_Name) ? "%" : "%" + shipment.Place_Of_Loading_Name + "%";
+            s.Place_Of_Discharge_Name = string.IsNullOrEmpty(shipment.Place_Of_Discharge_Name) ? "%" : "%" + shipment.Place_Of_Discharge_Name + "%";
+            s.Vessel_Name = string.IsNullOrEmpty(shipment.Vessel_Name) ? "%" : "%" + shipment.Vessel_Name + "%";
+            s.Voyage_No = string.IsNullOrEmpty(shipment.Voyage_No) ? "%" : "%" + shipment.Voyage_No + "%";
+            s.ETD_Date_From = shipment.ETD_Date_From;
+            s.ETD_Date_To = shipment.ETD_Date_To;
+            s.ETA_Date_From = shipment.ETA_Date_From;
+            s.ETA_Date_To = shipment.ETA_Date_To;
+            c.Container_No = string.IsNullOrEmpty(container.Container_No) ? "%" : "%" + container.Container_No + "%";
+            c.Container_Type = string.IsNullOrEmpty(container.Container_Type) ? "%" : container.Container_Type + "%";
+            HttpResponseMessage response =  await HttpClient.PostAsJsonAsync<Tuple<ShipmentSearchModel, Container>>($"{NavManager.BaseUri}api/Shipment/Search/", new Tuple<ShipmentSearchModel, Container>(s, c));
+            var responseContent = await response.Content.ReadAsStringAsync();
+            List<Shipment> result = JsonConvert.DeserializeObject<List<Shipment>>(responseContent);
+            return result;
         }
+
+
+        private void navigateEdit(string Job_No)
+        {
+            NavManager.NavigateTo($"/shipment/edit?Shipment_Job_No={Job_No}");
+        }
+
+        private void navigateView(string Job_No)
+        {
+            NavManager.NavigateTo($"/shipment/view?Shipment_Job_No={Job_No}");
+        }
+
+        async Task DeleteShipment(string Job_No)
+        {
+            var response = await HttpClient.DeleteAsync($"{NavManager.BaseUri}api/shipment/DeleteShipment/{Job_No}");
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await getShipmentData();
+                shipments = result.AsQueryable();
+                StateHasChanged();
+                await JS.InvokeVoidAsync("alert", $"Shipment {Job_No} has been deleted");
+            }
+            else
+            {
+                Console.WriteLine("Error deleting shipment");
+            }
+        }
+
+        async Task<Dictionary<string, UserProfileLayout>> GetProfileLayout(string currEmail)
+        {
+            Console.WriteLine(currEmail);
+            HttpResponseMessage response = await HttpClient.PostAsJsonAsync<Tuple<string, string>>($"{NavManager.BaseUri}api/UserProfileLayout/GetUserLayouts/", new Tuple<string, string>(currEmail, "Shipment"));
+            var responseContent = await response.Content.ReadAsStringAsync();
+            Dictionary<string, UserProfileLayout> result = JsonConvert.DeserializeObject<Dictionary<string, UserProfileLayout>>(responseContent);
+            Console.WriteLine(string.Join(", ", result.Keys.ToList()));
+            return result;
+        }
+
+        async void ChangeDisplay(string layoutName)
+        {
+            Console.WriteLine(layoutName);
+            currView = profileLayouts[layoutName].Layout_Fields;
+        }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var currEmail = user.FindFirst(c => c.Type == ClaimTypes.Email)?.Value;
+        profileLayouts = await GetProfileLayout(currEmail);
+
+        Console.WriteLine(string.Join(", ", profileLayouts.Keys.ToArray()));
+        layoutArray = profileLayouts.Keys.ToArray();
+
+        currView = profileLayouts.FirstOrDefault(x => x.Value.Is_Default).Value.Layout_Fields;
+        if (currView == null)
+        {
+            currView = ["Master_BL_NO"];
+        }
+        Console.WriteLine(string.Join(", ", currView));
+        currViewInitialised = true;
+        //handle if user not in table, if none of the is_default is true
     }
 }
