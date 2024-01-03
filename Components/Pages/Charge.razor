@@ -159,7 +159,7 @@
         string result = response.Content.ReadAsStringAsync().Result;
         if (result == "Error - duplicate primary keys")
         {
-            await JS.InvokeVoidAsync("alert", "Charge already exists");
+            await JS.InvokeVoidAsync("alert", "Charge description already exists");
         }
         else
         {
@@ -209,6 +209,9 @@
         string chargeCode = searchChargeReference.Charge_Code.Trim();
         string chargeDescription = searchChargeReference.Charge_Description.Trim(); // remove leading and trailing white spaces
         List<ChargeReference> items = new List<ChargeReference>();
+
+        // TODO: Change to just 1 API for future applications
+        // 1 API pass 4 parameters, if parameter is empty then skip
         if (chargeCode == "" && chargeDescription == "")
         {
             items = await Http.GetFromJsonAsync<List<ChargeReference>>($"{Configuration["ApiBaseUrl"]}/api/Charge/FetchAllCharges");
@@ -246,7 +249,11 @@
         HttpResponseMessage result = await Http.PostAsJsonAsync<ChargeReference>($"{Configuration["ApiBaseUrl"]}/api/Charge/UpdateChargeCode", chargeToEdit);
         editTab = false;
         chargeToEdit = new(); 
-        await FetchCharges(); 
+        await FetchCharges(); // TODO: if you have 2 pages, when you change a record on page 2, will the page refresh to page 1? 
+        // Keep this way first (can enhance speed and user experience later)
+        // Manually update ChargesQueryable 
+
+
         //StateHasChanged(); // the field does not change immediately unless I fetch the search again 
 
     }
