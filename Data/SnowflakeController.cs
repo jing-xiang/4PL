@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.Security.Cryptography;
+using System.Text;
 using System.Data;
 using Components.Account;
 using System.Text.RegularExpressions;
 using Microsoft.IdentityModel.Tokens;
+using System.Runtime.CompilerServices;
 
 namespace _4PL.Data
 {
@@ -367,34 +369,5 @@ namespace _4PL.Data
                 return Convert.ToBase64String(hash);
             }
         }
-
-
-
-        /*
-         * Ratecard
-         */
-        //[HttpPost("CreateRcTransaction")]
-        //[HttpGet("CreateRcTransaction")]
-        //public ActionResult createRcTransaction()
-        //{
-        //    //Fore ach rate card, ...
-        //    //1.Create transaction
-        //    string transactionId = _dbContext.CreateRcTransaction(null);
-
-        //    //2. Create charges (reference transactionId)
-        //    List<string> chargeIds = _dbContext.CreateCharges(new List<Charge>() { new Charge(), new Charge(), new Charge() }, transactionId);
-
-        //    //3. Create ratecard (reference transactionId and chargeIds)
-        //    //string ratecardId = _dbContext.CreateRatecard(new RateCard(), chargeIds, transactionId);
-
-        //    //return Ok(ratecardId);
-        //    return Ok(chargeIds);
-        //}
-
-        //[HttpGet("GetTransaction/{transactionId}")]
-        //public ActionResult getTransaction(string transactionId)
-        //{
-        //    return Ok();
-        //}
     }
 }
