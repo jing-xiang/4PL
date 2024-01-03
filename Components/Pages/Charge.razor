@@ -15,7 +15,8 @@
 <h3 class="container">Charge</h3>
 <div class="container">
 
-    <EditForm Model="addChargeReference" OnSubmit="CreateCharge" Enhance>
+    @if(!editTab) { 
+        <EditForm Model="addChargeReference" OnSubmit="CreateCharge" Enhance>
         <label class="label-control">Add Charge</label>
         <div class="row">
             <div class="col-md-6">
@@ -27,6 +28,21 @@
         </div>      
         <button type="submit" class="btn btn-primary my-2">Add</button>
     </EditForm>
+    }
+    else {
+        <EditForm Model="chargeToEdit" OnSubmit="UpdateCharge" Enhance>
+         <label class="label-control">Update Charge Code</label>
+         <div class="row">
+             <div class="col-md-6">
+                 <InputText @bind-Value="chargeToEdit.Charge_Code" placeholder="Charge Code" class="form-control" autocomplete="off"></InputText>
+             </div>
+             <div class="col-md-6">
+                 <InputText @bind-Value="chargeToEdit.Charge_Description" placeholder="Charge Description" disabled="true" class="form-control" autocomplete="off"></InputText>
+             </div>
+         </div>
+         <button type="submit" class="btn btn-primary my-2">Update</button>
+     </EditForm>
+    }
     <EditForm Model="searchChargeReference" OnSubmit="FetchCharges" Enhance>
         <label class="label-control">Search Charge</label>
         <div class="row">
@@ -44,27 +60,48 @@
         <PropertyColumn Title="Charge Code" Property="@(c => c.Charge_Code)" Sortable="true" InitialSortDirection="SortDirection.Ascending"></PropertyColumn>
         <PropertyColumn Title="Charge Description" Property="@(c => c.Charge_Description)" Sortable="true" InitialSortDirection="SortDirection.Ascending"></PropertyColumn>
         <TemplateColumn Title="Actions">
-            <button @onclick="@(() => editTab = !editTab)" class="btn btn-success">Edit</button>
+            <button @onclick="@(() => toggleEdit(context))" class="btn btn-success">Edit</button>
             <button @onclick="@(() => DeleteCharge(context.Charge_Description))" class="btn btn-danger">Delete</button>
         </TemplateColumn>
-        @if (editTab)
-        {
-            <TemplateColumn Title="Edit Charge Code">
-                <InputText @bind-Value="newChargeCode" placeholder="New Charge Code" class="form-control" autocomplete="off"></InputText>
-                <button @onclick="@(() => UpdateCharge(context))" class="btn btn-primary">Update</button>
-            </TemplateColumn>
-        }
     </QuickGrid>
     <Paginator State="@pagination" />
 
 </div>
 
+<style>
+    table {
+        font-family: arial, sans-serif;
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 14px;
+    }
+
+    td, th {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+    }
+
+    tr:nth-child(even) {
+        background-color: #dddddd;
+    }
+
+    .result-container {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .remarks-col {
+        min-width: 300px;
+    }
+</style>
 
 
 @code {
     IQueryable<ChargeReference> ChargesQueryable = Enumerable.Empty<ChargeReference>().AsQueryable();
-    private bool editTab = false; // to toggle edit tab 
-    private string newChargeCode = ""; 
+    private string oldChargeCode = "";
+    private bool editTab = false; 
+    private ChargeReference chargeToEdit  = new();
 
     [SupplyParameterFromForm]
     ChargeReference addChargeReference { get; set; } = new();
@@ -74,6 +111,27 @@
 
     QuickGrid<ChargeReference>? grid;
     PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
+
+    // async void toggleEdit(ChargeReference charge) { 
+    //     if (chargeToEdit != charge && chargeToEdit.editTab == true) { 
+    //         chargeToEdit.editTab = false; set the previous charge's edit tab to false
+    //     }
+    //     oldChargeCode = charge.Charge_Code; 
+    //     chargeToEdit = charge; 
+    //     chargeToEdit.editTab = !chargeToEdit.editTab; toggle current charge's edit tab 
+    // }
+
+    async void toggleEdit(ChargeReference charge) { 
+        if (charge.Charge_Description != chargeToEdit.Charge_Description && editTab == true) { // if the new charge to edit is different from the previous charge to edit 
+            // use charge description to compare as that is the unique key 
+            editTab = true; 
+        }
+        else { 
+            editTab = !editTab; 
+        }
+        oldChargeCode = charge.Charge_Code;
+        chargeToEdit = new ChargeReference(charge); 
+    }
 
     async Task CreateCharge()
     {
@@ -115,6 +173,7 @@
 
     async Task DeleteCharge(string chargeDescription)
     {
+        editTab = false; 
         string confirmMessage = $"Confirm delete charge with description: {chargeDescription}?";
         bool confirmed = await JS.InvokeAsync<bool>("confirm", confirmMessage);
         if (confirmed)
@@ -145,6 +204,7 @@
 
     async Task FetchCharges()
     {
+        editTab = false; 
         // check between charge code and description search term
         string chargeCode = searchChargeReference.Charge_Code.Trim();
         string chargeDescription = searchChargeReference.Charge_Description.Trim(); // remove leading and trailing white spaces
@@ -176,16 +236,18 @@
     }
 
     // TODO: Add an Update/Edit charge function that calls the API 
-    async Task UpdateCharge(ChargeReference currentCharge) { 
-        newChargeCode = newChargeCode.Trim(); 
-        if (newChargeCode == "" || newChargeCode == currentCharge.Charge_Code)
+    async Task UpdateCharge() { 
+        chargeToEdit.Charge_Code = chargeToEdit.Charge_Code.Trim();
+        if (chargeToEdit.Charge_Code == "" || chargeToEdit.Charge_Code == oldChargeCode)
         {
             await JS.InvokeVoidAsync("alert", $"Please fill in a valid new charge code"); 
             return;
         }
-        currentCharge.Charge_Code = newChargeCode; 
-        HttpResponseMessage result = await Http.PostAsJsonAsync<ChargeReference>($"{Configuration["ApiBaseUrl"]}/api/Charge/UpdateChargeCode", currentCharge);
-        StateHasChanged(); 
+        HttpResponseMessage result = await Http.PostAsJsonAsync<ChargeReference>($"{Configuration["ApiBaseUrl"]}/api/Charge/UpdateChargeCode", chargeToEdit);
+        editTab = false;
+        chargeToEdit = new(); 
+        await FetchCharges(); 
+        //StateHasChanged(); // the field does not change immediately unless I fetch the search again 
 
     }
 

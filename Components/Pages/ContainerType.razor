@@ -36,7 +36,33 @@
 
 </div>
 
+<style>
+    table {
+        font-family: arial, sans-serif;
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 14px;
+    }
 
+    td, th {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+    }
+
+    tr:nth-child(even) {
+        background-color: #dddddd;
+    }
+
+    .result-container {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .remarks-col {
+        min-width: 300px;
+    }
+</style>
 
 @code {
     IQueryable<ContainerTypeReference> ContainerTypesQueryable = Enumerable.Empty<ContainerTypeReference>().AsQueryable();

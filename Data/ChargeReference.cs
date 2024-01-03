@@ -17,4 +17,10 @@ public class ChargeReference
         this.Charge_Code = "";
         this.Charge_Description = "";
     }
+
+    public ChargeReference(ChargeReference charge)
+    {
+        this.Charge_Code = charge.Charge_Code;
+        this.Charge_Description = charge.Charge_Description; 
+    }
 }
