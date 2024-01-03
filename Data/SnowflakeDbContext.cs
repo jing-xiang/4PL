@@ -1394,7 +1394,7 @@ namespace _4PL.Data
          * 4. Show all container types (if search parameter is empty)
         **/
 
-        public async Task<String> CreateContainerType(string containerType)
+        public async Task<string> CreateContainerType(string containerType)
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
@@ -1486,6 +1486,90 @@ namespace _4PL.Data
         }
 
         /**
+         * Container Type Mappings 
+         * 1. Create mapping
+         * 2. Delete mapping
+         * 3. Show list of mappings (based on arbitrary number and variety of search parameters) 
+         * 4. TBC: Update mapping (how?)
+         **/
+        public async Task<string> CreateContainerTypeMapping(string otherContainerTypeName, string source, string containerType)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                var resultMessage = "Error in creating new container type mapping";
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = $@"CALL CREATE_CONTAINER_TYPE_MAPPING (:Other_Container_Type_Name, :Source, :Container_Type)";
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Other_Container_Type_Name", Value = otherContainerTypeName, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Source", Value = source, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Container_Type", Value = containerType, DbType = DbType.String });
+                    resultMessage = command.ExecuteScalar().ToString();
+
+                }
+                return resultMessage;
+
+            }
+        }
+
+        public async Task<int> DeleteContainerTypeMapping(string otherContainerTypeName, string source)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = $@"CALL DELETE_CONTAINER_TYPE_MAPPING (:Other_Container_Type_Name, :Source)";
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Other_Container_Type_Name", Value = otherContainerTypeName, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Source", Value = source, DbType = DbType.String });
+                    
+                    var result = command.ExecuteScalar();
+                    Debug.WriteLine($"result of DB call: {result}");
+                    if (result != DBNull.Value)
+                    {
+                        return Int32.Parse(result.ToString());
+                    }
+                    else
+                    {
+                        throw new Exception($"Failed to delete container type mapping: name - {otherContainerTypeName}, source - {source}"); // TBC
+                    }
+
+                }
+            }
+        }
+
+        public async Task<List<ContainerTypeMapping>> FetchContainerTypeMappings(string otherContainerTypeName, string source, string containerType)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                List<ContainerTypeMapping> containerTypeMappings = new List<ContainerTypeMapping>();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = $@"CALL FETCH_CONTAINER_TYPE_MAPPINGS (:Other_Container_Type_Name, :Source, :Container_Type)";
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Other_Container_Type_Name", Value = otherContainerTypeName, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Source", Value = source, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Container_Type", Value = containerType, DbType = DbType.String });
+                    IDataReader reader = command.ExecuteReader();
+
+                    while (reader.Read())
+                    {
+                        ContainerTypeMapping ct = new ContainerTypeMapping();
+                        ct.Other_Container_Type_Name = reader.GetString(reader.GetOrdinal("OTHER_CONTAINER_TYPE_NAME"));
+                        ct.Source = reader.GetString(reader.GetOrdinal("SOURCE"));
+                        ct.Container_Type = reader.GetString(reader.GetOrdinal("CONTAINER_TYPE"));
+                        containerTypeMappings.Add(ct);
+                    }
+
+                }
+                return containerTypeMappings;
+            }
+        }
+
+        // TODO: Update container type mapping function 
+
+
+        /**
          * Charge Reference
          * 1. Create a charge
          * 2. Delete a charge
@@ -1493,7 +1577,7 @@ namespace _4PL.Data
          * 4. Show list of charges (based on search parameters - charge description)
          * 5. Update charge (old charge code, new charge code) 
         **/
-        public async Task<String> CreateCharge(string chargeCode, string chargeDescription)
+        public async Task<string> CreateCharge(string chargeCode, string chargeDescription)
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
@@ -1638,7 +1722,7 @@ namespace _4PL.Data
             }
         }
 
-        public async Task<String> UpdateChargeCode(string chargeDescription, string newChargeCode)
+        public async Task<string> UpdateChargeCode(string chargeDescription, string newChargeCode)
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
