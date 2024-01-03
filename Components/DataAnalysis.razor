@@ -15,15 +15,15 @@
 
 <PageTitle>Data Analysis</PageTitle>
 
-<h1>Data Analysis Report</h1>
+<h1>Data Analysis</h1>
 <hr />
 <div align="center">
-    <iframe title="Comparison of Accrual and Actual Costs" width="1500" height="800" src="https://app.powerbi.com/reportEmbed?reportId=283062a6-72bf-417f-b2e3-ab8de389cb50&autoAuth=true&ctid=f1cf02ad-9661-4b67-ad60-9ae41c500550" frameborder="0" allowFullScreen="true"></iframe>
+    <iframe title="Comparison of Accrual and Actual Costs" width="1500" height="800" src="https://app.powerbi.com/reportEmbed?reportId=33c3d6fb-df15-4937-a8c2-8c089f317085&autoAuth=true&ctid=f1cf02ad-9661-4b67-ad60-9ae41c500550" frameborder="0" allowFullScreen="true"></iframe>
 </div>
 
 @code {
     public void OnInitialisedAsync()
     {
-        Console.WriteLine("hello");
+        Logger.LogInformation("Analysis Generated.");
     }
 }
