@@ -23,6 +23,11 @@ namespace _4PL.Data
             _connectionString = configuration.GetConnectionString("SnowflakeConnection");
         }
 
+        private void RetrieveConnectionString()
+        {
+
+        }
+
         public async Task RegisterUser(ApplicationUser user)
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
