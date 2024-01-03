@@ -1,8 +1,283 @@
 ﻿@page "/container-type-mapping"
+@using System.Diagnostics
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using _4PL.Data
+@inject IConfiguration Configuration
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject NavigationManager NavManager
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
 
+@rendermode InteractiveServer
 
-<h3>ContainerTypeMapping</h3>
+<PageTitle>Container Type Mapping</PageTitle>
+
+<h3 class="container">Container Type Mapping</h3>
+<div class="container">
+
+    @if (!editTab)
+    {
+        <EditForm Model="addChargeReference" OnSubmit="CreateCharge" Enhance>
+         <label class="label-control">Add Charge</label>
+         <div class="row">
+             <div class="col-md-6">
+                 <InputText @bind-Value="addChargeReference.Charge_Code" placeholder="Charge Code" class="form-control" autocomplete="off"></InputText>
+             </div>
+             <div class="col-md-6">
+                 <InputText @bind-Value="addChargeReference.Charge_Description" placeholder="Charge Description" class="form-control" autocomplete="off"></InputText>
+             </div>
+         </div>
+         <button type="submit" class="btn btn-primary my-2">Add</button>
+     </EditForm>
+    }
+    else
+    {
+        <EditForm Model="chargeToEdit" OnSubmit="UpdateCharge" Enhance>
+         <label class="label-control">Update Charge Code</label>
+         <div class="row">
+             <div class="col-md-6">
+                 <InputText @bind-Value="chargeToEdit.Charge_Code" placeholder="Charge Code" class="form-control" autocomplete="off"></InputText>
+             </div>
+             <div class="col-md-6">
+                 <InputText @bind-Value="chargeToEdit.Charge_Description" placeholder="Charge Description" disabled="true" class="form-control" autocomplete="off"></InputText>
+             </div>
+         </div>
+         <button type="submit" class="btn btn-primary my-2">Update</button>
+     </EditForm>
+    }
+    <EditForm Model="searchChargeReference" OnSubmit="FetchCharges" Enhance>
+        <label class="label-control">Search Charge</label>
+        <div class="row">
+            <div class="col-md-6">
+                <InputText @bind-Value="searchChargeReference.Charge_Code" placeholder="Charge Code" class="form-control" autocomplete="off"></InputText>
+            </div>
+            <div class="col-md-6">
+                <InputText @bind-Value="searchChargeReference.Charge_Description" placeholder="Charge Description" class="form-control" autocomplete="off"></InputText>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary my-2">Search</button>
+    </EditForm>
+    <br />
+    <QuickGrid Items="@ChargesQueryable" @ref="grid" Pagination="pagination">
+        <PropertyColumn Title="Charge Code" Property="@(c => c.Charge_Code)" Sortable="true" InitialSortDirection="SortDirection.Ascending"></PropertyColumn>
+        <PropertyColumn Title="Charge Description" Property="@(c => c.Charge_Description)" Sortable="true" InitialSortDirection="SortDirection.Ascending"></PropertyColumn>
+        <TemplateColumn Title="Actions">
+            <button @onclick="@(() => toggleEdit(context))" class="btn btn-success">Edit</button>
+            <button @onclick="@(() => DeleteCharge(context.Charge_Description))" class="btn btn-danger">Delete</button>
+        </TemplateColumn>
+    </QuickGrid>
+    <Paginator State="@pagination" />
+
+</div>
+
+<style>
+    table {
+        font-family: arial, sans-serif;
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 14px;
+    }
+
+    td, th {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+    }
+
+    tr:nth-child(even) {
+        background-color: #dddddd;
+    }
+
+    .result-container {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .remarks-col {
+        min-width: 300px;
+    }
+</style>
+
 
 @code {
+    IQueryable<ChargeReference> ChargesQueryable = Enumerable.Empty<ChargeReference>().AsQueryable();
+    private string oldChargeCode = "";
+    private bool editTab = false;
+    private ChargeReference chargeToEdit = new();
+
+    [SupplyParameterFromForm]
+    ChargeReference addChargeReference { get; set; } = new();
+    [SupplyParameterFromForm]
+    ChargeReference searchChargeReference { get; set; } = new();
+    // static List<ContainerTypeReference> containerTypesList = new();
+
+    QuickGrid<ChargeReference>? grid;
+    PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
+
+    // async void toggleEdit(ChargeReference charge) {
+    //     if (chargeToEdit != charge && chargeToEdit.editTab == true) {
+    //         chargeToEdit.editTab = false; set the previous charge's edit tab to false
+    //     }
+    //     oldChargeCode = charge.Charge_Code;
+    //     chargeToEdit = charge;
+    //     chargeToEdit.editTab = !chargeToEdit.editTab; toggle current charge's edit tab
+    // }
+
+    async void toggleEdit(ChargeReference charge)
+    {
+        if (charge.Charge_Description != chargeToEdit.Charge_Description && editTab == true)
+        { // if the new charge to edit is different from the previous charge to edit
+          // use charge description to compare as that is the unique key
+            editTab = true;
+        }
+        else
+        {
+            editTab = !editTab;
+        }
+        oldChargeCode = charge.Charge_Code;
+        chargeToEdit = new ChargeReference(charge);
+    }
+
+    async Task CreateCharge()
+    {
+        searchChargeReference = new(); // clear if there were previous searches
+        addChargeReference.Charge_Code = addChargeReference.Charge_Code.Trim();// trim leading and trailing spaces
+        addChargeReference.Charge_Description = addChargeReference.Charge_Description.Trim();// trim leading and trailing spaces
+        if (addChargeReference.Charge_Code == "" && addChargeReference.Charge_Description == "")
+        {
+            await JS.InvokeVoidAsync("alert", "Please fill in a charge code and description");
+            return;
+        }
+        else if (addChargeReference.Charge_Code == "")
+        {
+            await JS.InvokeVoidAsync("alert", "Please fill in a charge code");
+            return;
+        }
+        else if (addChargeReference.Charge_Description == "")
+        {
+            await JS.InvokeVoidAsync("alert", "Please fill in a charge description");
+            return;
+        }
+        // containerTypesList.Add(containerTypeReference);
+        // ConvertListToQueryable();
+        HttpResponseMessage response = await Http.PostAsJsonAsync($"{Configuration["ApiBaseUrl"]}/api/Charge/CreateCharge", addChargeReference);
+        string result = response.Content.ReadAsStringAsync().Result;
+        if (result == "Error - duplicate primary keys")
+        {
+            await JS.InvokeVoidAsync("alert", "Charge description already exists");
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", $"Successfully added charge with description: {result}");
+            // Navigation?
+            StateHasChanged();
+            //NavManager.NavigateTo("/container-type");
+        }
+        addChargeReference = new();
+    }
+
+    async Task DeleteCharge(string chargeDescription)
+    {
+        editTab = false;
+        string confirmMessage = $"Confirm delete charge with description: {chargeDescription}?";
+        bool confirmed = await JS.InvokeAsync<bool>("confirm", confirmMessage);
+        if (confirmed)
+        {
+            Debug.WriteLine($">>> Logging: {chargeDescription}");
+
+            HttpResponseMessage result = await Http.DeleteAsync($"{Configuration["ApiBaseUrl"]}/api/Charge/DeleteCharge/{chargeDescription}");
+            // result = await Http.PostAsJsonAsync<string>($"{Configuration["ApiBaseUrl"]}/api/ContainerType/DeleteContainerType/{containerType}", containerType);
+
+            Debug.WriteLine($"Logging: {result.StatusCode}");
+
+            if (result.Content.ReadAsStringAsync().Result == "true")
+            {
+                await JS.InvokeVoidAsync("alert", $"Successfully deleted charge with description: {chargeDescription}");
+                // Refresh and display
+                // NavManager.NavigateTo("/container-type");
+                await FetchCharges();
+
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", $"Failed to delete charge with description: {chargeDescription} -- Does not exist");
+            }
+            //addContainerTypeReference = new();
+        }
+
+    }
+
+    async Task FetchCharges()
+    {
+        editTab = false;
+        // check between charge code and description search term
+        string chargeCode = searchChargeReference.Charge_Code.Trim();
+        string chargeDescription = searchChargeReference.Charge_Description.Trim(); // remove leading and trailing white spaces
+        List<ChargeReference> items = new List<ChargeReference>();
+
+        // TODO: Change to just 1 API for future applications
+        // 1 API pass 4 parameters, if parameter is empty then skip
+        if (chargeCode == "" && chargeDescription == "")
+        {
+            items = await Http.GetFromJsonAsync<List<ChargeReference>>($"{Configuration["ApiBaseUrl"]}/api/Charge/FetchAllCharges");
+            if (!items.Any()) await JS.InvokeVoidAsync("alert", $"No search results found");
+        }
+        else if (chargeCode == "" && chargeDescription != "")
+        {
+            items = await Http.GetFromJsonAsync<List<ChargeReference>>($"{Configuration["ApiBaseUrl"]}/api/Charge/FetchChargesByDescription/{chargeDescription}");
+            if (!items.Any()) await JS.InvokeVoidAsync("alert", $"No search results found for charge description: {chargeDescription}");
+        }
+        else if (chargeCode != "" && chargeDescription == "")
+        {
+            items = await Http.GetFromJsonAsync<List<ChargeReference>>($"{Configuration["ApiBaseUrl"]}/api/Charge/FetchChargesByCode/{chargeCode}");
+            if (!items.Any()) await JS.InvokeVoidAsync("alert", $"No search results found for charge code: {chargeCode}");
+
+        }
+        else
+        {
+            items = await Http.GetFromJsonAsync<List<ChargeReference>>($"{Configuration["ApiBaseUrl"]}/api/Charge/FetchChargesByBoth/{chargeCode}/{chargeDescription}");
+            if (!items.Any()) await JS.InvokeVoidAsync("alert", $"No search results found for charge code: {chargeCode} and charge description: {chargeDescription}");
+        }
+
+        ChargesQueryable = items.AsQueryable();
+        // Refresh and display
+        StateHasChanged();
+    }
+
+    // TODO: Add an Update/Edit charge function that calls the API
+    async Task UpdateCharge()
+    {
+        chargeToEdit.Charge_Code = chargeToEdit.Charge_Code.Trim();
+        if (chargeToEdit.Charge_Code == "" || chargeToEdit.Charge_Code == oldChargeCode)
+        {
+            await JS.InvokeVoidAsync("alert", $"Please fill in a valid new charge code");
+            return;
+        }
+        HttpResponseMessage result = await Http.PostAsJsonAsync<ChargeReference>($"{Configuration["ApiBaseUrl"]}/api/Charge/UpdateChargeCode", chargeToEdit);
+        editTab = false;
+        chargeToEdit = new();
+        await FetchCharges(); // TODO: if you have 2 pages, when you change a record on page 2, will the page refresh to page 1?
+                              // Keep this way first (can enhance speed and user experience later)
+                              // Manually update ChargesQueryable
+
+
+        //StateHasChanged(); // the field does not change immediately unless I fetch the search again
+
+    }
+
+    // protected override void OnInitialized()
+    // {
+    //     ConvertListToQueryable();
+    // }
+
+    // private void ConvertListToQueryable()
+    // {
+    //     if (containerTypesList is null) return;
+    //     foreach (var ct in containerTypesList)
+    //     {
+    //         ContainerTypesQueryable = ContainerTypesQueryable.Concat(new[] { ct }.AsQueryable());
+    //     }
+    // }
 
 }
+
