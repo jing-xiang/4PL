@@ -120,7 +120,7 @@
                     <PropertyColumn Title="Shipment Fields" Property="@(p => p.PropertyInfo.Name)" />
                     <PropertyColumn Title="Data Type" Property="@(p => p.PropertyInfo.PropertyType)" />
                     <TemplateColumn>
-                        <input type="checkbox" @bind="context.IsSelected" disabled="@isJobNo(context)"/>
+                        <input type="checkbox" @bind="context.IsSelected" />
                     </TemplateColumn>
                 </QuickGrid>
 
@@ -344,8 +344,6 @@
 
     public async void HandleModal()
     {
-        Console.WriteLine("modal test");
-        Console.WriteLine(showModal);
         showModal = !showModal;
     }
 
@@ -367,9 +365,7 @@
 
     async Task InsertLayout()
     {
-        Console.WriteLine("InsertLayout");
         string[] Layout_Fields = GetSelectedProperties();
-        Console.WriteLine("Lyoutfields: " + string.Join(", ", Layout_Fields));
         List<UserProfileLayout> userProfileLayouts = new();
         foreach (var email in sharedEmails)
         {
@@ -378,7 +374,6 @@
             upl.Table_Name = "Shipment";
             upl.Layout_Fields = Layout_Fields;
             upl.Layout_Name = newLayoutName;
-            Console.WriteLine("newlytname: " + newLayoutName);
             userProfileLayouts.Add(upl);
         }
         var response = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/UserProfileLayout/CreateLayout/", userProfileLayouts);
@@ -410,11 +405,6 @@
         return result;
     }
 
-    private bool isJobNo(PropertyInfoWrapper p)
-    {
-        return p.PropertyInfo.Name.Equals("Job_No");
-    }
-
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
@@ -433,7 +423,6 @@
             var temp = profileLayouts.FirstOrDefault(x => x.Value.Is_Default).Key;
             selectedLayout = temp;
             defaultLayoutName = temp;
-            Console.WriteLine("dfltlytnm: " + defaultLayoutName);
         } 
         else if (findDefault == null && profileLayouts.Any()) {
             defaultLayoutName = layoutArray[0];
@@ -456,14 +445,7 @@
         {
             PropertyInfoWrapper p = new();
             p.PropertyInfo = prop;
-            if (prop.Name == "Job_No")
-            {
-                p.IsSelected = true;
-            }
-            else
-            {
-                p.IsSelected = false;
-            }
+            p.IsSelected = false;
             shipmentPropertiesTemp.Add(p);
         }
         shipmentProperties = shipmentPropertiesTemp.AsQueryable();
