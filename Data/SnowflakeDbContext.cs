@@ -16,11 +16,18 @@ namespace _4PL.Data
         public SnowflakeDbContext()
         {
             var configuration = new ConfigurationBuilder()
-                    .SetBasePath(Directory.GetCurrentDirectory())
-                    .AddJsonFile("appsettings.json")
+                    .AddUserSecrets<SnowflakeDbContext>()
                     .Build();
 
-            _connectionString = configuration.GetConnectionString("SnowflakeConnection");
+            var encryptedConn = configuration["ConnectionStrings:SnowflakeConnection"];
+            _connectionString = DecryptConn(encryptedConn);
+        }
+
+        private string DecryptConn(string encryptedConn)
+        {
+            byte[] encryptedBytes = Convert.FromBase64String(encryptedConn);
+            byte[] decryptedBytes = ProtectedData.Unprotect(encryptedBytes, optionalEntropy: null, scope: DataProtectionScope.CurrentUser);
+            return Encoding.UTF8.GetString(decryptedBytes);
         }
 
         public async Task RegisterUser(ApplicationUser user)
@@ -72,8 +79,8 @@ namespace _4PL.Data
             {
                 conn.Open();
                 IDbCommand command = conn.CreateCommand();
-                command.CommandText = $"SELECT COUNT(*) FROM ACCESS_CONTROL WHERE EMAIL = '{email}' AND ACCESS_TYPE = '{accessRight}'";
-                return Convert.ToDecimal(command.ExecuteScalar()) > 0;
+                command.CommandText = $"CALL CHECK_ACCESS_RIGHTS('{email}', '{accessRight}')";
+                return Convert.ToBoolean(command.ExecuteScalar());
             }
         }
 
@@ -408,11 +415,8 @@ namespace _4PL.Data
                 IDbCommand command = conn.CreateCommand();
 
                 command.CommandText = $"CALL DELETE_USER(:email)";
-
                 command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "email", Value = email, DbType = DbType.String });
-                Console.WriteLine("command created");
                 command.ExecuteScalar();
-                Console.WriteLine("command executed");
                 command.CommandText = $"DELETE FROM access_control WHERE email = '{email}'";
                 command.ExecuteScalar();
             }

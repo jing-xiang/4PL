@@ -1,18 +1,19 @@
 ﻿using _4PL.Data.Access_Rights;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Office.Interop.Excel;
 using System.Security.Claims;
 
 namespace _4PL.Data.Access_Rights
 {
     public class AccessHandler : AuthorizationHandler<AccessRequirement>
     {
-        private readonly HttpClient _httpClient;
+        private readonly IHttpClientFactory _httpClientFactory;
         private readonly IConfiguration _configuration;
 
-        public AccessHandler(HttpClient httpClient, IConfiguration configuration)
+        public AccessHandler(IHttpClientFactory httpClientFactory, IConfiguration configuration)
         {
-            _httpClient = httpClient;
+            _httpClientFactory = httpClientFactory;
             _configuration = configuration;
         }
     
@@ -29,8 +30,9 @@ namespace _4PL.Data.Access_Rights
         {
             try
             {
+                var httpClient = _httpClientFactory.CreateClient();
                 string? apiBaseUrl = _configuration.GetValue<string>("ApiBaseUrl");
-                var response = await _httpClient.GetFromJsonAsync<bool>($"{apiBaseUrl}/api/Snowflake/CheckAccess{email}&Right={accessRight}");
+                var response = await httpClient.GetFromJsonAsync<bool>($"{apiBaseUrl}/api/Snowflake/Check={email}&Right={accessRight}");
                 return response;
             }
             catch (Exception ex)

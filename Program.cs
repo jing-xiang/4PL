@@ -2,14 +2,12 @@ using _4PL.Components;
 using _4PL.Components.Account;
 using _4PL.Data;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Components.Account;
-using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Snowflake.Data.Client;
 using Syncfusion.Blazor;
 using Microsoft.AspNetCore.Authorization;
 using _4PL.Data.Access_Rights;
+using Org.BouncyCastle.Crypto.Paddings;
+using System.Text;
+using System.Security.Cryptography;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,11 +23,39 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     options.AccessDeniedPath = "/Forbidden/";
 });
 
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("MaintenanceRead", policy =>
+    {
+        policy.Requirements.Add(new AccessRequirement("MAINTENANCE_READ"));
+    });
+
+    options.AddPolicy("RateCardRead", policy =>
+    {
+        policy.Requirements.Add(new AccessRequirement("RATECARD_READ"));
+    });
+
+    options.AddPolicy("ShipmentRead", policy =>
+    {
+        policy.Requirements.Add(new AccessRequirement("SHIPMENT_READ"));
+    });
+
+    options.AddPolicy("ShipmentAutoRatingRead", policy =>
+    {
+        policy.Requirements.Add(new AccessRequirement("SHIPMENT_AUTORATING_READ"));
+    });
+
+    options.AddPolicy("DataAnalysisRead", policy =>
+    {
+        policy.Requirements.Add(new AccessRequirement("DATA_ANALYSIS_READ"));
+    });
+});
 
 builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddSyncfusionBlazor();
 builder.Services.AddSingleton<SnowflakeDbContext>();
 builder.Services.AddSingleton<AccessRightsDbContext>();
+builder.Services.AddSingleton<IAuthorizationHandler, AccessHandler>();
 builder.Services.AddControllers();
 builder.Services.AddHttpClient();
 

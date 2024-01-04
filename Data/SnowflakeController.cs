@@ -62,7 +62,7 @@ namespace _4PL.Data
             }
         }
 
-        [HttpGet("CheckAccess{email}&Right={accessRight}")]
+        [HttpGet("Check={email}&Right={accessRight}")]
         public IActionResult CheckAccessRights(string email, string accessRight)
         {
             try
