@@ -2350,6 +2350,106 @@ namespace _4PL.Data
             }
         }
 
+        public Dictionary<string, UserProfileLayout> fetchUserLayouts(string User_Email, string Table_Name)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                Dictionary<string, UserProfileLayout> result = new();
+                int counter = 1;
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = @$"SELECT * FROM USER_PROFILE_LAYOUT WHERE USER_EMAIL ILIKE :User_Email AND TABLE_NAME ILIKE :Table_Name";
+                    
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "User_Email", Value = User_Email, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Table_Name", Value = Table_Name, DbType = DbType.String });
+                    IDataReader reader = command.ExecuteReader();
+
+                    //Read result
+                    while (reader.Read())
+                    {
+                        UserProfileLayout upl = new();
+                        upl.User_Email = reader.GetString(reader.GetOrdinal("USER_EMAIL"));
+
+                        upl.Table_Name = reader.GetString(reader.GetOrdinal("TABLE_NAME"));
+
+                        //currently not using Layout_Name
+                        var nameTemp = reader.GetString(reader.GetOrdinal("LAYOUT_NAME"));
+                        upl.Layout_Name = nameTemp;
+
+                        var fieldsTemp = reader.GetString(reader.GetOrdinal("LAYOUT_FIELDS"));
+                        upl.Layout_Fields = fieldsTemp.Split(',');
+
+                        upl.Is_Default = reader.GetBoolean(reader.GetOrdinal("IS_DEFAULT"));
+
+                        //result["Layout " + counter++] = upl;
+                        result[nameTemp] = upl;
+                    }
+                }
+                return result;
+            }
+        }
+
+        public List<string> InsertUserLayout(List<UserProfileLayout> userProfileLayouts)
+        {
+            Console.WriteLine("method called");
+            List<string> noUser = new();
+            string jsonProfileLayout = JsonConvert.SerializeObject(userProfileLayouts);
+            Console.WriteLine("json" + jsonProfileLayout);
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                var command = conn.CreateCommand();
+
+                command.CommandText = "CALL sp_insert_user_layout (:userProfileLayouts)";
+                command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "userProfileLayouts", Value = jsonProfileLayout, DbType = DbType.String });
+
+                try
+                {
+                    Console.WriteLine("test1");
+                    var result = command.ExecuteScalar().ToString();
+                    Console.WriteLine("result" + result);
+                    var response = JsonConvert.DeserializeObject<Dictionary<string, object>>(result);
+
+                    if (response.ContainsKey("noUser"))
+                    {
+                        Console.WriteLine("test2");
+                        noUser = JsonConvert.DeserializeObject<List<string>>(response["noUser"].ToString());
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("An error occured: " + ex.Message);
+                }
+                finally
+                {
+                    conn.Close();
+                }
+                Console.WriteLine("noUser: " + noUser);
+                return noUser;
+            }
+        }
+
+        public void UpdateDefaultLayout(UserProfileLayout upl)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    string layoutFields = string.Join(",", upl.Layout_Fields);
+                    command.CommandText = @$"CALL UPDATE_DEFAULT_LAYOUT (:User_Email, :Table_Name, :Layout_Name, :Layout_Fields)";
+
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "User_Email", Value = upl.User_Email, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Table_Name", Value = upl.Table_Name, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Layout_Name", Value = upl.Layout_Name, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Layout_Fields", Value = layoutFields, DbType = DbType.String });
+
+                    command.ExecuteNonQuery();
+                }
+            }
+        }
     }
 
 }
