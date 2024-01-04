@@ -3,6 +3,19 @@
     overflow-y: auto;
 }
 
+.heading {
+    background-color: rgb(230, 230, 230);
+    height: 3rem;
+    padding: 7px;
+    text-align: center;
+}
+
+.button-view {
+    width: 100px;
+    flex-wrap: wrap;
+    margin: 3px;
+}
+
 ::deep thead {
     position: sticky;
     width: auto;
@@ -11,10 +24,18 @@
     background-color: rgb(240, 240, 240);
 }
 
+::deep thead .button-view {
+    flex-wrap: wrap;
+}
+
 ::deep thead .setting {
     width: 25rem;
 }
 
 ::deep tr:nth-child(even) {
     background: rgb(240, 240, 240);
+}
+
+::deep tr:where(:hover) {
+    border: 1px solid;
 }

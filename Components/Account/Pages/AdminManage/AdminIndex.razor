@@ -17,16 +17,16 @@
     <div class="col-md-10 overflow-auto">
         @if (isLoaded)
         {
-            <h3>Search User</h3>
+            <h3 class="heading"><strong>USER MANAGEMENT</strong></h3>
             <hr />
+            <h4 class="subheading">Search User</h4>
             <div style="display: flex; align-items:center">
                 <input type="text" class="form-control" style="margin-right:5px" autocomplete="off" @bind="SearchInput.Name" placeholder="Name" />
                 <input type="email" class="form-control" style="margin-right:5px" autocomplete="off" @bind="SearchInput.Email" placeholder="Email" />
                 <button type="submit" @onclick="SearchUsers" class="w-40 btn btn-primary">Search</button>
             </div>
             <hr />
-            <h3>Add User</h3>
-            <hr />
+            <h4 class="subheading">Add User</h4>
             <EditForm Model="AddUserInput" method="post" OnValidSubmit="AddNewUser" FormName="addUser">
                 <DataAnnotationsValidator />
                 @if (!string.IsNullOrEmpty(updateMessage))
@@ -37,7 +37,7 @@
                 <div style ="display: flex; align-items:center">
                     <InputText @bind-Value="AddUserInput.Name" style="margin-right:5px" class="form-control" autocomplete="off" placeholder="Name" />
                     <InputText @bind-Value="AddUserInput.Email" style="margin-right:5px" class="form-control" autocomplete="off" placeholder="Email" />
-                    <button type="submit" class="w-40 btn btn-secondary">Register</button>
+                    <button type="submit" class="w-40 btn btn-outline-success">Register</button>
                 </div>
                 <ValidationSummary class="mt-2 text-danger" role="alert" />
             </EditForm>
@@ -53,8 +53,8 @@
             </div>
             <div class="grid" tabindex="-1">
                 <QuickGrid Items="@users" Pagination="@pagination">
-                    <TemplateColumn Title="">
-                        <button type="submit" class="btn btn-sm btn-outline-secondary" @onclick="() => ManageUser(context.Email)">
+                    <TemplateColumn Title="" Class="button-view">
+                        <button type="submit" class="button-view btn btn-sm btn-success" @onclick="() => ManageUser(context.Email)">
                             Edit
                         </button>
                     </TemplateColumn>
@@ -76,7 +76,7 @@
             @if (currUser != null)
             {
                 <hr />
-                <h3>Manage User</h3>
+                <h4 class="subheading">Manage User <strong>@currUser.Email</strong></h4>
                 <hr />
                 <div class="row">
                     @if (!string.IsNullOrEmpty(userUpdateMessage))
