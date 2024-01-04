@@ -2,6 +2,8 @@
 using Microsoft.EntityFrameworkCore;
 using System.Data;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace _4PL.Data
 {
@@ -12,11 +14,18 @@ namespace _4PL.Data
         public AccessRightsDbContext()
         {
             var configuration = new ConfigurationBuilder()
-                    .SetBasePath(Directory.GetCurrentDirectory())
-                    .AddJsonFile("appsettings.json")
+                    .AddUserSecrets<SnowflakeDbContext>()
                     .Build();
 
-            _connectionString = configuration.GetConnectionString("SnowflakeConnection");
+            var encryptedConn = configuration["ConnectionStrings:SnowflakeConnection"];
+            _connectionString = DecryptConn(encryptedConn);
+        }
+
+        private string DecryptConn(string encryptedConn)
+        {
+            byte[] encryptedBytes = Convert.FromBase64String(encryptedConn);
+            byte[] decryptedBytes = ProtectedData.Unprotect(encryptedBytes, optionalEntropy: null, scope: DataProtectionScope.CurrentUser);
+            return Encoding.UTF8.GetString(decryptedBytes);
         }
 
         public async Task<List<string>> FetchAccessRights(string userEmail)

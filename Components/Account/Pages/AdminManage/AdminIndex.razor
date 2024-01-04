@@ -58,11 +58,11 @@
                             Edit
                         </button>
                     </TemplateColumn>
-                    <PropertyColumn Property="@(u => u.Name)" Class="name col-heading" Sortable="true" />
-                    <PropertyColumn Property="@(u => u.Email)" Class="email col-heading" Sortable="true" />
-                    <PropertyColumn Title="Attempts" Property="@(u => u.FailedAttempts)" Class="col-heading" Sortable="true" Align="Align.End" />
-                    <PropertyColumn Title="Locked" Property="@(u => u.IsLocked)" Class="col-heading" Sortable="true" Align="Align.End" />
-                    <TemplateColumn Title="Last Reset" SortBy="@userResetSort" Class="col-heading" Align="Align.End">
+                    <PropertyColumn Property="@(u => u.Name)" Class="name" Sortable="true" />
+                    <PropertyColumn Property="@(u => u.Email)" Class="email" Sortable="true" />
+                    <PropertyColumn Title="Attempts" Property="@(u => u.FailedAttempts)" Sortable="true" Align="Align.End" />
+                    <PropertyColumn Title="Locked" Property="@(u => u.IsLocked)" Sortable="true" Align="Align.End" />
+                    <TemplateColumn Title="Last Reset" SortBy="@userResetSort" Align="Align.End">
                         @context.LastReset.ToShortDateString()
                     </TemplateColumn>
                 </QuickGrid>

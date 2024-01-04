@@ -2,4 +2,4 @@
 @using Syncfusion.Blazor
 @using Syncfusion.Blazor.Buttons
 @layout AdminLayout
-@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Policy = "MaintenanceRead")]
