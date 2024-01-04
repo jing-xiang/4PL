@@ -103,7 +103,7 @@
                     <PropertyColumn Title="Shipment Fields" Property="@(p => p.PropertyInfo.Name)" />
                     <PropertyColumn Title="Data Type" Property="@(p => p.PropertyInfo.PropertyType)" />
                     <TemplateColumn>
-                        <input type="checkbox" @bind="context.IsSelected" />
+                        <input type="checkbox" @bind="context.IsSelected" disabled="@isJobNo(context)"/>
                     </TemplateColumn>
                 </QuickGrid>
 
@@ -112,12 +112,12 @@
                         <input type="email" @bind="newEmail" placeholder="Enter email" class="form-control mt-2" style="margin-right: 8px"/>
                         <button @onclick="AddEmail" class="btn btn-sm mt-2 btn-primary">Add</button>
                     </div>
-                    <div class="shared-emails">
+                    <div class="shared-emails d-flex">
                         @foreach (var email in sharedEmails)
                         {
                             <div class="email-tag">
                                 <span>@email</span>
-                                <button @onclick="() => RemoveEmail(email)" class="cancel-btn">×</button>
+                                <button @onclick="() => RemoveEmail(email)" class="cancel-btn" style="background-color:transparent; border:none">×</button>
                             </div>
                         }
                     </div>
@@ -189,6 +189,14 @@
         overflow-y:scroll;
     }
 
+    .email-tag {
+        border: 1px solid #9999;
+        border-radius: 10px;
+        padding-left: 8px;
+        padding-right: 5px;
+        margin-top: 5px;
+        margin-right: 5px;
+    }
 </style>
 
 @code {
@@ -345,6 +353,11 @@
         return result;
     }
 
+    private bool isJobNo(PropertyInfoWrapper p)
+    {
+        return p.PropertyInfo.Name.Equals("Job_No");
+    }
+
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
@@ -361,6 +374,7 @@
         //handle if user not in table, if none of the is_default is true
         if (findDefault != null)
         {
+            Console.WriteLine("here");
             currView = findDefault.Layout_Fields;
         } 
         else if (findDefault == null && profileLayouts.Any()) {
@@ -368,13 +382,13 @@
         } 
         else {
             currView = ["Master_BL_No", "Container_Mode", "Place_Of_Loading_ID", "Place_Of_Loading_Name", "Place_Of_Discharge_ID", "Place_Of_Discharge_Name", "Vessel_Name", "Voyage_No", "ETD_Date", "ETA_Date",
-            "Carrier_Matchcode", "Carrier_Name", "Carrier_Contract_No", "Carrier_Booking_Reference_No", "Inco_Terms", "Controlling_Customer_Name", "Shipper_Name", "Consignee_Name", "Total_No_Of_Pieces", "Package_Type", 
-            "Total_No_Of_Volume_Weight_MTQ", "Total_No_Of_Gross_Weight_KGM", "Description", "Shipment_Note"];
+                "Carrier_Matchcode", "Carrier_Name", "Carrier_Contract_No", "Carrier_Booking_Reference_No", "Inco_Terms", "Controlling_Customer_Name", "Shipper_Name", "Consignee_Name", "Total_No_Of_Pieces", "Package_Type", 
+                "Total_No_Of_Volume_Weight_MTQ", "Total_No_Of_Gross_Weight_KGM", "Description", "Shipment_Note"];
         }
 
         Console.WriteLine(string.Join(", ", currView));
         var props = typeof(Shipment).GetProperties(BindingFlags.Instance | BindingFlags.Public)
-            .Where(p => p.CanRead && p.Name != "Container_List")
+            .Where(p => p.CanRead && p.Name != "Container_List" && p.Name != "Last_Modified_At" && p.Name != "Last_Modified_By")
             .ToList();
 
         List<PropertyInfoWrapper> shipmentPropertiesTemp = new();
@@ -382,7 +396,14 @@
         {
             PropertyInfoWrapper p = new();
             p.PropertyInfo = prop;
-            p.IsSelected = false;
+            if (prop.Name == "Job_No")
+            {
+                p.IsSelected = true;
+            }
+            else
+            {
+                p.IsSelected = false;
+            }
             shipmentPropertiesTemp.Add(p);
         }
         shipmentProperties = shipmentPropertiesTemp.AsQueryable();
