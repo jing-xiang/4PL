@@ -159,16 +159,30 @@ namespace _4PL.Data
         }
 
         [HttpPut("{userEmail}/UpdateEmail")]
-        public async Task<IActionResult> UpdateEmail([FromBody] ApplicationUser emailModel)
+        public async Task<IActionResult> UpdateEmail([FromBody] ApplicationUser updatedUser)
         {
             try
             {
-                await _dbContext.UpdateEmail(emailModel);
+                await _dbContext.UpdateEmail(updatedUser);
                 return Ok("Email successfully changed.");
             }
             catch (DuplicateNameException ex)
             {
                 return Conflict(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPut("{userEmail}/UpdateName")]
+        public async Task<IActionResult> UpdateUser([FromBody] ApplicationUser updatedUser)
+        {
+            try
+            {
+                await _dbContext.UpdateName(updatedUser);
+                return Ok("Name successfully changed.");
             }
             catch (Exception ex)
             {

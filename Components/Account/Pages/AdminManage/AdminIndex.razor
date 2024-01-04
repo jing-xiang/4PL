@@ -86,12 +86,13 @@
                     <div class="col-md-6">
                         <p>
                             <strong>Name</strong>
-                            <input class="form-control" type="text" readonly value="@currUser.Name" />
+                            <input class="form-control" type="text" @bind-value="@UpdateUserInput.UpdatedName" />
                         </p>
                         <p>
                             <strong>Email</strong>
-                            <input class="form-control" type="text" readonly value="@currUser.Email" />
+                            <input class="form-control" type="text" @bind-value="@UpdateUserInput.UpdatedEmail" />
                         </p>
+                        <button @onclick="UpdateUser" class="w-100 btn btn-lg btn-outline-success">Update</button>
                         @if (lockedStatus == "TRUE")
                         {
                             <button @onclick="UnlockUser" class="w-100 btn btn-lg btn-outline-success">Unlock Account</button>
@@ -134,6 +135,7 @@
     [SupplyParameterFromForm]
     private SearchModel SearchInput { get; set; } = new();
     private AddUserModel AddUserInput { get; set; } = new();
+    private UpdateUserModel UpdateUserInput { get; set; } = new();
 
     private string? updateMessage;
     private string? userUpdateMessage;
@@ -141,6 +143,7 @@
     private string? messageType;
     private string? apiBaseUrl;
     private string? lockedStatus;
+    private string? currEmail;
     private bool isLoaded;
     private bool isToConfirm;
 
@@ -168,6 +171,7 @@
         updateMessage = null;
         userUpdateMessage = null;
         deleteMessage = null;
+        currEmail = null;
     }
 
     private async Task SearchUsers()
@@ -223,13 +227,53 @@
         ResetStrings();
         currUser = await HttpClient.GetFromJsonAsync<ApplicationUser>($"{apiBaseUrl}/api/Snowflake/e={email}");
         lockedStatus = currUser.IsLocked ? "TRUE" : "FALSE";
+        currEmail = email;
+        UpdateUserInput.UpdatedName = currUser.Name;
+        UpdateUserInput.UpdatedEmail = currUser.Email;
+    }
+
+    private async Task UpdateUser()
+    {
+        ResetStrings();
+        messageType = "danger";
+        if (UpdateUserInput.UpdatedName.Trim() == "" || UpdateUserInput.UpdatedEmail.Trim() == "")
+        {
+            userUpdateMessage = "Fields cannot be empty.";
+            return;
+        }
+        else if (UpdateUserInput.UpdatedName == currUser.Name && UpdateUserInput.UpdatedEmail == currUser.Email)
+        {
+            userUpdateMessage = "There must be at least one field that is different.";
+            return;
+        }
+        else if (UpdateUserInput.UpdatedEmail != currUser.Email)
+        {
+            ApplicationUser temp = new();
+            temp.Name = UpdateUserInput.UpdatedEmail;
+            temp.Email = currUser.Email;
+            var result = await HttpClient.PutAsJsonAsync($"{apiBaseUrl}/api/Snowflake/{currUser.Email}/UpdateEmail", temp);
+            if (!result.IsSuccessStatusCode)
+            {
+                userUpdateMessage = await result.Content.ReadAsStringAsync();
+                return;
+            }
+        } else if (UpdateUserInput.UpdatedName != currUser.Name)
+        {
+            ApplicationUser temp = new();
+            temp.Name = UpdateUserInput.UpdatedName;
+            temp.Email = UpdateUserInput.UpdatedEmail;
+            var result = await HttpClient.PutAsJsonAsync($"{apiBaseUrl}/api/Snowflake/{currUser.Email}/UpdateName", temp);
+        }
+
+        userUpdateMessage = "Details successfully updated.";
+        messageType = "success";
+        await LoadUsers();
     }
 
     private async Task UnlockUser()
     {
-        var result = await HttpClient.PutAsJsonAsync($"{apiBaseUrl}/api/Snowflake/{currUser.Email}/Unlock", currUser);
-        if (result.IsSuccessStatusCode)
-            userUpdateMessage = "Account successfully unlocked. A password reset link has been sent to their email.";
+        var result = await HttpClient.PutAsJsonAsync($"{apiBaseUrl}/api/Snowflake/{currEmail}/Unlock", currUser);
+        userUpdateMessage = "Account successfully unlocked. A password reset link has been sent to their email.";
         messageType = "success";
         lockedStatus = "FALSE";
         await LoadUsers();
@@ -237,7 +281,7 @@
 
     private async Task LockUser()
     {
-        var result = await HttpClient.PutAsJsonAsync($"{apiBaseUrl}/api/Snowflake/{currUser.Email}/Lock", currUser);
+        var result = await HttpClient.PutAsJsonAsync($"{apiBaseUrl}/api/Snowflake/{currEmail}/Lock", currUser);
         userUpdateMessage = "Account successfully locked.";
         messageType = "danger";
         lockedStatus = "TRUE";
@@ -247,11 +291,11 @@
     private async Task DeleteUser()
     {
         ResetStrings();
-        string confirmMessage = $"Confirm delete user '{currUser.Email}' with email '{currUser.Email}'?";
+        string confirmMessage = $"Confirm delete user '{currEmail}' with email '{currEmail}'?";
         bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", confirmMessage);
         if (confirmed)
         {
-            await HttpClient.DeleteAsync($"{apiBaseUrl}/api/Snowflake/d={currUser.Email}");
+            await HttpClient.DeleteAsync($"{apiBaseUrl}/api/Snowflake/d={currEmail}");
             messageType = "danger";
             deleteMessage = $"{currUser.Name} successfully deleted.";
             currUser = null;
@@ -278,5 +322,16 @@
         [EmailAddress]
         [Display(Name = "Email")]
         public string Email { get; set; } = "";
+    }
+
+    private sealed class UpdateUserModel
+    {
+        public string UpdatedName { get; set; } = "";
+
+        [EmailAddress]
+        public string Email { get; set; } = "";
+
+        [EmailAddress]
+        public string UpdatedEmail { get; set; } = "";
     }
 }
