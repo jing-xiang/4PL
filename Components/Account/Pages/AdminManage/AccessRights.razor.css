@@ -1,12 +1,21 @@
 ﻿.grid {
-    height: 24rem;
+    height: 27.1rem;
     width: 100%;
     overflow-y: auto;
 }
 
-.grid-rights {
-    width: 100%;
-    overflow-y: auto;
+.heading {
+    background-color: rgb(230, 230, 230);
+    height: 3rem;
+    padding: 7px;
+    text-align: center;
+}
+
+.subheading {
+    background-color: rgb(240, 240, 240);
+    height: 40px;
+    padding: 6px;
+    padding-left: 12px;
 }
 
 .button-view {
@@ -56,6 +65,10 @@
 
 ::deep tr:nth-child(even) {
     background: rgba(240,240,240);
+}
+
+::deep tr:where(:hover) {
+    border: 1px solid;
 }
 
 .page-size-chooser {

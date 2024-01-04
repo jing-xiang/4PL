@@ -23,16 +23,16 @@
     <div class="col-md-10 overflow-auto">
         @if (isLoaded)
         {
-            <h3>Access Rights Management</h3>
+            <h3 class="heading"><strong>ACCESS RIGHTS MANAGEMENT</strong></h3>
             <hr />
+            <h4 class="subheading">Search User</h4>
             <div style="display: flex; align-items:center">
                 <input type="text" class="form-control" style="margin-right:5px" autocomplete="off" @bind="SearchInput.Name" placeholder="Name" />
                 <input type="email" class="form-control" style="margin-right:5px" autocomplete="off" @bind="SearchInput.Email" placeholder="Email" />
                 <button type="submit" @onclick="SearchUsers" class="w-40 btn btn-primary">Search</button>
             </div>
             <hr />
-            <h3>Copy Access Rights</h3>
-            <hr />
+            <h4 class="subheading">Copy Access Rights</h4>
             <EditForm Model="CopyInput" method="post" OnValidSubmit="CopyAccessRights" FormName="copyAccessRights">
                 <DataAnnotationsValidator />
                 @if (!string.IsNullOrEmpty(copyMessage))
@@ -64,17 +64,17 @@
                     <TemplateColumn Title="" Class="button-view">
                         <div class="row">
                             <div class="col-md-4">
-                                <button type="submit" class="button-view btn btn-sm btn-secondary" @onclick="() => ViewRights(context.Email)">
+                                <button type="submit" class="button-view btn btn-sm btn-warning" @onclick="() => ViewRights(context.Email)">
                                     View Rights
                                 </button>
                             </div>
                             <div class="col-md-4">
-                                <button type="submit" class="button-view btn btn-sm btn-outline-success" @onclick="() => { CopyInput.FromEmail = context.Email; }">
+                                <button type="submit" class="button-view btn btn-sm btn-outline-success" @onclick="() => { ResetStrings(); CopyInput.FromEmail = context.Email; }">
                                     Copy From
                                 </button>
                             </div>
                             <div class="col-md-4">                       
-                                <button type="submit" class="button-view btn btn-sm btn-outline-warning" @onclick="() => { CopyInput.ToEmail = context.Email; }">
+                                <button type="submit" class="button-view btn btn-sm btn-outline-secondary" @onclick="() => { ResetStrings(); CopyInput.ToEmail = context.Email; }">
                                     Copy To
                                 </button>
                             </div>
@@ -87,7 +87,7 @@
             @if (currUser != null)
             {
                 <hr />
-                <h3>Manage User Rights for <strong>@currUser.Email</strong></h3>
+                <h4 class="subheading">Manage User Rights for <strong>@currUser.Email</strong></h4>
                 <hr />
                 @if (!string.IsNullOrEmpty(saveMessage))
                 {
@@ -139,12 +139,9 @@
 
     private string? copyMessage;
     private string? saveMessage;
-    private string? errorMessage;
-    private string? deleteMessage;
     private string? messageType = "success";
     private string? apiBaseUrl;
     private bool isLoaded;
-    private bool isCopySuccessful;
 
 
     ApplicationUser? currUser;
@@ -168,8 +165,6 @@
     {
         copyMessage = null;
         saveMessage = null;
-        errorMessage = null;
-        deleteMessage = null;
     }
 
     private async Task SearchUsers()
@@ -257,16 +252,15 @@
 
     public async Task CopyAccessRights()
     {
-        messageType = "danger";
         if (CopyInput.FromEmail == CopyInput.ToEmail) {
             copyMessage = "Emails must be different.";
-            return; 
+            return;
         }
 
         bool isValidFromUser = await HttpClient.GetFromJsonAsync<bool>($"{apiBaseUrl}/api/Snowflake/CheckIsValidUser={CopyInput.FromEmail}");
         bool isValidToUser = await HttpClient.GetFromJsonAsync<bool>($"{apiBaseUrl}/api/Snowflake/CheckIsValidUser={CopyInput.ToEmail}");
-        Console.WriteLine("users checked");
-        if (!isValidFromUser || !isValidToUser) { 
+        if (!isValidFromUser || !isValidToUser) {
+            messageType = "danger";
             copyMessage = "Invalid user email provided.";
             return;
         };
@@ -279,10 +273,7 @@
         copyPair.Add(CopyInput.FromEmail);
         copyPair.Add(CopyInput.ToEmail);
         var response = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/AccessRights/CopyAccessRights", copyPair);
-        if (response.IsSuccessStatusCode)
-        {
-            messageType = "success";
-        }
+        messageType = response.IsSuccessStatusCode ? "success" : "danger";
         copyMessage = await response.Content.ReadAsStringAsync();
     }
 
