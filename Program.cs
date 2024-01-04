@@ -5,9 +5,6 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Syncfusion.Blazor;
 using Microsoft.AspNetCore.Authorization;
 using _4PL.Data.Access_Rights;
-using Org.BouncyCastle.Crypto.Paddings;
-using System.Text;
-using System.Security.Cryptography;
 
 var builder = WebApplication.CreateBuilder(args);
 
