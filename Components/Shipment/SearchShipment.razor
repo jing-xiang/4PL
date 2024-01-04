@@ -1,12 +1,18 @@
 ﻿@page "/shipment/search"
 
 @using Newtonsoft.Json
+@using System.Reflection
 @using _4PL.Data
 @using Microsoft.AspNetCore.Components.QuickGrid
+@using System.Security.Claims
+@using _4PL.Components.Account.Shared
+@using Syncfusion.Blazor
+@using Syncfusion.Blazor.Buttons
 
 @inject IJSRuntime JS
 @inject NavigationManager NavManager
 @inject HttpClient HttpClient
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 @rendermode InteractiveServer
 
@@ -76,37 +82,91 @@
 
 </EditForm>
 
-<div class="result-container py-4" style="max-width:80vw">
+@if (currViewInitialised)
+{
+    <div class="d-flex justify-content-between">
+        <div>
+            <select @onchange="e => ChangeDisplay(e.Value.ToString())" class="mt-3 px-2 py-1 rounded-1">
+                @foreach (var l in layoutArray)
+                {
+                    <option value="@l" selected="@((l == defaultLayoutName) ? "selected" : null)">@l</option>
+                }
+            </select>
+            <button style="background-color:transparent; border-radius: 5px; margin-top: 10px; padding-top: 4px; padding-left:4px; padding-right:4px;" @onclick="HandleMenu">
+                <SfIcon Name="IconName.MoreVertical" Size="IconSize.Medium"></SfIcon>
+            </button>
+            @if (showMenu)
+            {
+                <div class="custom-menu">
+                    <select @bind="selectedLayout" class="px-2 py-1 rounded-1">
+                        @foreach (var l in layoutArray)
+                        {
+                            <option value=@l selected="@((l == defaultLayoutName) ? "selected" : null)">@l</option>
+                        }
+                    </select>
+                    <button class="btn btn-sm btn-primary" @onclick="ChangeDefault">Make this a default</button>
+                </div>
+            }
+        </div>
+        <button style="background-color:transparent; border-radius: 5px; margin-top: 10px; padding-top: 4px; padding-left:4px; padding-right:4px;" @onclick="HandleModal">
+            <SfIcon Name="IconName.Adjustment" Size="IconSize.Large"></SfIcon>
+        </button>
+    </div>
+    @if(showModal)
+    {
+        <div class="d-flex justify-content-end">
+            <div class="custom-modal">
+                <QuickGrid Items="shipmentProperties">
+                    <PropertyColumn Title="Shipment Fields" Property="@(p => p.PropertyInfo.Name)" />
+                    <PropertyColumn Title="Data Type" Property="@(p => p.PropertyInfo.PropertyType)" />
+                    <TemplateColumn>
+                        <input type="checkbox" @bind="context.IsSelected" disabled="@isJobNo(context)"/>
+                    </TemplateColumn>
+                </QuickGrid>
+
+                <div class="share-layout">
+                    <div>
+                        <input type="text" @bind="newLayoutName" placeholder="Enter Layout Name" class="form-control-sm mt-2" />
+                    </div>
+                    <div class="d-flex share-input">
+                        <input type="email" @bind="newEmail" placeholder="Enter Email" class="form-control-sm mt-2" style="margin-right: 8px"/>
+                        <button @onclick="AddEmail" class="btn btn-sm mt-2 btn-primary">Add</button>
+                    </div>
+                    <div class="shared-emails d-flex">
+                        @foreach (var email in sharedEmails)
+                        {
+                            <span class="email-tag">
+                                <span>@email</span>
+                                <button @onclick="() => RemoveEmail(email)" class="cancel-btn" style="background-color:transparent; border:none">×</button>
+                            </span>
+                        }
+                    </div>
+                </div>
+                <div class="d-flex justify-content-end mt-2">
+                    <button class="btn btn-sm btn-success" style="margin-right: 5px" @onclick="InsertLayout">Update</button>
+                    <button class="btn btn-sm btn-outline-dark">Cancel</button>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+<div class="result-container py-2" style="max-width:80vw">
     <QuickGrid Items="@shipments" Pagination="@pagination">
         <TemplateColumn Title="Job No" >
             <a href="/shipment/view?Shipment_Job_No=@context.Job_No" class="text-decoration-none font-weight-bold">
                 @context.Job_No
             </a>
         </TemplateColumn>
-        <PropertyColumn Title="Master BL No" Property="@(s => s.Master_BL_No)" Sortable="true" />
-        <PropertyColumn Title="Container Mode" Property="@(s => s.Container_Mode)" Sortable="true" />
-        <PropertyColumn Title="Place Of Loading ID" Property="@(s => s.Place_Of_Loading_ID)" Sortable="true" />
-        <PropertyColumn Title="Place Of Loading Name" Property="@(s => s.Place_Of_Loading_Name)" Sortable="true" />
-        <PropertyColumn Title="Place Of Discharge ID" Property="@(s => s.Place_Of_Discharge_ID)" Sortable="true" />
-        <PropertyColumn Title="Place Of Discharge Name" Property="@(s => s.Place_Of_Discharge_Name)" Sortable="true" />
-        <PropertyColumn Title="Vessel Name" Property="@(s => s.Vessel_Name)" Sortable="true" />
-        <PropertyColumn Title="Voyage No" Property="@(s => s.Voyage_No)" Sortable="true" />
-        <PropertyColumn Title="ETD Date" Property="@(s => s.ETD_Date.Date.ToShortDateString())" Sortable="true" />
-        <PropertyColumn Title="ETA Date" Property="@(s => s.ETA_Date.Date.ToShortDateString())" Sortable="true" />
-        <PropertyColumn Title="Carrier Matchcode" Property="@(s => s.Carrier_Matchcode)" Sortable="true" />
-        <PropertyColumn Title="Carrier Name" Property="@(s => s.Carrier_Name)" Sortable="true" />
-        <PropertyColumn Title="Carrier Contract No" Property="@(s => s.Carrier_Contract_No)" Sortable="true" />
-        <PropertyColumn Title="Carrier Booking Reference No" Property="@(s => s.Carrier_Booking_Reference_No)" Sortable="true" />
-        <PropertyColumn Title="Inco Terms" Property="@(s => s.Inco_Terms)" Sortable="true" />
-        <PropertyColumn Title="Controlling Customer Name" Property="@(s => s.Controlling_Customer_Name)" Sortable="true" />
-        <PropertyColumn Title="Shipper Name" Property="@(s => s.Shipper_Name)" Sortable="true" />
-        <PropertyColumn Title="Consignee Name" Property="@(s => s.Consignee_Name)" Sortable="true" />
-        <PropertyColumn Title="Total No Of Pieces" Property="@(s => s.Total_No_Of_Pieces)" Sortable="true" />
-        <PropertyColumn Title="Package Type" Property="@(s => s.Package_Type)" Sortable="true" />
-        <PropertyColumn Title="Total No Of Volume Weight MTQ" Property="@(s => s.Total_No_Of_Volume_Weight_MTQ)" Sortable="true" />
-        <PropertyColumn Title="Total No Of Gross Weight KGM" Property="@(s => s.Total_No_Of_Gross_Weight_KGM)" Sortable="true" />
-        <PropertyColumn Title="Description" Property="@(s => s.Description)" Sortable="true" />
-        <PropertyColumn Title="Shipment Note" Property="@(s => s.Shipment_Note)" Sortable="true" />
+
+        @if(currViewInitialised)
+        {
+            @foreach(var col in currView)
+            {
+                <PropertyColumn Title="@col.Replace("_", " ")" Property="@(s => s.GetType().GetProperty(col).GetValue(s, null))" Sortable="true" />
+            }
+        }
+
         <TemplateColumn Title ="Actions">
             <button class="btn btn-sm btn-success" @onclick="() => navigateEdit(context.Job_No)">Edit</button>
             <button class="btn btn-sm btn-danger" @onclick="() => DeleteShipment(context.Job_No)">Delete</button>
@@ -136,6 +196,41 @@
     tr:nth-child(even) {
         background-color: #dddddd;
     }
+
+    .custom-modal {
+        position: fixed;
+        z-index: 9999; 
+        background-color: white; 
+        padding: 20px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1); 
+        max-height:40vh;
+        overflow-y:scroll;
+    }
+
+    .shared-emails {
+        max-width: 30vw;
+    }
+
+    .email-tag {
+        border: 1px solid #9999;
+        border-radius: 10px;
+        padding-left: 8px;
+        padding-right: 5px;
+        margin-top: 5px;
+        margin-right: 5px;
+    }
+
+    .custom-menu {
+        position: fixed;
+        z-index: 9999;
+        background-color: white;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+    }
 </style>
 
 @code {
@@ -145,7 +240,6 @@
 
     PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
     IQueryable<Shipment> shipments = Enumerable.Empty<Shipment>().AsQueryable();
-
 
     public async void Search()
     {
@@ -208,5 +302,178 @@
         {
             Console.WriteLine("Error deleting shipment");
         }
+    }
+
+    //Changing layout view
+    Dictionary<string, UserProfileLayout> profileLayouts = new();
+    string[]? currView;
+    string[]? layoutArray;
+    string? selectedLayout;
+    string? defaultLayoutName;
+
+    IQueryable<PropertyInfoWrapper> shipmentProperties = Enumerable.Empty<PropertyInfoWrapper>().AsQueryable();
+    bool currViewInitialised = false;
+
+    async void ChangeDisplay(string layoutName)
+    {
+        Console.WriteLine(layoutName);
+        currView = profileLayouts[layoutName].Layout_Fields;
+    }
+
+    public async void HandleMenu()
+    {
+        showMenu = !showMenu;
+    }
+
+    async void ChangeDefault()
+    {
+        var response = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/UserProfileLayout/UpdateLayout/", profileLayouts[selectedLayout]);
+        await JS.InvokeVoidAsync("alert", "Successfully Updated");
+        showMenu = !showMenu;
+        defaultLayoutName = selectedLayout;
+        currView = profileLayouts[defaultLayoutName].Layout_Fields;
+        StateHasChanged();
+    }
+
+    //Layout adjustment modal, share view 
+    bool showModal = false;
+    bool showMenu = false;
+    List<string> sharedEmails = new List<string>();
+    string newEmail = "";
+    string newLayoutName = "";
+
+    public async void HandleModal()
+    {
+        Console.WriteLine("modal test");
+        Console.WriteLine(showModal);
+        showModal = !showModal;
+    }
+
+    void AddEmail()
+    {
+        if (!string.IsNullOrEmpty(newEmail) && !sharedEmails.Contains(newEmail))
+        {
+            sharedEmails.Add(newEmail);
+            StateHasChanged();
+            newEmail = "";
+        }
+    }
+
+    void RemoveEmail(string email)
+    {
+        sharedEmails.Remove(email);
+        StateHasChanged();
+    }
+
+    async Task InsertLayout()
+    {
+        Console.WriteLine("InsertLayout");
+        string[] Layout_Fields = GetSelectedProperties();
+        Console.WriteLine("Lyoutfields: " + string.Join(", ", Layout_Fields));
+        List<UserProfileLayout> userProfileLayouts = new();
+        foreach (var email in sharedEmails)
+        {
+            UserProfileLayout upl = new();
+            upl.User_Email = email;
+            upl.Table_Name = "Shipment";
+            upl.Layout_Fields = Layout_Fields;
+            upl.Layout_Name = newLayoutName;
+            Console.WriteLine("newlytname: " + newLayoutName);
+            userProfileLayouts.Add(upl);
+        }
+        var response = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/UserProfileLayout/CreateLayout/", userProfileLayouts);
+        var insertResult = response.Content.ReadAsStringAsync().Result;
+        newLayoutName = "";
+        sharedEmails = new List<string>();
+        if (insertResult.Equals("Success"))
+        {
+            await JS.InvokeVoidAsync("alert", "Successfully Added");
+        } else
+        {
+            await JS.InvokeVoidAsync("alert", insertResult);
+        }
+    }
+
+    string[] GetSelectedProperties()
+    {
+        string[] output = shipmentProperties.Where(p => p.IsSelected).Select(p => p.PropertyInfo.Name).ToArray();
+        return output;
+    }
+
+    async Task<Dictionary<string, UserProfileLayout>> GetProfileLayout(string currEmail)
+    {
+        Console.WriteLine(currEmail);
+        HttpResponseMessage response = await HttpClient.PostAsJsonAsync<Tuple<string, string>>($"{NavManager.BaseUri}api/UserProfileLayout/GetUserLayouts/", new Tuple<string, string>(currEmail, "Shipment"));
+        var responseContent = await response.Content.ReadAsStringAsync();
+        Dictionary<string, UserProfileLayout> result = JsonConvert.DeserializeObject<Dictionary<string, UserProfileLayout>>(responseContent);
+        Console.WriteLine(string.Join(", ", result.Keys.ToList()));
+        return result;
+    }
+
+    private bool isJobNo(PropertyInfoWrapper p)
+    {
+        return p.PropertyInfo.Name.Equals("Job_No");
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var currEmail = user.FindFirst(c => c.Type == ClaimTypes.Email)?.Value;
+        profileLayouts = await GetProfileLayout(currEmail);
+
+        layoutArray = profileLayouts.Keys.ToArray();
+
+        var findDefault = profileLayouts.FirstOrDefault(x => x.Value.Is_Default).Value;
+
+        //handle if user not in table, if none of the is_default is true
+        if (findDefault != null)
+        {
+            currView = findDefault.Layout_Fields;
+            var temp = profileLayouts.FirstOrDefault(x => x.Value.Is_Default).Key;
+            selectedLayout = temp;
+            defaultLayoutName = temp;
+            Console.WriteLine("dfltlytnm: " + defaultLayoutName);
+        } 
+        else if (findDefault == null && profileLayouts.Any()) {
+            defaultLayoutName = layoutArray[0];
+            selectedLayout = layoutArray[0];
+            currView = profileLayouts[defaultLayoutName].Layout_Fields;
+        } 
+        else {
+            currView = ["Master_BL_No", "Container_Mode", "Place_Of_Loading_ID", "Place_Of_Loading_Name", "Place_Of_Discharge_ID", "Place_Of_Discharge_Name", "Vessel_Name", "Voyage_No", "ETD_Date", "ETA_Date",
+                "Carrier_Matchcode", "Carrier_Name", "Carrier_Contract_No", "Carrier_Booking_Reference_No", "Inco_Terms", "Controlling_Customer_Name", "Shipper_Name", "Consignee_Name", "Total_No_Of_Pieces", "Package_Type", 
+                "Total_No_Of_Volume_Weight_MTQ", "Total_No_Of_Gross_Weight_KGM", "Description", "Shipment_Note"];
+        }
+
+        Console.WriteLine(string.Join(", ", currView));
+        var props = typeof(Shipment).GetProperties(BindingFlags.Instance | BindingFlags.Public)
+            .Where(p => p.CanRead && p.Name != "Container_List" && p.Name != "Last_Modified_At" && p.Name != "Last_Modified_By" && p.Name != "Job_No")
+            .ToList();
+
+        List<PropertyInfoWrapper> shipmentPropertiesTemp = new();
+        foreach(var prop in props)
+        {
+            PropertyInfoWrapper p = new();
+            p.PropertyInfo = prop;
+            if (prop.Name == "Job_No")
+            {
+                p.IsSelected = true;
+            }
+            else
+            {
+                p.IsSelected = false;
+            }
+            shipmentPropertiesTemp.Add(p);
+        }
+        shipmentProperties = shipmentPropertiesTemp.AsQueryable();
+
+        currViewInitialised = true;
+    }
+
+    public class PropertyInfoWrapper
+    {
+        public PropertyInfo PropertyInfo { get; set; }
+        public bool IsSelected { get; set; }
     }
 }
