@@ -384,6 +384,7 @@
         var response = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/UserProfileLayout/CreateLayout/", userProfileLayouts);
         var insertResult = response.Content.ReadAsStringAsync().Result;
         newLayoutName = "";
+        sharedEmails = new List<string>();
         if (insertResult.Equals("Success"))
         {
             await JS.InvokeVoidAsync("alert", "Successfully Added");
@@ -447,7 +448,7 @@
 
         Console.WriteLine(string.Join(", ", currView));
         var props = typeof(Shipment).GetProperties(BindingFlags.Instance | BindingFlags.Public)
-            .Where(p => p.CanRead && p.Name != "Container_List" && p.Name != "Last_Modified_At" && p.Name != "Last_Modified_By")
+            .Where(p => p.CanRead && p.Name != "Container_List" && p.Name != "Last_Modified_At" && p.Name != "Last_Modified_By" && p.Name != "Job_No")
             .ToList();
 
         List<PropertyInfoWrapper> shipmentPropertiesTemp = new();
