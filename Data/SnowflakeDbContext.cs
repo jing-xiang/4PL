@@ -2199,7 +2199,8 @@ namespace _4PL.Data
 
                         upl.Is_Default = reader.GetBoolean(reader.GetOrdinal("IS_DEFAULT"));
 
-                        result["Layout " + counter++] = upl;
+                        //result["Layout " + counter++] = upl;
+                        result[nameTemp] = upl;
                     }
                 }
                 return result;
@@ -2246,7 +2247,26 @@ namespace _4PL.Data
             }
         }
 
+        public void UpdateDefaultLayout(UserProfileLayout upl)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
 
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    string layoutFields = string.Join(",", upl.Layout_Fields);
+                    command.CommandText = @$"CALL UPDATE_DEFAULT_LAYOUT (:User_Email, :Table_Name, :Layout_Name, :Layout_Fields)";
+
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "User_Email", Value = upl.User_Email, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Table_Name", Value = upl.Table_Name, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Layout_Name", Value = upl.Layout_Name, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Layout_Fields", Value = layoutFields, DbType = DbType.String });
+
+                    command.ExecuteNonQuery();
+                }
+            }
+        }
     }
 
 }

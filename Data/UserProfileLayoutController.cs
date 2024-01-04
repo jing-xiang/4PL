@@ -38,6 +38,13 @@ namespace _4PL.Data
             }
             return Ok(returnOutput);
         }
+
+        [HttpPost("UpdateLayout")]
+        public IActionResult UpdateLayout([FromBody] UserProfileLayout upl)
+        {
+            _dbcontext.UpdateDefaultLayout(upl);
+            return Ok();
+        }
     }
 }
 

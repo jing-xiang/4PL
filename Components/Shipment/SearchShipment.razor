@@ -85,13 +85,30 @@
 @if (currViewInitialised)
 {
     <div class="d-flex justify-content-between">
-        <select @onchange="e => ChangeDisplay(e.Value.ToString())" class="mt-3 px-2 py-1 rounded-1">
-            @foreach (var l in layoutArray)
+        <div>
+            <select @onchange="e => ChangeDisplay(e.Value.ToString())" class="mt-3 px-2 py-1 rounded-1">
+                @foreach (var l in layoutArray)
+                {
+                    <option value="@l" selected="@((l == defaultLayoutName) ? "selected" : null)">@l</option>
+                }
+            </select>
+            <button style="background-color:transparent; border-radius: 5px; margin-top: 10px; padding-top: 4px; padding-left:4px; padding-right:4px;" @onclick="HandleMenu">
+                <SfIcon Name="IconName.MoreVertical" Size="IconSize.Medium"></SfIcon>
+            </button>
+            @if (showMenu)
             {
-                <option value=@l>@l</option>
+                <div class="custom-menu">
+                    <select @bind="selectedLayout" class="px-2 py-1 rounded-1">
+                        @foreach (var l in layoutArray)
+                        {
+                            <option value=@l selected="@((l == defaultLayoutName) ? "selected" : null)">@l</option>
+                        }
+                    </select>
+                    <button class="btn btn-sm btn-primary" @onclick="ChangeDefault">Make this a default</button>
+                </div>
             }
-        </select>
-        <button style="background-color:transparent; border-radius: 5px" @onclick="HandleModal">
+        </div>
+        <button style="background-color:transparent; border-radius: 5px; margin-top: 10px; padding-top: 4px; padding-left:4px; padding-right:4px;" @onclick="HandleModal">
             <SfIcon Name="IconName.Adjustment" Size="IconSize.Large"></SfIcon>
         </button>
     </div>
@@ -108,22 +125,25 @@
                 </QuickGrid>
 
                 <div class="share-layout">
+                    <div>
+                        <input type="text" @bind="newLayoutName" placeholder="Enter Layout Name" class="form-control-sm mt-2" />
+                    </div>
                     <div class="d-flex share-input">
-                        <input type="email" @bind="newEmail" placeholder="Enter email" class="form-control mt-2" style="margin-right: 8px"/>
+                        <input type="email" @bind="newEmail" placeholder="Enter Email" class="form-control-sm mt-2" style="margin-right: 8px"/>
                         <button @onclick="AddEmail" class="btn btn-sm mt-2 btn-primary">Add</button>
                     </div>
                     <div class="shared-emails d-flex">
                         @foreach (var email in sharedEmails)
                         {
-                            <div class="email-tag">
+                            <span class="email-tag">
                                 <span>@email</span>
                                 <button @onclick="() => RemoveEmail(email)" class="cancel-btn" style="background-color:transparent; border:none">×</button>
-                            </div>
+                            </span>
                         }
                     </div>
                 </div>
                 <div class="d-flex justify-content-end mt-2">
-                    <button class="btn btn-sm btn-success" style="margin-right: 5px" @onclick="UpdateLayout">Update</button>
+                    <button class="btn btn-sm btn-success" style="margin-right: 5px" @onclick="InsertLayout">Update</button>
                     <button class="btn btn-sm btn-outline-dark">Cancel</button>
                 </div>
             </div>
@@ -189,6 +209,10 @@
         overflow-y:scroll;
     }
 
+    .shared-emails {
+        max-width: 30vw;
+    }
+
     .email-tag {
         border: 1px solid #9999;
         border-radius: 10px;
@@ -196,6 +220,16 @@
         padding-right: 5px;
         margin-top: 5px;
         margin-right: 5px;
+    }
+
+    .custom-menu {
+        position: fixed;
+        z-index: 9999;
+        background-color: white;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
     }
 </style>
 
@@ -206,12 +240,6 @@
 
     PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
     IQueryable<Shipment> shipments = Enumerable.Empty<Shipment>().AsQueryable();
-
-    Dictionary<string, UserProfileLayout> profileLayouts = new();
-    string[]? currView;
-    string[]? layoutArray;
-    IQueryable<PropertyInfoWrapper> shipmentProperties = Enumerable.Empty<PropertyInfoWrapper>().AsQueryable();
-    bool currViewInitialised = false;
 
     public async void Search()
     {
@@ -276,16 +304,43 @@
         }
     }
 
+    //Changing layout view
+    Dictionary<string, UserProfileLayout> profileLayouts = new();
+    string[]? currView;
+    string[]? layoutArray;
+    string? selectedLayout;
+    string? defaultLayoutName;
+
+    IQueryable<PropertyInfoWrapper> shipmentProperties = Enumerable.Empty<PropertyInfoWrapper>().AsQueryable();
+    bool currViewInitialised = false;
+
     async void ChangeDisplay(string layoutName)
     {
         Console.WriteLine(layoutName);
         currView = profileLayouts[layoutName].Layout_Fields;
     }
 
-    //Layout adjustment modal
+    public async void HandleMenu()
+    {
+        showMenu = !showMenu;
+    }
+
+    async void ChangeDefault()
+    {
+        var response = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/UserProfileLayout/UpdateLayout/", profileLayouts[selectedLayout]);
+        await JS.InvokeVoidAsync("alert", "Successfully Updated");
+        showMenu = !showMenu;
+        defaultLayoutName = selectedLayout;
+        currView = profileLayouts[defaultLayoutName].Layout_Fields;
+        StateHasChanged();
+    }
+
+    //Layout adjustment modal, share view 
     bool showModal = false;
+    bool showMenu = false;
     List<string> sharedEmails = new List<string>();
     string newEmail = "";
+    string newLayoutName = "";
 
     public async void HandleModal()
     {
@@ -300,7 +355,7 @@
         {
             sharedEmails.Add(newEmail);
             StateHasChanged();
-            newEmail = ""; // Clear the input after adding
+            newEmail = "";
         }
     }
 
@@ -310,9 +365,9 @@
         StateHasChanged();
     }
 
-    async Task UpdateLayout()
+    async Task InsertLayout()
     {
-        Console.WriteLine("UpdateLayout");
+        Console.WriteLine("InsertLayout");
         string[] Layout_Fields = GetSelectedProperties();
         Console.WriteLine("Lyoutfields: " + string.Join(", ", Layout_Fields));
         List<UserProfileLayout> userProfileLayouts = new();
@@ -322,12 +377,13 @@
             upl.User_Email = email;
             upl.Table_Name = "Shipment";
             upl.Layout_Fields = Layout_Fields;
-
+            upl.Layout_Name = newLayoutName;
+            Console.WriteLine("newlytname: " + newLayoutName);
             userProfileLayouts.Add(upl);
         }
         var response = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/UserProfileLayout/CreateLayout/", userProfileLayouts);
         var insertResult = response.Content.ReadAsStringAsync().Result;
-
+        newLayoutName = "";
         if (insertResult.Equals("Success"))
         {
             await JS.InvokeVoidAsync("alert", "Successfully Added");
@@ -365,20 +421,23 @@
         var currEmail = user.FindFirst(c => c.Type == ClaimTypes.Email)?.Value;
         profileLayouts = await GetProfileLayout(currEmail);
 
-        Console.WriteLine(string.Join(", ", profileLayouts.Keys.ToArray()));
         layoutArray = profileLayouts.Keys.ToArray();
 
         var findDefault = profileLayouts.FirstOrDefault(x => x.Value.Is_Default).Value;
 
-        Console.WriteLine("fnddflt: " + findDefault);
         //handle if user not in table, if none of the is_default is true
         if (findDefault != null)
         {
-            Console.WriteLine("here");
             currView = findDefault.Layout_Fields;
+            var temp = profileLayouts.FirstOrDefault(x => x.Value.Is_Default).Key;
+            selectedLayout = temp;
+            defaultLayoutName = temp;
+            Console.WriteLine("dfltlytnm: " + defaultLayoutName);
         } 
         else if (findDefault == null && profileLayouts.Any()) {
-            currView = profileLayouts["Layout 1"].Layout_Fields;
+            defaultLayoutName = layoutArray[0];
+            selectedLayout = layoutArray[0];
+            currView = profileLayouts[defaultLayoutName].Layout_Fields;
         } 
         else {
             currView = ["Master_BL_No", "Container_Mode", "Place_Of_Loading_ID", "Place_Of_Loading_Name", "Place_Of_Discharge_ID", "Place_Of_Discharge_Name", "Vessel_Name", "Voyage_No", "ETD_Date", "ETA_Date",
