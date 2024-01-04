@@ -2206,7 +2206,45 @@ namespace _4PL.Data
             }
         }
 
+        public List<string> InsertUserLayout(List<UserProfileLayout> userProfileLayouts)
+        {
+            Console.WriteLine("method called");
+            List<string> noUser = new();
+            string jsonProfileLayout = JsonConvert.SerializeObject(userProfileLayouts);
+            Console.WriteLine("json" + jsonProfileLayout);
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                var command = conn.CreateCommand();
 
+                command.CommandText = "CALL sp_insert_user_layout (:userProfileLayouts)";
+                command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "userProfileLayouts", Value = jsonProfileLayout, DbType = DbType.String });
+
+                try
+                {
+                    Console.WriteLine("test1");
+                    var result = command.ExecuteScalar().ToString();
+                    Console.WriteLine("result" + result);
+                    var response = JsonConvert.DeserializeObject<Dictionary<string, object>>(result);
+
+                    if (response.ContainsKey("noUser"))
+                    {
+                        Console.WriteLine("test2");
+                        noUser = JsonConvert.DeserializeObject<List<string>>(response["noUser"].ToString());
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("An error occured: " + ex.Message);
+                }
+                finally
+                {
+                    conn.Close();
+                }
+                Console.WriteLine("noUser: " + noUser);
+                return noUser;
+            }
+        }
 
 
     }

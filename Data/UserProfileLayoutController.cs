@@ -20,6 +20,24 @@ namespace _4PL.Data
             var output = _dbcontext.fetchUserLayouts(tpl.Item1, tpl.Item2);
             return Ok(output);
         }
+
+        [HttpPost("CreateLayout")]
+        public IActionResult CreateLayout([FromBody] List<UserProfileLayout> userProfileLayouts)
+        {
+            var response = _dbcontext.InsertUserLayout(userProfileLayouts);
+
+            var returnOutput = "";
+            if (response.Any())
+            {
+                returnOutput += "Error Updating Layout. \n";
+                returnOutput += $"User not found: {string.Join(", ", response)}";
+            }
+            else
+            {
+                returnOutput += "Success";
+            }
+            return Ok(returnOutput);
+        }
     }
 }
 
