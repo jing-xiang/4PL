@@ -17,155 +17,99 @@ namespace _4PL.Data
                     .AddUserSecrets<DataAnalysisDbContext>()
                     .Build();
 
-            var encryptedConn = configuration["ConnectionStrings:SnowflakeConnection"];
-            _connectionString = DecryptConn(encryptedConn);
+            byte[] encConn = Convert.FromBase64String(configuration["EncAlg:Conn"]);
+            byte[] encKey = Convert.FromBase64String(configuration["EncAlg:Key"]);
+            byte[] encIV = Convert.FromBase64String(configuration["EncAlg:IV"]);
+            _connectionString = DecryptConn(encConn, encKey, encIV);
         }
 
-        private string DecryptConn(string encryptedConn)
+        private string DecryptConn(byte[] encConn, byte[] encKey, byte[] encIV)
         {
-            byte[] encryptedBytes = Convert.FromBase64String(encryptedConn);
-            byte[] decryptedBytes = ProtectedData.Unprotect(encryptedBytes, optionalEntropy: null, scope: DataProtectionScope.CurrentUser);
-            return Encoding.UTF8.GetString(decryptedBytes);
+            Aes decAlg = Aes.Create();
+            decAlg.Key = encKey;
+            decAlg.IV = encIV;
+            MemoryStream decryptionStreamBacking = new MemoryStream();
+            CryptoStream decrypt = new CryptoStream(
+            decryptionStreamBacking, decAlg.CreateDecryptor(), CryptoStreamMode.Write);
+            decrypt.Write(encConn, 0, encConn.Length);
+            decrypt.Flush();
+            decrypt.Close();
+            return new UTF8Encoding(false).GetString(decryptionStreamBacking.ToArray());
         }
 
-        public async Task<List<string>> FetchAccessRights(string userEmail)
-        {
-            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
-            {
-                conn.Open();
-                using (IDbCommand command = conn.CreateCommand())
-                {
-                    command.CommandText = $"SELECT access_type FROM access_control WHERE email = '{userEmail}'";
-                    IDataReader reader = command.ExecuteReader();
-                    List<string> accessRights = new();
-                    while (reader.Read())
-                    {
-                        accessRights.Add(reader.GetString(0));
-                    }
-                    return accessRights;
-                }
-            }
-        }
-
-        public async Task<List<AccessRight>> FetchAccessTypes()
+        public List<DataReport> FetchDataReports()
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
                 conn.Open();
                 using (IDbCommand command = conn.CreateCommand())
                 {
-                    command.CommandText = $"SELECT * FROM ACCESS_MODEL";
+                    command.CommandText = $"SELECT * FROM DATA_REPORTS";
                     IDataReader reader = command.ExecuteReader();
-                    List<AccessRight> accessModel = new();
+                    List<DataReport> reports = new();
                     while (reader.Read())
                     {
-                        AccessRight curr = new()
+                        DataReport curr = new()
                         {
-                            AccessType = reader.GetString(0),
-                            Description = reader.GetString(1)
+                            Title = reader.GetString(0),
+                            Link = reader.GetString(1),
+                            AccessRightRequired = reader.GetString(2),
                         };
-                        accessModel.Add(curr);
+                        reports.Add(curr);
                     }
-                    return accessModel;
+                    return reports;
                 }
             }
         }
 
-        public bool CheckIsValidType(string accessType)
+        public void AddNewReport(DataReport newReport)
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
                 conn.Open();
-                IDbCommand command = conn.CreateCommand();
-                command.CommandText = $"CALL CHECK_DUPLICATE_TYPE('{accessType}')";
-                return Convert.ToBoolean(command.ExecuteScalar());
+                bool isDuplicate = false;
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = "CALL ADD_REPORT(:title, :link, :access_right)";
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "title", Value = newReport.Title, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "link", Value = newReport.Link, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "access_right", Value = newReport.AccessRightRequired, DbType = DbType.String });
+
+                    isDuplicate = Convert.ToBoolean(command.ExecuteScalar());
+                }
+                if (isDuplicate)
+                {
+                    throw new DuplicateNameException("Data report title already exists.");
+                }
             }
         }
 
-        public void AddNewAccessRight(AccessRight newRight)
+        public void UpdateReport(DataReport updatedReport)
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
                 conn.Open();
-                IDbCommand command = conn.CreateCommand();
-                command.CommandText = $"CALL ADD_NEW_ACCESS_RIGHT('{newRight.AccessType}', '{newRight.Description}')";
-                command.ExecuteScalar();
+                bool isDuplicate = false;
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = "CALL UPDATE_REPORT(:title, :new_title, :link, :access_right)";
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "title", Value = updatedReport.Title, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "new_title", Value = updatedReport.UpdatedTitle, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "link", Value = updatedReport.Link, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "access_right", Value = updatedReport.AccessRightRequired, DbType = DbType.String });
+                }
             }
         }
 
-        public void UpdateAccessRight(AccessRight updatedRight)
-        {
-            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
-            {
-                conn.Open();
-                IDbCommand command = conn.CreateCommand();
-                command.CommandText = $"CALL UPDATE_ACCESS_RIGHT('{updatedRight.AccessType}', '{updatedRight.UpdatedAccessType}', '{updatedRight.UpdatedDescription}')";
-                command.ExecuteScalar();
-            }
-        }
-
-        public void DeleteAccessRight(string accessType)
-        {
-            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
-            {
-                conn.Open();
-                IDbCommand command = conn.CreateCommand();
-                command.CommandText = $"CALL DELETE_ACCESS_RIGHT('{accessType}')";
-                command.ExecuteScalar();
-            }
-        }
-
-        public void CopyAccessRights(string targetEmail, List<string> rightsToCopy)
+        public void DeleteReport(string reportTitle)
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
                 conn.Open();
                 using (IDbCommand command = conn.CreateCommand())
                 {
-                    command.CommandText = $"CALL DELETE_ACCESS_RIGHTS('{targetEmail}')";
+                    command.CommandText = $"CALL DELETE_REPORT('{reportTitle}')";
                     command.ExecuteScalar();
-
-                    if (rightsToCopy.IsNullOrEmpty())
-                    {
-                        return;
-                    }
-
-                    command.CommandText = "INSERT INTO ACCESS_CONTROL (EMAIL, ACCESS_TYPE) VALUES ";
-                    List<string> toConcat = new();
-                    foreach (string right in rightsToCopy)
-                    {
-                        toConcat.Add($"('{targetEmail}', '{right}')");
-                    }
-                    command.CommandText += string.Join(",", toConcat);
-                    command.ExecuteScalar();
-                }
-            }
-        }
-
-        public void SaveAccessRights(ApplicationUser user)
-        {
-            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
-            {
-                conn.Open();
-                using (IDbCommand command = conn.CreateCommand())
-                {
-                    command.CommandText = $"CALL DELETE_ACCESS_RIGHTS('{user.Email}')";
-                    command.ExecuteScalar();
-
-                    command.CommandText = "INSERT INTO ACCESS_CONTROL (EMAIL, ACCESS_TYPE) VALUES ";
-                    List<string> toConcat = new();
-                    foreach (AccessRight right in user.AccessRights)
-                    {
-                        if (right.UpdatedRight)
-                        {
-                            toConcat.Add($"('{user.Email}', '{right.AccessType}')");
-                        }
-                    }
-                    if (!toConcat.IsNullOrEmpty())
-                    {
-                        command.CommandText += string.Join(",", toConcat);
-                        command.ExecuteScalar();
-                    }
                 }
             }
         }
