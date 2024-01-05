@@ -1538,12 +1538,12 @@ namespace _4PL.Data
             }
         }
 
-        public async Task<List<ContainerTypeMapping>> FetchContainerTypeMappings(string otherContainerTypeName, string source, string containerType)
+        public async Task<List<ContainerTypeMappingReference>> FetchContainerTypeMappings(string otherContainerTypeName, string source, string containerType)
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
                 conn.Open();
-                List<ContainerTypeMapping> containerTypeMappings = new List<ContainerTypeMapping>();
+                List<ContainerTypeMappingReference> containerTypeMappings = new List<ContainerTypeMappingReference>();
                 using (IDbCommand command = conn.CreateCommand())
                 {
                     command.CommandText = $@"CALL FETCH_CONTAINER_TYPE_MAPPINGS (:Other_Container_Type_Name, :Source, :Container_Type)";
@@ -1554,7 +1554,7 @@ namespace _4PL.Data
 
                     while (reader.Read())
                     {
-                        ContainerTypeMapping ct = new ContainerTypeMapping();
+                        ContainerTypeMappingReference ct = new ContainerTypeMappingReference();
                         ct.Other_Container_Type_Name = reader.GetString(reader.GetOrdinal("OTHER_CONTAINER_TYPE_NAME"));
                         ct.Source = reader.GetString(reader.GetOrdinal("SOURCE"));
                         ct.Container_Type = reader.GetString(reader.GetOrdinal("CONTAINER_TYPE"));
