@@ -7,14 +7,14 @@ using System.Text;
 
 namespace _4PL.Data
 {
-    public class AccessRightsDbContext
+    public class DataAnalysisDbContext
     {
         private readonly string _connectionString;
 
-        public AccessRightsDbContext()
+        public DataAnalysisDbContext()
         {
             var configuration = new ConfigurationBuilder()
-                    .AddUserSecrets<AccessRightsDbContext>()
+                    .AddUserSecrets<DataAnalysisDbContext>()
                     .Build();
 
             var encryptedConn = configuration["ConnectionStrings:SnowflakeConnection"];
@@ -165,7 +165,7 @@ namespace _4PL.Data
                     {
                         command.CommandText += string.Join(",", toConcat);
                         command.ExecuteScalar();
-                    }            
+                    }
                 }
             }
         }

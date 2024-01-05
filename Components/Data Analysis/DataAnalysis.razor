@@ -10,13 +10,45 @@
 
 <PageTitle>Data Analysis</PageTitle>
 
-<div align="center" class="col-md-12">
-    <iframe title="Comparison of Accrual and Actual Costs" width="1300" height="800" src="https://app.powerbi.com/reportEmbed?reportId=33c3d6fb-df15-4937-a8c2-8c089f317085&autoAuth=true&ctid=f1cf02ad-9661-4b67-ad60-9ae41c500550" frameborder="0" allowFullScreen="true"></iframe>
+<div class="row">
+    <div class="col-md-2">
+        <ul class="nav nav-pills flex-column">
+
+            @foreach (DataReport report in reports ?? Enumerable.Empty<DataReport>())
+            {
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="javacript:void(0)" Match="NavLinkMatch.All" @onclick = "() => ShowReport(report)">@report.Title</NavLink>
+                </li>
+            }
+        </ul>
+    </div>
+    <div class="col-md-10">
+        @if (currReport != null)
+        {
+            <div align="center" class="col-md-12">
+                <iframe title="@currReport.Title" width="1300" height="800" src="@currReport.Link" frameborder="0" allowFullScreen></iframe>
+            </div>
+        }
+    </div>
 </div>
 
 @code {
-    public void OnInitialisedAsync()
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    private string? apiBaseUrl;
+    private DataReport? currReport;
+    private List<DataReport>? reports = new();
+
+    protected override async Task OnInitializedAsync()
     {
-        Logger.LogInformation("Analysis Generated.");
+        apiBaseUrl = Configuration["ApiBaseUrl"];
+        Logger.LogInformation("Fetching Reports");
+        reports = await HttpClient.GetFromJsonAsync<List<DataReport>>($"{apiBaseUrl}/api/DataAnalysis/FetchReports");
+    }
+
+    private void ShowReport(DataReport report)
+    {
+        currReport = report;
     }
 }
