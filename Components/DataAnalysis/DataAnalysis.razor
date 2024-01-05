@@ -1,32 +1,41 @@
 ﻿@page "/DataAnalysis"
 
 @using System.ComponentModel.DataAnnotations
+@using System.Security.Claims
 @using _4PL.Data
+@using Microsoft.AspNetCore.Components.QuickGrid
 
 @inject ILogger<DataAnalysis> Logger
 @inject NavigationManager NavigationManager
 @inject HttpClient HttpClient
 @inject IConfiguration Configuration
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@rendermode InteractiveServer
 
 <PageTitle>Data Analysis</PageTitle>
 
+<h1>Data Analysis</h1>
+<hr />
 <div class="row">
     <div class="col-md-2">
-        <ul class="nav nav-pills flex-column">
-
-            @foreach (DataReport report in reports ?? Enumerable.Empty<DataReport>())
-            {
-                <li class="nav-item">
-                    <NavLink class="nav-link" href="javacript:void(0)" Match="NavLinkMatch.All" @onclick = "() => ShowReport(report)">@report.Title</NavLink>
-                </li>
-            }
-        </ul>
+        <div class="grid" tabindex="-1">
+            <QuickGrid Items="@reports">
+                <TemplateColumn Title="View Reports" Class="reports">
+                    @if (userRights.Contains(context.AccessRightRequired ?? ""))
+                    {
+                        <button type="submit" class="button-view w-100 btn btn-outline-primary" @onclick="() => ShowReport(context)">
+                            @context.Title
+                        </button>
+                    }
+                </TemplateColumn>
+            </QuickGrid>
+        </div>
     </div>
     <div class="col-md-10">
         @if (currReport != null)
         {
             <div align="center" class="col-md-12">
-                <iframe title="@currReport.Title" width="1300" height="800" src="@currReport.Link" frameborder="0" allowFullScreen></iframe>
+                <iframe title="@currReport.Title" width="1300" height="800" src="@currReport.Link" frameborder="0"></iframe>
             </div>
         }
     </div>
@@ -37,18 +46,27 @@
     private HttpContext HttpContext { get; set; } = default!;
 
     private string? apiBaseUrl;
+    private ApplicationUser? currUser;
     private DataReport? currReport;
-    private List<DataReport>? reports = new();
+    private List<string>? userRights = new();
+    private IQueryable<DataReport>? reports;
 
     protected override async Task OnInitializedAsync()
     {
         apiBaseUrl = Configuration["ApiBaseUrl"];
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var currEmail = user.FindFirst(c => c.Type == ClaimTypes.Email)?.Value;
+        userRights = await HttpClient.GetFromJsonAsync<List<string>>($"{apiBaseUrl}/api/AccessRights/FetchAccessRights={currEmail}");
+
         Logger.LogInformation("Fetching Reports");
-        reports = await HttpClient.GetFromJsonAsync<List<DataReport>>($"{apiBaseUrl}/api/DataAnalysis/FetchReports");
+        var result = await HttpClient.GetFromJsonAsync<List<DataReport>>($"{apiBaseUrl}/api/DataAnalysis/FetchReports");
+        reports = result.AsQueryable();
     }
 
     private void ShowReport(DataReport report)
     {
         currReport = report;
+        StateHasChanged();
     }
 }

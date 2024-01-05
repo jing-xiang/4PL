@@ -14,7 +14,7 @@
 <PageTitle>Admin</PageTitle>
 
 <div class="row">
-    <div class="col-md-10 overflow-auto">
+    <div class="col-md-12 overflow-auto">
         @if (isLoaded)
         {
             <h3 class="heading"><strong>USER MANAGEMENT</strong></h3>
@@ -54,7 +54,7 @@
             <div class="grid" tabindex="-1">
                 <QuickGrid Items="@users" Pagination="@pagination">
                     <TemplateColumn Title="" Class="button-view">
-                        <button type="submit" class="button-view btn btn-sm btn-success" @onclick="() => ManageUser(context.Email)">
+                        <button type="submit" class="button-view btn btn-sm btn-success" @onclick="() => ManageUser(context)">
                             Edit
                         </button>
                     </TemplateColumn>
@@ -92,7 +92,7 @@
                             <strong>Email</strong>
                             <input class="form-control" type="text" @bind-value="@UpdateUserInput.UpdatedEmail" />
                         </p>
-                        <button @onclick="UpdateUser" class="w-100 btn btn-lg btn-outline-success">Update</button>
+                        <button @onclick="UpdateUser" class="w-100 mb-2 btn btn-lg btn-outline-success">Update</button>
                         @if (lockedStatus == "TRUE")
                         {
                             <button @onclick="UnlockUser" class="w-100 btn btn-lg btn-outline-success">Unlock Account</button>
@@ -147,7 +147,6 @@
     private bool isLoaded;
     private bool isToConfirm;
 
-    QuickGrid<ApplicationUser>? grid;
     IQueryable<ApplicationUser>? users;
     GridSort<ApplicationUser> userResetSort = GridSort<ApplicationUser>.ByAscending(x => x.LastReset);
     PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
@@ -222,12 +221,12 @@
         return;
     }
 
-    private async Task ManageUser(string email)
+    private void ManageUser(ApplicationUser user)
     {
         ResetStrings();
-        currUser = await HttpClient.GetFromJsonAsync<ApplicationUser>($"{apiBaseUrl}/api/Snowflake/e={email}");
+        currUser = user;
         lockedStatus = currUser.IsLocked ? "TRUE" : "FALSE";
-        currEmail = email;
+        currEmail = currUser.Email;
         UpdateUserInput.UpdatedName = currUser.Name;
         UpdateUserInput.UpdatedEmail = currUser.Email;
     }
@@ -235,39 +234,24 @@
     private async Task UpdateUser()
     {
         ResetStrings();
-        messageType = "danger";
-        if (UpdateUserInput.UpdatedName.Trim() == "" || UpdateUserInput.UpdatedEmail.Trim() == "")
-        {
-            userUpdateMessage = "Fields cannot be empty.";
-            return;
-        }
-        else if (UpdateUserInput.UpdatedName == currUser.Name && UpdateUserInput.UpdatedEmail == currUser.Email)
+        if (UpdateUserInput.UpdatedName == currUser.Name && UpdateUserInput.UpdatedEmail == currUser.Email)
         {
             userUpdateMessage = "There must be at least one field that is different.";
             return;
-        }
-        else if (UpdateUserInput.UpdatedEmail != currUser.Email)
+        } else
         {
-            ApplicationUser temp = new();
-            temp.Name = UpdateUserInput.UpdatedEmail;
-            temp.Email = currUser.Email;
-            var result = await HttpClient.PutAsJsonAsync($"{apiBaseUrl}/api/Snowflake/{currUser.Email}/UpdateEmail", temp);
-            if (!result.IsSuccessStatusCode)
-            {
-                userUpdateMessage = await result.Content.ReadAsStringAsync();
-                return;
-            }
-        } else if (UpdateUserInput.UpdatedName != currUser.Name)
-        {
-            ApplicationUser temp = new();
-            temp.Name = UpdateUserInput.UpdatedName;
-            temp.Email = UpdateUserInput.UpdatedEmail;
-            var result = await HttpClient.PutAsJsonAsync($"{apiBaseUrl}/api/Snowflake/{currUser.Email}/UpdateName", temp);
-        }
+            ApplicationUser temp = new()
+                {
+                    Name = UpdateUserInput.UpdatedName,
+                    Email = currUser.Email,
+                    UpdatedEmail = UpdateUserInput.UpdatedEmail,
+                };
 
-        userUpdateMessage = "Details successfully updated.";
-        messageType = "success";
-        await LoadUsers();
+            var result = await HttpClient.PutAsJsonAsync($"{apiBaseUrl}/api/Snowflake/{currUser.Email}/UpdateUserDetails", temp);
+            userUpdateMessage = await result.Content.ReadAsStringAsync();
+            messageType = result.IsSuccessStatusCode ? "success" : "danger";
+            await LoadUsers();
+        }
     }
 
     private async Task UnlockUser()
@@ -326,11 +310,14 @@
 
     private sealed class UpdateUserModel
     {
+        [Required]
         public string UpdatedName { get; set; } = "";
 
+        [Required]
         [EmailAddress]
         public string Email { get; set; } = "";
 
+        [Required]
         [EmailAddress]
         public string UpdatedEmail { get; set; } = "";
     }

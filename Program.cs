@@ -56,6 +56,7 @@ builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddSyncfusionBlazor();
 builder.Services.AddSingleton<SnowflakeDbContext>();
 builder.Services.AddSingleton<AccessRightsDbContext>();
+builder.Services.AddSingleton<DataAnalysisDbContext>();
 builder.Services.AddSingleton<IAuthorizationHandler, AccessHandler>();
 builder.Services.AddControllers();
 builder.Services.AddHttpClient();
