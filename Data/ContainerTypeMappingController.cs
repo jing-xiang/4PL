@@ -23,7 +23,7 @@ public class ContainerTypeMappingController : Controller
     **/
 
     [HttpPost("CreateContainerTypeMapping")]
-    public async Task<ActionResult<string>> CreateContainerTypeMapping([FromBody] ContainerTypeMapping mapping) // TBC: FromBody
+    public async Task<ActionResult<string>> CreateContainerTypeMapping([FromBody] ContainerTypeMappingReference mapping) // TBC: FromBody
     {
         try
         {
@@ -50,28 +50,29 @@ public class ContainerTypeMappingController : Controller
         
     }
 
-    //[HttpGet("FetchAllContainerTypes")]
-    //public async Task<ActionResult<List<ContainerTypeReference>>> FetchAllContainerTypes() // GET request should not have body 
-    //{
-    //    try
-    //    {
-    //        List<ContainerTypeReference> containerTypeMappings = await _dbContext.FetchAllContainerTypes();
-    //        Debug.WriteLine($"Logging: {containerTypeMappings}");
-    //        return Ok(containerTypeMappings);
-    //    }
-    //    catch (Exception ex)
-    //    {
-    //        return StatusCode(500, $"{ex.GetType().Name}: {ex.Message}");
-    //    }
-    //}
-
-
-    [HttpGet("FetchContainerTypesMappings/{otherContainerTypeName}/{source}/{containerType}")]
-    public async Task<ActionResult<List<ContainerTypeMapping>>> FetchContainerTypes(string otherContainerTypeName, string source, string containerType) // GET request should not have body 
+    [HttpGet("FetchContainerTypesList")]
+    public async Task<ActionResult<List<ContainerTypeReference>>> FetchContainerTypesList() // GET request should not have body 
     {
         try
         {
-            List<ContainerTypeMapping> containerTypeMappings = await _dbContext.FetchContainerTypeMappings(otherContainerTypeName, source, containerType);
+            List<ContainerTypeReference> containerTypes = await _dbContext.FetchAllContainerTypes();
+            Debug.WriteLine($"Logging: {containerTypes}");
+            return Ok(containerTypes);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"{ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
+
+    [HttpGet("FetchContainerTypeMappings/{otherContainerTypeName}/{source}/{containerType}")]
+    public async Task<ActionResult<List<ContainerTypeMappingReference>>> FetchContainerTypeMappings(string otherContainerTypeName, string source, string containerType) // GET request should not have body 
+    {
+        Debug.WriteLine($"Server side Parameters: otherContainerTypeName={otherContainerTypeName}, source={source}, containerType={containerType}");
+        try
+        {
+            List<ContainerTypeMappingReference> containerTypeMappings = await _dbContext.FetchContainerTypeMappings(otherContainerTypeName.Trim(), source.Trim(), containerType.Trim());
             Debug.WriteLine($"Logging: {containerTypeMappings}");
             return Ok(containerTypeMappings);
         } catch (Exception ex)

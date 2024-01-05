@@ -17,14 +17,22 @@
 
     @if (!editTab)
     {
-        <EditForm Model="addChargeReference" OnSubmit="CreateCharge" Enhance>
-         <label class="label-control">Add Charge</label>
+        <EditForm Model="addContainerTypeMapping" OnSubmit="CreateMapping" Enhance>
+         <label class="label-control">Add Mapping</label>
          <div class="row">
-             <div class="col-md-6">
-                 <InputText @bind-Value="addChargeReference.Charge_Code" placeholder="Charge Code" class="form-control" autocomplete="off"></InputText>
+             <div class="col-md-4">
+                 <InputText @bind-Value="addContainerTypeMapping.Other_Container_Type_Name" placeholder="Other Container Type Name" class="form-control" autocomplete="off"></InputText>
              </div>
-             <div class="col-md-6">
-                 <InputText @bind-Value="addChargeReference.Charge_Description" placeholder="Charge Description" class="form-control" autocomplete="off"></InputText>
+             <div class="col-md-4">
+                 <InputText @bind-Value="addContainerTypeMapping.Source" placeholder="Source" class="form-control" autocomplete="off"></InputText>
+             </div>
+             <div class="col-md-4">
+                 <label for="selectContainerType">Select Container Type:</label>
+                 <InputSelect id="selectContainerType" @bind-Value="addContainerTypeMapping.Container_Type" autocomplete="off">
+                     @foreach (var ct in containerTypesList) { 
+                         <option value="@ct.Container_Type">@ct.Container_Type</option>
+                     }
+                 </InputSelect>
              </div>
          </div>
          <button type="submit" class="btn btn-primary my-2">Add</button>
@@ -32,38 +40,57 @@
     }
     else
     {
-        <EditForm Model="chargeToEdit" OnSubmit="UpdateCharge" Enhance>
-         <label class="label-control">Update Charge Code</label>
+        <EditForm Model="mappingToEdit" OnSubmit="UpdateMapping" Enhance>
+         <label class="label-control">Update Mapping</label>
          <div class="row">
-             <div class="col-md-6">
-                 <InputText @bind-Value="chargeToEdit.Charge_Code" placeholder="Charge Code" class="form-control" autocomplete="off"></InputText>
+             <div class="col-md-4">
+                 <InputText @bind-Value="mappingToEdit.Other_Container_Type_Name" placeholder="Other Container Type Name" class="form-control" autocomplete="off"></InputText>
              </div>
-             <div class="col-md-6">
-                 <InputText @bind-Value="chargeToEdit.Charge_Description" placeholder="Charge Description" disabled="true" class="form-control" autocomplete="off"></InputText>
+             <div class="col-md-4">
+                 <InputText @bind-Value="mappingToEdit.Source" placeholder="Source" disabled="true" class="form-control" autocomplete="off"></InputText>
              </div>
+             <div class="col-md-4">
+                 <label for="selectContainerType">Select Container Type:</label>
+                 <InputSelect id="selectContainerType" @bind-Value="mappingToEdit.Container_Type" autocomplete="off">
+                     @foreach (var ct in containerTypesList)
+                        {
+                            <option value="@ct.Container_Type">@ct.Container_Type</option>
+                        }
+                    </InputSelect>
+                </div>
          </div>
          <button type="submit" class="btn btn-primary my-2">Update</button>
      </EditForm>
     }
-    <EditForm Model="searchChargeReference" OnSubmit="FetchCharges" Enhance>
-        <label class="label-control">Search Charge</label>
+    <EditForm Model="searchContainerTypeMapping" OnSubmit="FetchMappings" Enhance>
+        <label class="label-control">Search Mapping</label>
         <div class="row">
-            <div class="col-md-6">
-                <InputText @bind-Value="searchChargeReference.Charge_Code" placeholder="Charge Code" class="form-control" autocomplete="off"></InputText>
+            <div class="col-md-4">
+                <InputText @bind-Value="searchContainerTypeMapping.Other_Container_Type_Name" placeholder="Other Container Type Name" class="form-control" autocomplete="off"></InputText>
             </div>
-            <div class="col-md-6">
-                <InputText @bind-Value="searchChargeReference.Charge_Description" placeholder="Charge Description" class="form-control" autocomplete="off"></InputText>
+            <div class="col-md-4">
+                <InputText @bind-Value="searchContainerTypeMapping.Source" placeholder="Source" class="form-control" autocomplete="off"></InputText>
+            </div>
+            <div class="col-md-4">
+                <label for="selectContainerType">Select Container Type:</label>
+                <InputSelect id="selectContainerType" @bind-Value="searchContainerTypeMapping.Container_Type" autocomplete="off">
+                    @foreach (var ct in containerTypesList)
+                    {
+                        <option value="@ct.Container_Type">@ct.Container_Type</option>
+                    }
+                </InputSelect>
             </div>
         </div>
         <button type="submit" class="btn btn-primary my-2">Search</button>
     </EditForm>
     <br />
-    <QuickGrid Items="@ChargesQueryable" @ref="grid" Pagination="pagination">
-        <PropertyColumn Title="Charge Code" Property="@(c => c.Charge_Code)" Sortable="true" InitialSortDirection="SortDirection.Ascending"></PropertyColumn>
-        <PropertyColumn Title="Charge Description" Property="@(c => c.Charge_Description)" Sortable="true" InitialSortDirection="SortDirection.Ascending"></PropertyColumn>
+    <QuickGrid Items="@ContainerTypeMappingsQueryable" @ref="grid" Pagination="pagination">
+        <PropertyColumn Title="Other Container Type Name" Property="@(c => c.Other_Container_Type_Name)" Sortable="true" InitialSortDirection="SortDirection.Ascending"></PropertyColumn>
+        <PropertyColumn Title="Source" Property="@(c => c.Source)" Sortable="true" InitialSortDirection="SortDirection.Ascending"></PropertyColumn>
+        <PropertyColumn Title="Container Type" Property="@(c => c.Container_Type)" Sortable="true" InitialSortDirection="SortDirection.Ascending"></PropertyColumn>
         <TemplateColumn Title="Actions">
             <button @onclick="@(() => toggleEdit(context))" class="btn btn-success">Edit</button>
-            <button @onclick="@(() => DeleteCharge(context.Charge_Description))" class="btn btn-danger">Delete</button>
+            <button @onclick="@(() => DeleteMapping(context))" class="btn btn-danger">Delete</button>
         </TemplateColumn>
     </QuickGrid>
     <Paginator State="@pagination" />
@@ -100,19 +127,25 @@
 
 
 @code {
-    IQueryable<ChargeReference> ChargesQueryable = Enumerable.Empty<ChargeReference>().AsQueryable();
-    private string oldChargeCode = "";
+    IQueryable<ContainerTypeMappingReference> ContainerTypeMappingsQueryable = Enumerable.Empty<ContainerTypeMappingReference>().AsQueryable();
+    private string oldChargeCode = ""; // to edit 
     private bool editTab = false;
-    private ChargeReference chargeToEdit = new();
+    private ContainerTypeMappingReference mappingToEdit = new(); 
+    private List<ContainerTypeReference> containerTypesList = new(); 
 
     [SupplyParameterFromForm]
-    ChargeReference addChargeReference { get; set; } = new();
+    ContainerTypeMappingReference addContainerTypeMapping { get; set; } = new();
     [SupplyParameterFromForm]
-    ChargeReference searchChargeReference { get; set; } = new();
+    ContainerTypeMappingReference searchContainerTypeMapping { get; set; } = new();
     // static List<ContainerTypeReference> containerTypesList = new();
 
-    QuickGrid<ChargeReference>? grid;
+    QuickGrid<ContainerTypeMappingReference>? grid;
     PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
+
+    protected override async Task OnInitializedAsync()
+    {
+        containerTypesList = await Http.GetFromJsonAsync<List<ContainerTypeReference>>($"{Configuration["ApiBaseUrl"]}/api/ContainerTypeMapping/FetchContainerTypesList");
+    }
 
     // async void toggleEdit(ChargeReference charge) {
     //     if (chargeToEdit != charge && chargeToEdit.editTab == true) {
@@ -123,145 +156,141 @@
     //     chargeToEdit.editTab = !chargeToEdit.editTab; toggle current charge's edit tab
     // }
 
-    async void toggleEdit(ChargeReference charge)
+    // To edit 
+    async void toggleEdit(ContainerTypeMappingReference mapping)
     {
-        if (charge.Charge_Description != chargeToEdit.Charge_Description && editTab == true)
-        { // if the new charge to edit is different from the previous charge to edit
-          // use charge description to compare as that is the unique key
+        if ((mapping.Other_Container_Type_Name != mappingToEdit.Other_Container_Type_Name || mapping.Source != mappingToEdit.Source)
+        && editTab == true)
+        { //if the new charge to edit is different from the previous charge to edit
+          //use charge description to compare as that is the unique key
             editTab = true;
         }
         else
         {
             editTab = !editTab;
         }
-        oldChargeCode = charge.Charge_Code;
-        chargeToEdit = new ChargeReference(charge);
+        // oldChargeCode = charge.Charge_Code;
+        mappingToEdit = new ContainerTypeMappingReference(mapping);
     }
 
-    async Task CreateCharge()
+    async Task CreateMapping()
     {
-        searchChargeReference = new(); // clear if there were previous searches
-        addChargeReference.Charge_Code = addChargeReference.Charge_Code.Trim();// trim leading and trailing spaces
-        addChargeReference.Charge_Description = addChargeReference.Charge_Description.Trim();// trim leading and trailing spaces
-        if (addChargeReference.Charge_Code == "" && addChargeReference.Charge_Description == "")
+        searchContainerTypeMapping = new(); // clear if there were previous searches
+        addContainerTypeMapping.Other_Container_Type_Name = addContainerTypeMapping.Other_Container_Type_Name.Trim();// trim leading and trailing spaces
+        addContainerTypeMapping.Source = addContainerTypeMapping.Source.Trim();// trim leading and trailing spaces
+        addContainerTypeMapping.Container_Type = addContainerTypeMapping.Container_Type.Trim();// trim leading and trailing spaces
+        if (addContainerTypeMapping.Other_Container_Type_Name == "" || addContainerTypeMapping.Source == "" || addContainerTypeMapping.Container_Type == "")
         {
-            await JS.InvokeVoidAsync("alert", "Please fill in a charge code and description");
-            return;
-        }
-        else if (addChargeReference.Charge_Code == "")
-        {
-            await JS.InvokeVoidAsync("alert", "Please fill in a charge code");
-            return;
-        }
-        else if (addChargeReference.Charge_Description == "")
-        {
-            await JS.InvokeVoidAsync("alert", "Please fill in a charge description");
+            await JS.InvokeVoidAsync("alert", "Please fill in the missing field(s)");
             return;
         }
         // containerTypesList.Add(containerTypeReference);
         // ConvertListToQueryable();
-        HttpResponseMessage response = await Http.PostAsJsonAsync($"{Configuration["ApiBaseUrl"]}/api/Charge/CreateCharge", addChargeReference);
+        HttpResponseMessage response = await Http.PostAsJsonAsync($"{Configuration["ApiBaseUrl"]}/api/ContainerTypeMapping/CreateContainerTypeMapping", addContainerTypeMapping);
         string result = response.Content.ReadAsStringAsync().Result;
         if (result == "Error - duplicate primary keys")
         {
-            await JS.InvokeVoidAsync("alert", "Charge description already exists");
+            await JS.InvokeVoidAsync("alert", "The inputted combination of other container type name and source already exists");
         }
         else
         {
-            await JS.InvokeVoidAsync("alert", $"Successfully added charge with description: {result}");
+            await JS.InvokeVoidAsync("alert", $"Successfully added container type mapping");
             // Navigation?
             StateHasChanged();
             //NavManager.NavigateTo("/container-type");
         }
-        addChargeReference = new();
+        addContainerTypeMapping = new();
     }
 
-    async Task DeleteCharge(string chargeDescription)
+    async Task DeleteMapping(ContainerTypeMappingReference mapping)
     {
         editTab = false;
-        string confirmMessage = $"Confirm delete charge with description: {chargeDescription}?";
+        string confirmMessage = $"Confirm delete container type mapping with other name: {mapping.Other_Container_Type_Name} and source: {mapping.Source}?";
         bool confirmed = await JS.InvokeAsync<bool>("confirm", confirmMessage);
         if (confirmed)
         {
-            Debug.WriteLine($">>> Logging: {chargeDescription}");
+            // Debug.WriteLine($">>> Logging: {chargeDescription}");
 
-            HttpResponseMessage result = await Http.DeleteAsync($"{Configuration["ApiBaseUrl"]}/api/Charge/DeleteCharge/{chargeDescription}");
+            HttpResponseMessage result = await Http.DeleteAsync($"{Configuration["ApiBaseUrl"]}/api/ContainerTypeMapping/DeleteContainerTypeMapping/{mapping.Other_Container_Type_Name}/{mapping.Source}");
             // result = await Http.PostAsJsonAsync<string>($"{Configuration["ApiBaseUrl"]}/api/ContainerType/DeleteContainerType/{containerType}", containerType);
 
             Debug.WriteLine($"Logging: {result.StatusCode}");
 
             if (result.Content.ReadAsStringAsync().Result == "true")
             {
-                await JS.InvokeVoidAsync("alert", $"Successfully deleted charge with description: {chargeDescription}");
+                await JS.InvokeVoidAsync("alert", $"Successfully deleted mapping with other name: {mapping.Other_Container_Type_Name} and source: {mapping.Source}");
                 // Refresh and display
                 // NavManager.NavigateTo("/container-type");
-                await FetchCharges();
+                await FetchMappings();
 
             }
             else
             {
-                await JS.InvokeVoidAsync("alert", $"Failed to delete charge with description: {chargeDescription} -- Does not exist");
+                await JS.InvokeVoidAsync("alert", $"Failed to delete mapping with other name: {mapping.Other_Container_Type_Name} and source: {mapping.Source} -- Does not exist");
             }
             //addContainerTypeReference = new();
         }
 
     }
 
-    async Task FetchCharges()
+    async Task FetchMappings()
     {
         editTab = false;
         // check between charge code and description search term
-        string chargeCode = searchChargeReference.Charge_Code.Trim();
-        string chargeDescription = searchChargeReference.Charge_Description.Trim(); // remove leading and trailing white spaces
-        List<ChargeReference> items = new List<ChargeReference>();
+        string otherContainerTypeName = searchContainerTypeMapping.Other_Container_Type_Name.Trim();
+        // otherContainerTypeName = otherContainerTypeName != "" ? otherContainerTypeName : " "; 
+        string source = searchContainerTypeMapping.Source.Trim(); // remove leading and trailing white spaces
+        // source = source != "" ? source : " ";
+        string containerType = searchContainerTypeMapping.Container_Type.Trim(); 
+        // containerType = containerType != "" ? containerType : " ";
+
+        List<ContainerTypeMappingReference> items = new List<ContainerTypeMappingReference>();
 
         // TODO: Change to just 1 API for future applications
         // 1 API pass 4 parameters, if parameter is empty then skip
-        if (chargeCode == "" && chargeDescription == "")
-        {
-            items = await Http.GetFromJsonAsync<List<ChargeReference>>($"{Configuration["ApiBaseUrl"]}/api/Charge/FetchAllCharges");
-            if (!items.Any()) await JS.InvokeVoidAsync("alert", $"No search results found");
-        }
-        else if (chargeCode == "" && chargeDescription != "")
-        {
-            items = await Http.GetFromJsonAsync<List<ChargeReference>>($"{Configuration["ApiBaseUrl"]}/api/Charge/FetchChargesByDescription/{chargeDescription}");
-            if (!items.Any()) await JS.InvokeVoidAsync("alert", $"No search results found for charge description: {chargeDescription}");
-        }
-        else if (chargeCode != "" && chargeDescription == "")
-        {
-            items = await Http.GetFromJsonAsync<List<ChargeReference>>($"{Configuration["ApiBaseUrl"]}/api/Charge/FetchChargesByCode/{chargeCode}");
-            if (!items.Any()) await JS.InvokeVoidAsync("alert", $"No search results found for charge code: {chargeCode}");
+        try {
+            items = await Http.GetFromJsonAsync<List<ContainerTypeMappingReference>>($"{Configuration["ApiBaseUrl"]}/api/ContainerTypeMapping/FetchContainerTypeMappings/{Uri.EscapeDataString(otherContainerTypeName)}/{Uri.EscapeDataString(source)}/{Uri.EscapeDataString(containerType)}");
 
-        }
-        else
-        {
-            items = await Http.GetFromJsonAsync<List<ChargeReference>>($"{Configuration["ApiBaseUrl"]}/api/Charge/FetchChargesByBoth/{chargeCode}/{chargeDescription}");
-            if (!items.Any()) await JS.InvokeVoidAsync("alert", $"No search results found for charge code: {chargeCode} and charge description: {chargeDescription}");
-        }
 
-        ChargesQueryable = items.AsQueryable();
+            if (!items.Any()) await JS.InvokeVoidAsync("alert", $"No search results found"); // TODO: possibly more descriptive error message?
+        }
+        catch (Exception ex) { 
+            if (otherContainerTypeName.Length == 0) Debug.WriteLine($"otherContainerTypeName is empty string");
+            if (source.Length == 0) Debug.WriteLine($"source is empty string");
+            if (containerType.Length == 0) Debug.WriteLine($"containerType is empty string");
+            foreach (ContainerTypeMappingReference item in items) { 
+                Debug.WriteLine(item);
+            }
+
+            Debug.WriteLine(ex.Message);
+            return; 
+        }
+        
+        
+
+        ContainerTypeMappingsQueryable = items.AsQueryable();
         // Refresh and display
         StateHasChanged();
     }
 
-    // TODO: Add an Update/Edit charge function that calls the API
-    async Task UpdateCharge()
+    // TODO: Edit the Update/Edit mapping function that calls the API
+    async Task UpdateMapping()
     {
-        chargeToEdit.Charge_Code = chargeToEdit.Charge_Code.Trim();
-        if (chargeToEdit.Charge_Code == "" || chargeToEdit.Charge_Code == oldChargeCode)
-        {
-            await JS.InvokeVoidAsync("alert", $"Please fill in a valid new charge code");
-            return;
-        }
-        HttpResponseMessage result = await Http.PostAsJsonAsync<ChargeReference>($"{Configuration["ApiBaseUrl"]}/api/Charge/UpdateChargeCode", chargeToEdit);
-        editTab = false;
-        chargeToEdit = new();
-        await FetchCharges(); // TODO: if you have 2 pages, when you change a record on page 2, will the page refresh to page 1?
-                              // Keep this way first (can enhance speed and user experience later)
-                              // Manually update ChargesQueryable
+        // chargeToEdit.Charge_Code = chargeToEdit.Charge_Code.Trim();
+        // if (chargeToEdit.Charge_Code == "" || chargeToEdit.Charge_Code == oldChargeCode)
+        // {
+        //     await JS.InvokeVoidAsync("alert", $"Please fill in a valid new charge code");
+        //     return;
+        // }
+        // HttpResponseMessage result = await Http.PostAsJsonAsync<ChargeReference>($"{Configuration["ApiBaseUrl"]}/api/Charge/UpdateChargeCode", chargeToEdit);
+        // editTab = false;
+        // chargeToEdit = new();
+        // await FetchCharges(); TODO: if you have 2 pages, when you change a record on page 2, will the page refresh to page 1?
+        //                       Keep this way first (can enhance speed and user experience later)
+        //                       Manually update ChargesQueryable
 
 
-        //StateHasChanged(); // the field does not change immediately unless I fetch the search again
+        // StateHasChanged(); the field does not change immediately unless I fetch the search again
 
     }
 
