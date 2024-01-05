@@ -16,11 +16,10 @@ namespace _4PL.Data
         public SnowflakeDbContext()
         {
             var configuration = new ConfigurationBuilder()
-                    .SetBasePath(Directory.GetCurrentDirectory())
-                    .AddJsonFile("appsettings.json")
+                    .AddUserSecrets<SnowflakeDbContext>()
                     .Build();
 
-            var encryptedConn = configuration.GetConnectionString("SnowflakeConnection");
+            var encryptedConn = configuration["ConnectionStrings:SnowflakeConnection"];
             _connectionString = DecryptConn(encryptedConn);
         }
 
