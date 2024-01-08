@@ -36,7 +36,7 @@ namespace _4PL.Data
                 EmailService emailService = new EmailService(emailSettings);
                 emailService.SendPasswordResetLinkAsync(user.Email, token);
 
-                return Ok("User registered successfully. Check email for confirmation.");
+                return Ok($"User {user.Name} registered successfully. Check email for confirmation.");
             }
             catch (DuplicateNameException ex)
             {
@@ -159,16 +159,30 @@ namespace _4PL.Data
         }
 
         [HttpPut("{userEmail}/UpdateEmail")]
-        public async Task<IActionResult> UpdateEmail([FromBody] ApplicationUser emailModel)
+        public async Task<IActionResult> UpdateEmail([FromBody] ApplicationUser updatedUser)
         {
             try
             {
-                await _dbContext.UpdateEmail(emailModel);
+                await _dbContext.UpdateEmail(updatedUser);
                 return Ok("Email successfully changed.");
             }
             catch (DuplicateNameException ex)
             {
                 return Conflict(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPut("{userEmail}/UpdateUserDetails")]
+        public async Task<IActionResult> UpdateUserDetails([FromBody] ApplicationUser updatedUser)
+        {
+            try
+            {
+                await _dbContext.UpdateUserDetails(updatedUser);
+                return Ok("Details successfully updated.");
             }
             catch (Exception ex)
             {

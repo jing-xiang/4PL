@@ -1,18 +1,11 @@
 ﻿@using _4PL.Data
 
 <ul class="nav nav-pills flex-column">
-    <li class="nav-item">
-        <NavLink class="nav-link" href="Admin" Match="NavLinkMatch.All">Admin Page</NavLink>
-    </li>
-    <li class="nav-item">
-        <NavLink class="nav-link" href="Admin/SystemSettings">System Settings</NavLink>
-    </li>
-    <li class="nav-item">
-        <NavLink class="nav-link" href="Admin/AccessRights">Access Control</NavLink>
-    </li>
-    <li class="nav-item">
-        <NavLink class="nav-link" href="Admin/AccessModel">Access Model</NavLink>
-    </li>
+    <NavLink class="nav-link" href="Admin" Match="NavLinkMatch.All">Admin Page</NavLink>
+    <NavLink class="nav-link" href="Admin/SystemSettings">System Settings</NavLink>
+    <NavLink class="nav-link" href="Admin/AccessRights">Access Control</NavLink>
+    <NavLink class="nav-link" href="Admin/AccessModel">Access Model</NavLink>
+    <NavLink class="nav-link" href="Admin/DataReports">Reports Management</NavLink>
 </ul>
 
 @code {

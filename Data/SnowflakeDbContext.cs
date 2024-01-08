@@ -45,7 +45,6 @@ namespace _4PL.Data
             {
                 conn.Open();
                 bool isDuplicate = false;
-                List<string> access_types = new List<string>();
 
                 using (IDbCommand command = conn.CreateCommand())
                 {
@@ -320,21 +319,48 @@ namespace _4PL.Data
             }
         }
 
-        public async Task UpdateEmail(ApplicationUser emailModel)
+        public async Task UpdateEmail(ApplicationUser updatedUser)
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
                 conn.Open();
                 IDbCommand command = conn.CreateCommand();
                 command.CommandText = $"CALL UPDATE_EMAIL(:email, :new_email)";
-                command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "email", Value = emailModel.Email, DbType = DbType.String });
-                command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "new_email", Value = emailModel.Name, DbType = DbType.String });
+                command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "email", Value = updatedUser.Email, DbType = DbType.String });
+                command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "new_email", Value = updatedUser.Name, DbType = DbType.String });
 
                 bool isDuplicate = Convert.ToBoolean(command.ExecuteScalar());
                 if (isDuplicate)
                 {
                     throw new DuplicateNameException("Email already in use for another account.");
                 }
+            }
+        }
+
+        public async Task UpdateName(ApplicationUser updatedUser)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                IDbCommand command = conn.CreateCommand();
+                command.CommandText = $"CALL UPDATE_NAME(:email, :new_name)";
+                command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "email", Value = updatedUser.Email, DbType = DbType.String });
+                command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "new_name", Value = updatedUser.Name, DbType = DbType.String });
+                command.ExecuteScalar();
+            }
+        }
+
+        public async Task UpdateUserDetails(ApplicationUser updatedUser)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                IDbCommand command = conn.CreateCommand();
+                command.CommandText = $"CALL UPDATE_USER_DETAILS(:email, :new_email, :new_name)";
+                command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "email", Value = updatedUser.Email, DbType = DbType.String });
+                command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "new_email", Value = updatedUser.Email, DbType = DbType.String });
+                command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "new_name", Value = updatedUser.Name, DbType = DbType.String });
+                command.ExecuteScalar();
             }
         }
 
