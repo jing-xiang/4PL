@@ -1,0 +1,71 @@
+﻿@page "/shipment/test"
+
+@using Newtonsoft.Json
+@using System.Reflection
+@using _4PL.Data
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using System.Security.Claims
+@using _4PL.Components.Account.Shared
+@using Syncfusion.Blazor
+@using Syncfusion.Blazor.Buttons
+
+@inject IJSRuntime JS
+@inject NavigationManager NavManager
+@inject HttpClient HttpClient
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+@rendermode InteractiveServer
+
+<h3>Component</h3>
+<CustomQG items="shipments"  tableName="Shipment" TItem="Shipment"></CustomQG>
+<CustomQG items="containers" tableName="Container" TItem="Container"></CustomQG>
+
+@code {
+    IQueryable<Shipment> shipments = Enumerable.Empty<Shipment>().AsQueryable();
+    IQueryable<Container> containers = Enumerable.Empty<Container>().AsQueryable();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await getShipmentData();
+        if (result != null && result.Any())
+        {
+            shipments = result.AsQueryable();
+            StateHasChanged();
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", $"No shipment found");
+        }
+
+        var result2 = await getContainerData();
+        containers = result2.AsQueryable();
+
+    }
+
+    async Task<List<Shipment>> getShipmentData()
+    {
+        ShipmentSearchModel s = new();
+        Container c = new();
+        s.Job_No =  "%";
+        s.Master_BL_No = "%";
+        s.Place_Of_Loading_Name = "%";
+        s.Place_Of_Discharge_Name = "%";
+        s.Vessel_Name = "%";
+        s.Voyage_No = "%";
+        s.ETD_Date_From = new DateTime(2022, 1, 1);
+        s.ETD_Date_To = DateTime.Now;
+        s.ETA_Date_From = new DateTime(2022, 1, 1);
+        s.ETA_Date_To = DateTime.Now;
+        c.Container_No = "%";
+        c.Container_Type = "%";
+        HttpResponseMessage response = await HttpClient.PostAsJsonAsync<Tuple<ShipmentSearchModel, Container>>($"{NavManager.BaseUri}api/Shipment/Search/", new Tuple<ShipmentSearchModel, Container>(s, c));
+        var responseContent = await response.Content.ReadAsStringAsync();
+        List<Shipment> result = JsonConvert.DeserializeObject<List<Shipment>>(responseContent);
+        return result;
+    }
+
+    async Task<List<Container>> getContainerData()
+    {
+        return await HttpClient.GetFromJsonAsync<List<Container>>($"{NavManager.BaseUri}api/shipment/ContainerData/EGLV235301061137");
+    }
+}
