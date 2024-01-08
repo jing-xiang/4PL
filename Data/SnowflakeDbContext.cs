@@ -16,18 +16,27 @@ namespace _4PL.Data
         public SnowflakeDbContext()
         {
             var configuration = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json")
-                .Build();
+                    .AddUserSecrets<SnowflakeDbContext>()
+                    .Build();
 
-            _connectionString = configuration.GetConnectionString("SnowflakeConnection");
+            byte[] encConn = Convert.FromBase64String(configuration["EncAlg:Conn"]);
+            byte[] encKey = Convert.FromBase64String(configuration["EncAlg:Key"]);
+            byte[] encIV = Convert.FromBase64String(configuration["EncAlg:IV"]);
+            _connectionString = DecryptConn(encConn, encKey, encIV);
         }
 
-        private string DecryptConn(string encryptedConn)
+        private string DecryptConn(byte[] encConn, byte[] encKey, byte[] encIV)
         {
-            byte[] encryptedBytes = Convert.FromBase64String(encryptedConn);
-            byte[] decryptedBytes = ProtectedData.Unprotect(encryptedBytes, optionalEntropy: null, scope: DataProtectionScope.CurrentUser);
-            return Encoding.UTF8.GetString(decryptedBytes);
+            Aes decAlg = Aes.Create();
+            decAlg.Key = encKey;
+            decAlg.IV = encIV;
+            MemoryStream decryptionStreamBacking = new MemoryStream();
+            CryptoStream decrypt = new CryptoStream(
+            decryptionStreamBacking, decAlg.CreateDecryptor(), CryptoStreamMode.Write);
+            decrypt.Write(encConn, 0, encConn.Length);
+            decrypt.Flush();
+            decrypt.Close();
+            return new UTF8Encoding(false).GetString(decryptionStreamBacking.ToArray());
         }
 
         public async Task RegisterUser(ApplicationUser user)
