@@ -1,0 +1,60 @@
+﻿@page "/generic-type-1"
+@using _4PL.Data
+@using Newtonsoft.Json
+@inject IJSRuntime JS
+@inject NavigationManager NavManager
+@inject HttpClient HttpClient
+
+<PageTitle>Generic Type 1</PageTitle>
+
+<h1>Generic Type Example 1</h1>
+
+<ListGenericTypeItems1 ExampleList="@shipments"
+                       TExample="Shipment" />
+
+<ListGenericTypeItems1 ExampleList="@(new List<int> { 1, 2, 3 })"
+                       TExample="int" />
+
+@code {
+    List<Shipment>? shipments;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Console.WriteLine("Oninitialised");
+        var result = await getShipmentData();
+
+        Console.WriteLine("res: " + string.Join(", ", result));
+        if (result != null && result.Any())
+        {
+            shipments = result;
+            StateHasChanged();
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", $"No shipment found");
+        }
+
+    }
+
+    async Task<List<Shipment>> getShipmentData()
+    {
+        ShipmentSearchModel s = new();
+        Container c = new();
+        s.Job_No = "%";
+        s.Master_BL_No = "%";
+        s.Place_Of_Loading_Name = "%";
+        s.Place_Of_Discharge_Name = "%";
+        s.Vessel_Name = "%";
+        s.Voyage_No = "%";
+        s.ETD_Date_From = new DateTime(2022, 1, 1);
+        s.ETD_Date_To = DateTime.Now;
+        s.ETA_Date_From = new DateTime(2022, 1, 1);
+        s.ETA_Date_To = DateTime.Now;
+        c.Container_No = "%";
+        c.Container_Type = "%";
+        HttpResponseMessage response = await HttpClient.PostAsJsonAsync<Tuple<ShipmentSearchModel, Container>>($"{NavManager.BaseUri}api/Shipment/Search/", new Tuple<ShipmentSearchModel, Container>(s, c));
+        var responseContent = await response.Content.ReadAsStringAsync();
+        List<Shipment> result = JsonConvert.DeserializeObject<List<Shipment>>(responseContent);
+        return result;
+    }
+}

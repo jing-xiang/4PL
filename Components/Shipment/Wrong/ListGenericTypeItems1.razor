@@ -1,0 +1,16 @@
+﻿@typeparam TExample
+
+@if (ExampleList is not null)
+{
+    <ul>
+        @foreach (var item in ExampleList)
+        {
+            <li>@item.ToString()</li>
+        }
+    </ul>
+}
+
+@code {
+    [Parameter]
+    public IEnumerable<TExample>? ExampleList { get; set; }
+}

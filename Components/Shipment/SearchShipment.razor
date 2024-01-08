@@ -144,7 +144,7 @@
                 </div>
                 <div class="d-flex justify-content-end mt-2">
                     <button class="btn btn-sm btn-success" style="margin-right: 5px" @onclick="InsertLayout">Update</button>
-                    <button class="btn btn-sm btn-outline-dark">Cancel</button>
+                    <button class="btn btn-sm btn-outline-dark" @onclick="CancelInsertLayout">Cancel</button>
                 </div>
             </div>
         </div>
@@ -314,13 +314,13 @@
     IQueryable<PropertyInfoWrapper> shipmentProperties = Enumerable.Empty<PropertyInfoWrapper>().AsQueryable();
     bool currViewInitialised = false;
 
-    async void ChangeDisplay(string layoutName)
+    void ChangeDisplay(string layoutName)
     {
         Console.WriteLine(layoutName);
         currView = profileLayouts[layoutName].Layout_Fields;
     }
 
-    public async void HandleMenu()
+    public void HandleMenu()
     {
         showMenu = !showMenu;
     }
@@ -342,7 +342,7 @@
     string newEmail = "";
     string newLayoutName = "";
 
-    public async void HandleModal()
+    public void HandleModal()
     {
         showModal = !showModal;
     }
@@ -387,6 +387,12 @@
         {
             await JS.InvokeVoidAsync("alert", insertResult);
         }
+    }
+
+    void CancelInsertLayout()
+    {
+        newLayoutName = "";
+        sharedEmails = new List<string>();
     }
 
     string[] GetSelectedProperties()

@@ -126,6 +126,11 @@ namespace _4PL.Data
             this.Last_Modified_At = DateTime.Now;
             this.Last_Modified_By = "";
         }
+
+        public override string ToString()
+        {
+            return Job_No;
+        }
     }
 
 }
