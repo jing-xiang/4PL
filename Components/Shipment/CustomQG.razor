@@ -1,0 +1,327 @@
+﻿@typeparam TItem
+
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using System.Reflection
+@using _4PL.Data
+@using Newtonsoft.Json
+@using System.Security.Claims
+
+@inject IJSRuntime JS
+@inject NavigationManager NavManager
+@inject HttpClient HttpClient
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+@if (currViewInitialised)
+{
+    <div class="d-flex justify-content-between">
+        <div>
+            <select @onchange="e => ChangeDisplay(e.Value.ToString())" class="mt-3 px-2 py-1 rounded-1">
+                @foreach (var l in layoutArray)
+                {
+                    <option value=@l selected="@((l == defaultLayout) ? "selected" : null)">@l</option>
+                }
+            </select>
+            <button style="background-color:transparent; border-radius: 5px; margin-top: 10px; padding-top: 4px; padding-left:4px; padding-right:4px;" @onclick="HandleMenu">
+                <SfIcon Name="IconName.MoreVertical" Size="IconSize.Medium"></SfIcon>
+            </button>
+            @if (showMenu)
+            {
+                <div class="custom-menu">
+                    <select @bind="selectedLayout" class="px-2 py-1 rounded-1">
+                        @foreach (var l in layoutArray)
+                        {
+                            <option value=@l selected="@((l == defaultLayout) ? "selected" : null)">@l</option>
+                        }
+                    </select>
+                    <button class="btn btn-sm btn-primary" @onclick="ChangeDefault">Make this a default</button>
+                </div>
+            }
+        </div>
+
+        <button style="background-color:transparent; border-radius: 5px; margin-top: 10px; padding-top: 4px; padding-left:4px; padding-right:4px;" @onclick="HandleModal">
+                <SfIcon Name="IconName.Adjustment" Size="IconSize.Large"></SfIcon>
+        </button>
+    </div>
+}
+
+@if (showModal)
+{
+    <div class="d-flex justify-content-end">
+        <div class="custom-modal">
+            <QuickGrid Items="modelProperties">
+                <PropertyColumn Title="Fields" Property="@(p => p.PropertyInfo.Name)" />
+                <PropertyColumn Title="Data Type" Property="@(p => p.PropertyInfo.PropertyType)" />
+                <TemplateColumn>
+                    <input type="checkbox" @bind="context.IsSelected" />
+                </TemplateColumn>
+            </QuickGrid>
+
+            <div class="share-layout">
+                <div>
+                    <input type="text" @bind="newLayoutName" placeholder="Enter Layout Name" class="form-control-sm mt-2" />
+                </div>
+                <div class="d-flex share-input">
+                    <input type="email" @bind="newEmail" placeholder="Enter Email" class="form-control-sm mt-2" style="margin-right: 8px" />
+                    <button @onclick="AddEmail" class="btn btn-sm mt-2 btn-primary">Add</button>
+                </div>
+                <div class="shared-emails d-flex">
+                    @foreach (var email in sharedEmails)
+                    {
+                        <span class="email-tag">
+                            <span>@email</span>
+                            <button @onclick="() => RemoveEmail(email)" class="cancel-btn" style="background-color:transparent; border:none">×</button>
+                        </span>
+                    }
+                </div>
+            </div>
+            <div class="d-flex justify-content-end mt-2">
+                <button class="btn btn-sm btn-success" style="margin-right: 5px" @onclick="InsertLayout">Update</button>
+                <button class="btn btn-sm btn-outline-dark" @onclick="CancelInsertLayout">Cancel</button>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="result-container py-2" style="max-width:80vw">
+    @if (items is not null)
+    {
+        <QuickGrid Items="@items" Pagination="@pagination">
+            @if (currColumns is not null)
+            {
+                @foreach (var col in currColumns)
+                {
+                    <PropertyColumn Title="@col.Replace("_", " ")" Property="@(i => i.GetType().GetProperty(col).GetValue(i, null))" Sortable="true" />
+                }
+            }
+            
+            <TemplateColumn Title="Actions">
+                <button class="btn btn-sm btn-success">Edit</button>
+                <button class="btn btn-sm btn-danger">Delete</button>
+            </TemplateColumn>
+        </QuickGrid>
+        <Paginator State="@pagination" />
+    }
+</div>
+
+<style>
+    .result-container {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    table {
+        font-family: arial, sans-serif;
+        border-collapse: collapse;
+        font-size: 14px;
+    }
+
+    td, th {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+    }
+
+    tr:nth-child(even) {
+        background-color: #dddddd;
+    }
+
+    .custom-modal {
+        position: fixed;
+        z-index: 9999;
+        background-color: white;
+        padding: 20px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        max-height: 40vh;
+        overflow-y: scroll;
+    }
+
+    .shared-emails {
+        max-width: 30vw;
+    }
+
+    .email-tag {
+        border: 1px solid #9999;
+        border-radius: 10px;
+        padding-left: 8px;
+        padding-right: 5px;
+        margin-top: 5px;
+        margin-right: 5px;
+    }
+
+    .custom-menu {
+        position: fixed;
+        z-index: 9999;
+        background-color: white;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+    }
+</style>
+
+@code {
+    [Parameter]
+    public IQueryable<TItem>? items { get; set; }
+
+    [Parameter]
+    public string tableName { get; set; } = "";
+
+    //Handle multiple layout views and change default layout
+    PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
+    bool currViewInitialised = false;
+    bool showMenu = false;
+    string[]? currColumns;
+    string[]? layoutArray;
+    string? selectedLayout;
+    string? defaultLayout;
+    public Dictionary<string, UserProfileLayout> layoutDictionary = new();
+
+    void ChangeDisplay(string layoutName)
+    {
+        currColumns = layoutDictionary[layoutName].Layout_Fields;
+    }
+
+    public void HandleMenu()
+    {
+        showMenu = !showMenu;
+    }
+
+    async void ChangeDefault()
+    {
+        var response = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/UserProfileLayout/UpdateLayout/", layoutDictionary[selectedLayout]);
+        await JS.InvokeVoidAsync("alert", "Successfully Updated");
+        showMenu = !showMenu;
+        defaultLayout = selectedLayout;
+        currColumns = layoutDictionary[selectedLayout].Layout_Fields;
+        StateHasChanged();
+    }
+
+    //Share layout views to others
+    bool showModal = false;
+    List<string> sharedEmails = new List<string>();
+    string newEmail = "";
+    string newLayoutName = "";
+    IQueryable<PropertyInfoWrapper> modelProperties = Enumerable.Empty<PropertyInfoWrapper>().AsQueryable();
+
+    public void HandleModal()
+    {
+        showModal = !showModal;
+    }
+
+    void AddEmail()
+    {
+        if (!string.IsNullOrEmpty(newEmail) && !sharedEmails.Contains(newEmail))
+        {
+            sharedEmails.Add(newEmail);
+            StateHasChanged();
+            newEmail = "";
+        }
+    }
+
+    void RemoveEmail(string email)
+    {
+        sharedEmails.Remove(email);
+        StateHasChanged();
+    }
+
+    async Task InsertLayout()
+    {
+        string[] Layout_Fields = GetSelectedProperties();
+        List<UserProfileLayout> userProfileLayouts = new();
+        foreach (var email in sharedEmails)
+        {
+            UserProfileLayout upl = new();
+            upl.User_Email = email;
+            upl.Table_Name = tableName;
+            upl.Layout_Fields = Layout_Fields;
+            upl.Layout_Name = newLayoutName;
+            userProfileLayouts.Add(upl);
+        }
+        var response = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/UserProfileLayout/CreateLayout/", userProfileLayouts);
+        var insertResult = response.Content.ReadAsStringAsync().Result;
+        newLayoutName = "";
+        sharedEmails = new List<string>();
+        if (insertResult.Equals("Success"))
+        {
+            await JS.InvokeVoidAsync("alert", "Successfully Added");
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", insertResult);
+        }
+    }
+
+    void CancelInsertLayout()
+    {
+        newLayoutName = "";
+        sharedEmails = new List<string>();
+    }
+
+    string[] GetSelectedProperties()
+    {
+        string[] output = modelProperties.Where(p => p.IsSelected).Select(p => p.PropertyInfo.Name).ToArray();
+        return output;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        //initializing layoutDictionary and layoutArray
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var currEmail = user.FindFirst(c => c.Type == ClaimTypes.Email)?.Value;
+        layoutDictionary = await GetProfileLayout(currEmail);
+        layoutArray = layoutDictionary.Keys.ToArray();
+
+        //fetching the properties of TItem
+        var props = typeof(TItem).GetProperties(BindingFlags.Instance | BindingFlags.Public)
+            .Where(p => p.CanRead)
+            .ToList();
+
+        List<PropertyInfoWrapper> propertiesTemp = new();
+        foreach (var prop in props)
+        {
+            PropertyInfoWrapper p = new();
+            p.PropertyInfo = prop;
+            p.IsSelected = false;
+            propertiesTemp.Add(p);
+        }
+        modelProperties = propertiesTemp.AsQueryable();
+
+        //handle if user not in table, if none of the is_default is true
+        var findDefault = layoutDictionary.FirstOrDefault(x => x.Value.Is_Default).Value;
+        if (findDefault != null)
+        {
+            currColumns = findDefault.Layout_Fields;
+            var temp = layoutDictionary.FirstOrDefault(x => x.Value.Is_Default).Key;
+            selectedLayout = temp;
+            defaultLayout = temp;
+        }
+        else if (findDefault == null && layoutDictionary.Any())
+        {
+            defaultLayout = layoutArray[0];
+            selectedLayout = layoutArray[0];
+            currColumns = layoutDictionary[defaultLayout].Layout_Fields;
+        }
+        else
+        {
+            currColumns = props.Select(p => p.Name).ToArray();
+        }
+        currViewInitialised = true;
+    }
+
+    async Task<Dictionary<string, UserProfileLayout>> GetProfileLayout(string currEmail)
+    {
+        HttpResponseMessage response = await HttpClient.PostAsJsonAsync<Tuple<string, string>>($"{NavManager.BaseUri}api/UserProfileLayout/GetUserLayouts/", new Tuple<string, string>(currEmail, tableName));
+        var responseContent = await response.Content.ReadAsStringAsync();
+        Dictionary<string, UserProfileLayout> result = JsonConvert.DeserializeObject<Dictionary<string, UserProfileLayout>>(responseContent);
+        return result;
+    }
+
+    public class PropertyInfoWrapper
+    {
+        public PropertyInfo PropertyInfo { get; set; }
+        public bool IsSelected { get; set; }
+    }
+}
