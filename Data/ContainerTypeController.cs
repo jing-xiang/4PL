@@ -79,5 +79,20 @@ public class ContainerTypeController : Controller
         }
     }
 
+    [HttpGet("FetchMappingContainerTypes")]
+    public async Task<ActionResult<List<string>>> FetchMappingContainerTypes() // GET request should not have body 
+    {
+        try
+        {
+            List<string> mappingContainerTypes = await _dbContext.FetchMappingContainerTypes();
+            Debug.WriteLine($"Logging: {mappingContainerTypes}");
+            return Ok(mappingContainerTypes);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"{ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
 
 }

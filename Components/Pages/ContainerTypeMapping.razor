@@ -2,6 +2,7 @@
 @using System.Diagnostics
 @using Microsoft.AspNetCore.Components.QuickGrid
 @using _4PL.Data
+@using Newtonsoft.Json
 @inject IConfiguration Configuration
 @inject HttpClient Http
 @inject IJSRuntime JS
@@ -17,64 +18,75 @@
 
     @if (!editTab)
     {
-        <EditForm Model="addContainerTypeMapping" OnSubmit="CreateMapping" Enhance>
-         <label class="label-control">Add Mapping</label>
-         <div class="row">
-             <div class="col-md-4">
-                 <InputText @bind-Value="addContainerTypeMapping.Other_Container_Type_Name" placeholder="Other Container Type Name" class="form-control" autocomplete="off"></InputText>
-             </div>
-             <div class="col-md-4">
-                 <InputText @bind-Value="addContainerTypeMapping.Source" placeholder="Source" class="form-control" autocomplete="off"></InputText>
-             </div>
-             <div class="col-md-4">
-                 <label for="selectContainerType">Select Container Type:</label>
-                 <InputSelect id="selectContainerType" @bind-Value="addContainerTypeMapping.Container_Type" autocomplete="off">
-                     @foreach (var ct in containerTypesList) { 
-                         <option value="@ct.Container_Type">@ct.Container_Type</option>
-                     }
-                 </InputSelect>
-             </div>
-         </div>
-         <button type="submit" class="btn btn-primary my-2">Add</button>
-     </EditForm>
+        <EditForm Model="addContainerTypeMapping" OnSubmit="CreateMapping" 
+    Enhance
+         >
+             <label class="label-control">Add Mapping</label>
+             <div class="row">
+                 <div class="col-md-4">
+                     <InputText @bind-Value="addContainerTypeMapping.Other_Container_Type_Name" placeholder="Other Container Type Name" class="form-control" autocomplete="off"></InputText>
+                 </div>
+                 <div class="col-md-4">
+                     <InputText @bind-Value="addContainerTypeMapping.Source" placeholder="Source" class="form-control" autocomplete="off"></InputText>
+                 </div>
+                 <div class="col-md-4">
+                    <label for="selectContainerType">Select Container Type:</label>
+                     <InputSelect id="selectContainerType" @bind-Value="addContainerTypeMapping.Container_Type" autocomplete="off">
+                         <option value=""></option>
+                         @foreach (var ct in containerTypesList) {
+                            <option value="@ct.Container_Type">@ct.Container_Type</option>
+                        }
+                    </InputSelect>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary my-2">Add</button>
+        </EditForm>
     }
     else
     {
-        <EditForm Model="mappingToEdit" OnSubmit="UpdateMapping" Enhance>
-         <label class="label-control">Update Mapping</label>
-         <div class="row">
-             <div class="col-md-4">
-                 <InputText @bind-Value="mappingToEdit.Other_Container_Type_Name" placeholder="Other Container Type Name" class="form-control" autocomplete="off"></InputText>
-             </div>
-             <div class="col-md-4">
-                 <InputText @bind-Value="mappingToEdit.Source" placeholder="Source" disabled="true" class="form-control" autocomplete="off"></InputText>
-             </div>
-             <div class="col-md-4">
-                 <label for="selectContainerType">Select Container Type:</label>
-                 <InputSelect id="selectContainerType" @bind-Value="mappingToEdit.Container_Type" autocomplete="off">
-                     @foreach (var ct in containerTypesList)
+        <EditForm Model
+        ="mappingToEdit" OnSubmit
+        ="UpdateMapping"    
+    Enhance
+         >
+             <label class="label-control">Update Mapping</label>
+             <div class="row">
+                 <div class="col-md-4">
+                     <InputText @bind-Value="mappingToEdit.Other_Container_Type_Name" placeholder="Other Container Type Name" class="form-control" autocomplete="off"></InputText>
+                 </div>
+                 <div class="col-md-4">
+                     <InputText @bind-Value="mappingToEdit.Source" placeholder="Source" class="form-control" autocomplete="off"></InputText>
+                 </div>
+                 <div class="col-md-4">
+                    <label for="selectContainerType">Select Container Type:</label>
+                     <InputSelect id="selectContainerType" @bind-Value="mappingToEdit.Container_Type">
+                         <option value=""></option>
+                         @foreach (var ct in containerTypesList)
                         {
                             <option value="@ct.Container_Type">@ct.Container_Type</option>
                         }
                     </InputSelect>
                 </div>
-         </div>
-         <button type="submit" class="btn btn-primary my-2">Update</button>
-     </EditForm>
+            </div>
+            <button type="submit" class="btn btn-primary my-2">Update</button>
+        </EditForm>
     }
-    <EditForm Model="searchContainerTypeMapping" OnSubmit="FetchMappings" Enhance>
-        <label class="label-control">Search Mapping</label>
-        <div class="row">
-            <div class="col-md-4">
-                <InputText @bind-Value="searchContainerTypeMapping.Other_Container_Type_Name" placeholder="Other Container Type Name" class="form-control" autocomplete="off"></InputText>
-            </div>
-            <div class="col-md-4">
-                <InputText @bind-Value="searchContainerTypeMapping.Source" placeholder="Source" class="form-control" autocomplete="off"></InputText>
-            </div>
-            <div class="col-md-4">
-                <label for="selectContainerType">Select Container Type:</label>
-                <InputSelect id="selectContainerType" @bind-Value="searchContainerTypeMapping.Container_Type" autocomplete="off">
-                    @foreach (var ct in containerTypesList)
+    <EditForm Model="searchContainerTypeMapping" OnSubmit="FetchMappings" 
+    Enhance
+     >
+         <label class="label-control">Search Mapping</label>
+         <div class="row">
+             <div class="col-md-4">
+                 <InputText @bind-Value="searchContainerTypeMapping.Other_Container_Type_Name" placeholder="Other Container Type Name" class="form-control" autocomplete="off"></InputText>
+             </div>
+             <div class="col-md-4">
+                 <InputText @bind-Value="searchContainerTypeMapping.Source" placeholder="Source" class="form-control" autocomplete="off"></InputText>
+             </div>
+             <div class="col-md-4">
+                 <label for="selectContainerType">Select Container Type:</label>
+                 <InputSelect id="selectContainerType" @bind-Value="searchContainerTypeMapping.Container_Type">
+                     <option value=""></option>
+                     @foreach (var ct in containerTypesList)
                     {
                         <option value="@ct.Container_Type">@ct.Container_Type</option>
                     }
@@ -99,45 +111,44 @@
 
 <style>
     table {
-        font-family: arial, sans-serif;
-        border-collapse: collapse;
-        width: 100%;
-        font-size: 14px;
+    font-family: arial, sans-serif;
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 14px;
     }
 
     td, th {
-        border: 1px solid #dddddd;
-        text-align: left;
-        padding: 8px;
+    border: 1px solid #dddddd;
+    text-align: left;
+    padding: 8px;
     }
 
     tr:nth-child(even) {
-        background-color: #dddddd;
+    background-color: #dddddd;
     }
 
     .result-container {
-        width: 100%;
-        overflow-x: auto;
+    width: 100%;
+    overflow-x: auto;
     }
 
     .remarks-col {
-        min-width: 300px;
+    min-width: 300px;
     }
 </style>
 
 
 @code {
     IQueryable<ContainerTypeMappingReference> ContainerTypeMappingsQueryable = Enumerable.Empty<ContainerTypeMappingReference>().AsQueryable();
-    private string oldChargeCode = ""; // to edit 
     private bool editTab = false;
-    private ContainerTypeMappingReference mappingToEdit = new(); 
-    private List<ContainerTypeReference> containerTypesList = new(); 
+    private ContainerTypeMappingReference prevMapping = new();
+    private ContainerTypeMappingReference mappingToEdit = new();
+    private List<ContainerTypeReference> containerTypesList = new();
 
     [SupplyParameterFromForm]
     ContainerTypeMappingReference addContainerTypeMapping { get; set; } = new();
     [SupplyParameterFromForm]
     ContainerTypeMappingReference searchContainerTypeMapping { get; set; } = new();
-    // static List<ContainerTypeReference> containerTypesList = new();
 
     QuickGrid<ContainerTypeMappingReference>? grid;
     PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
@@ -156,20 +167,18 @@
     //     chargeToEdit.editTab = !chargeToEdit.editTab; toggle current charge's edit tab
     // }
 
-    // To edit 
     async void toggleEdit(ContainerTypeMappingReference mapping)
     {
         if ((mapping.Other_Container_Type_Name != mappingToEdit.Other_Container_Type_Name || mapping.Source != mappingToEdit.Source)
         && editTab == true)
-        { //if the new charge to edit is different from the previous charge to edit
-          //use charge description to compare as that is the unique key
+        { //if the new mapping to edit is different from the previous mapping to edit
             editTab = true;
         }
         else
         {
             editTab = !editTab;
         }
-        // oldChargeCode = charge.Charge_Code;
+        prevMapping = mapping;
         mappingToEdit = new ContainerTypeMappingReference(mapping);
     }
 
@@ -184,8 +193,6 @@
             await JS.InvokeVoidAsync("alert", "Please fill in the missing field(s)");
             return;
         }
-        // containerTypesList.Add(containerTypeReference);
-        // ConvertListToQueryable();
         HttpResponseMessage response = await Http.PostAsJsonAsync($"{Configuration["ApiBaseUrl"]}/api/ContainerTypeMapping/CreateContainerTypeMapping", addContainerTypeMapping);
         string result = response.Content.ReadAsStringAsync().Result;
         if (result == "Error - duplicate primary keys")
@@ -195,9 +202,7 @@
         else
         {
             await JS.InvokeVoidAsync("alert", $"Successfully added container type mapping");
-            // Navigation?
             StateHasChanged();
-            //NavManager.NavigateTo("/container-type");
         }
         addContainerTypeMapping = new();
     }
@@ -209,18 +214,11 @@
         bool confirmed = await JS.InvokeAsync<bool>("confirm", confirmMessage);
         if (confirmed)
         {
-            // Debug.WriteLine($">>> Logging: {chargeDescription}");
-
             HttpResponseMessage result = await Http.DeleteAsync($"{Configuration["ApiBaseUrl"]}/api/ContainerTypeMapping/DeleteContainerTypeMapping/{mapping.Other_Container_Type_Name}/{mapping.Source}");
-            // result = await Http.PostAsJsonAsync<string>($"{Configuration["ApiBaseUrl"]}/api/ContainerType/DeleteContainerType/{containerType}", containerType);
-
-            Debug.WriteLine($"Logging: {result.StatusCode}");
-
             if (result.Content.ReadAsStringAsync().Result == "true")
             {
                 await JS.InvokeVoidAsync("alert", $"Successfully deleted mapping with other name: {mapping.Other_Container_Type_Name} and source: {mapping.Source}");
                 // Refresh and display
-                // NavManager.NavigateTo("/container-type");
                 await FetchMappings();
 
             }
@@ -236,37 +234,15 @@
     async Task FetchMappings()
     {
         editTab = false;
-        // check between charge code and description search term
-        string otherContainerTypeName = searchContainerTypeMapping.Other_Container_Type_Name.Trim();
-        // otherContainerTypeName = otherContainerTypeName != "" ? otherContainerTypeName : " "; 
-        string source = searchContainerTypeMapping.Source.Trim(); // remove leading and trailing white spaces
-        // source = source != "" ? source : " ";
-        string containerType = searchContainerTypeMapping.Container_Type.Trim(); 
-        // containerType = containerType != "" ? containerType : " ";
+        searchContainerTypeMapping.Other_Container_Type_Name = searchContainerTypeMapping.Other_Container_Type_Name.Trim();
+        searchContainerTypeMapping.Source = searchContainerTypeMapping.Source.Trim(); // remove leading and trailing white spaces
+        searchContainerTypeMapping.Container_Type = searchContainerTypeMapping.Container_Type.Trim();
 
         List<ContainerTypeMappingReference> items = new List<ContainerTypeMappingReference>();
-
-        // TODO: Change to just 1 API for future applications
-        // 1 API pass 4 parameters, if parameter is empty then skip
-        try {
-            items = await Http.GetFromJsonAsync<List<ContainerTypeMappingReference>>($"{Configuration["ApiBaseUrl"]}/api/ContainerTypeMapping/FetchContainerTypeMappings/{Uri.EscapeDataString(otherContainerTypeName)}/{Uri.EscapeDataString(source)}/{Uri.EscapeDataString(containerType)}");
-
-
-            if (!items.Any()) await JS.InvokeVoidAsync("alert", $"No search results found"); // TODO: possibly more descriptive error message?
-        }
-        catch (Exception ex) { 
-            if (otherContainerTypeName.Length == 0) Debug.WriteLine($"otherContainerTypeName is empty string");
-            if (source.Length == 0) Debug.WriteLine($"source is empty string");
-            if (containerType.Length == 0) Debug.WriteLine($"containerType is empty string");
-            foreach (ContainerTypeMappingReference item in items) { 
-                Debug.WriteLine(item);
-            }
-
-            Debug.WriteLine(ex.Message);
-            return; 
-        }
-        
-        
+        HttpResponseMessage result = await Http.PostAsJsonAsync<ContainerTypeMappingReference>($"{Configuration["ApiBaseUrl"]}/api/ContainerTypeMapping/FetchContainerTypeMappings", searchContainerTypeMapping);
+        var resultContent = await result.Content.ReadAsStringAsync();
+        items = JsonConvert.DeserializeObject<List<ContainerTypeMappingReference>>(resultContent);
+        if (!items.Any()) await JS.InvokeVoidAsync("alert", $"No search results found"); // TODO: possibly more descriptive error message?
 
         ContainerTypeMappingsQueryable = items.AsQueryable();
         // Refresh and display
@@ -276,37 +252,28 @@
     // TODO: Edit the Update/Edit mapping function that calls the API
     async Task UpdateMapping()
     {
-        // chargeToEdit.Charge_Code = chargeToEdit.Charge_Code.Trim();
-        // if (chargeToEdit.Charge_Code == "" || chargeToEdit.Charge_Code == oldChargeCode)
-        // {
-        //     await JS.InvokeVoidAsync("alert", $"Please fill in a valid new charge code");
-        //     return;
-        // }
-        // HttpResponseMessage result = await Http.PostAsJsonAsync<ChargeReference>($"{Configuration["ApiBaseUrl"]}/api/Charge/UpdateChargeCode", chargeToEdit);
-        // editTab = false;
-        // chargeToEdit = new();
-        // await FetchCharges(); TODO: if you have 2 pages, when you change a record on page 2, will the page refresh to page 1?
+        mappingToEdit.Other_Container_Type_Name = mappingToEdit.Other_Container_Type_Name.Trim();
+        if (mappingToEdit.Other_Container_Type_Name == "" || mappingToEdit.Source == "" || mappingToEdit.Container_Type == "")
+        {
+            await JS.InvokeVoidAsync("alert", $"Updated field values cannot be empty");
+            return;
+        }
+        else if (mappingToEdit.Other_Container_Type_Name == prevMapping.Other_Container_Type_Name
+    && mappingToEdit.Source == prevMapping.Source && mappingToEdit.Container_Type == prevMapping.Container_Type) { 
+            await JS.InvokeVoidAsync("alert", $"Updated container type mapping is identical to the original mapping");
+            return;
+    }
+        HttpResponseMessage result = await Http.PostAsJsonAsync<ContainerTypeMappingReference>($"{Configuration["ApiBaseUrl"]}/api/ContainerTypeMapping/UpdateContainerTypeMapping", mappingToEdit);
+        editTab = false;
+        mappingToEdit = new();
+        await FetchMappings(); 
+        // TODO: if you have 2 pages, when you change a record on page 2, will the page refresh to page 1?
         //                       Keep this way first (can enhance speed and user experience later)
         //                       Manually update ChargesQueryable
 
-
-        // StateHasChanged(); the field does not change immediately unless I fetch the search again
+        StateHasChanged(); // the field does not change immediately unless I fetch the search again
 
     }
-
-    // protected override void OnInitialized()
-    // {
-    //     ConvertListToQueryable();
-    // }
-
-    // private void ConvertListToQueryable()
-    // {
-    //     if (containerTypesList is null) return;
-    //     foreach (var ct in containerTypesList)
-    //     {
-    //         ContainerTypesQueryable = ContainerTypesQueryable.Concat(new[] { ct }.AsQueryable());
-    //     }
-    // }
 
 }
 

@@ -110,6 +110,11 @@
 
     async Task DeleteContainerType(string containerType)
     {
+        List<string> mappedContainerTypes = await Http.GetFromJsonAsync<List<string>>($"{Configuration["ApiBaseUrl"]}/api/ContainerType/FetchMappingContainerTypes");
+        if (mappedContainerTypes != null && mappedContainerTypes.Contains(containerType)) {
+            await JS.InvokeVoidAsync("alert", $"Container type: {containerType} has already been used in a mapping");
+            return; 
+        }
         string confirmMessage = $"Confirm delete container type: {containerType}?";
         bool confirmed = await JS.InvokeAsync<bool>("confirm", confirmMessage);
         if (confirmed)

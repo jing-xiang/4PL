@@ -1490,7 +1490,7 @@ namespace _4PL.Data
          * 1. Create mapping
          * 2. Delete mapping
          * 3. Show list of mappings (based on arbitrary number and variety of search parameters) 
-         * 4. TBC: Update mapping (how?)
+         * 4. Update mapping (based on id)
          **/
         public async Task<string> CreateContainerTypeMapping(string otherContainerTypeName, string source, string containerType)
         {
@@ -1555,6 +1555,7 @@ namespace _4PL.Data
                     while (reader.Read())
                     {
                         ContainerTypeMappingReference ct = new ContainerTypeMappingReference();
+                        ct.Id = Guid.Parse(reader.GetString(reader.GetOrdinal("ID")));
                         ct.Other_Container_Type_Name = reader.GetString(reader.GetOrdinal("OTHER_CONTAINER_TYPE_NAME"));
                         ct.Source = reader.GetString(reader.GetOrdinal("SOURCE"));
                         ct.Container_Type = reader.GetString(reader.GetOrdinal("CONTAINER_TYPE"));
@@ -1566,7 +1567,50 @@ namespace _4PL.Data
             }
         }
 
-        // TODO: Update container type mapping function 
+        public async Task<List<string>> FetchMappingContainerTypes() // For use in checking when deleting container type
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                List<string> containerTypes = new List<string>();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = $@"CALL FETCH_MAPPING_CONTAINER_TYPES()";
+                    // Changed to stored procedure
+                    IDataReader reader = command.ExecuteReader();
+
+                    while (reader.Read())
+                    {
+                        string ct = reader.GetString(reader.GetOrdinal("CONTAINER_TYPE"));
+                        containerTypes.Add(ct);
+                    }
+
+                }
+                return containerTypes;
+            }
+        }
+ 
+        public async Task<string> UpdateContainerTypeMapping(string id, string otherContainerTypeName, string source, string containerType)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                var resultMessage = $"Error in updating container type mapping with id: {id}";
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = $@"CALL UPDATE_CONTAINER_TYPE_MAPPING (:id, :Other_Container_Type_Name, :Source, :Container_Type)";
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "id", Value = id, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Other_Container_Type_Name", Value = otherContainerTypeName, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Source", Value = source, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Container_Type", Value = containerType, DbType = DbType.String });
+                    resultMessage = command.ExecuteScalar().ToString();
+
+                }
+                return resultMessage; // If successful, it will be the id of the updated mapping 
+
+            }
+        }
+
 
 
         /**

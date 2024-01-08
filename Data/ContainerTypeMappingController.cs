@@ -51,7 +51,7 @@ public class ContainerTypeMappingController : Controller
     }
 
     [HttpGet("FetchContainerTypesList")]
-    public async Task<ActionResult<List<ContainerTypeReference>>> FetchContainerTypesList() // GET request should not have body 
+    public async Task<ActionResult<string>> FetchContainerTypesList() // GET request should not have body 
     {
         try
         {
@@ -66,13 +66,12 @@ public class ContainerTypeMappingController : Controller
     }
 
 
-    [HttpGet("FetchContainerTypeMappings/{otherContainerTypeName}/{source}/{containerType}")]
-    public async Task<ActionResult<List<ContainerTypeMappingReference>>> FetchContainerTypeMappings(string otherContainerTypeName, string source, string containerType) // GET request should not have body 
+    [HttpPost("FetchContainerTypeMappings")]
+    public async Task<ActionResult<List<ContainerTypeMappingReference>>> FetchContainerTypeMappings(ContainerTypeMappingReference searchContainerTypeMapping) 
     {
-        Debug.WriteLine($"Server side Parameters: otherContainerTypeName={otherContainerTypeName}, source={source}, containerType={containerType}");
         try
         {
-            List<ContainerTypeMappingReference> containerTypeMappings = await _dbContext.FetchContainerTypeMappings(otherContainerTypeName.Trim(), source.Trim(), containerType.Trim());
+            List<ContainerTypeMappingReference> containerTypeMappings = await _dbContext.FetchContainerTypeMappings(searchContainerTypeMapping.Other_Container_Type_Name, searchContainerTypeMapping.Source, searchContainerTypeMapping.Container_Type);
             Debug.WriteLine($"Logging: {containerTypeMappings}");
             return Ok(containerTypeMappings);
         } catch (Exception ex)
@@ -80,6 +79,23 @@ public class ContainerTypeMappingController : Controller
             return StatusCode(500, $"{ex.GetType().Name}: {ex.Message}");
         }
     }
+
+    [HttpPost("UpdateContainerTypeMapping")]
+    public async Task<ActionResult<string>> UpdateContainerTypeMapping(ContainerTypeMappingReference containerTypeMapping)
+    {
+        try
+        {
+            string resultId = await _dbContext.UpdateContainerTypeMapping(containerTypeMapping.Id.ToString(), containerTypeMapping.Other_Container_Type_Name, containerTypeMapping.Source, containerTypeMapping.Container_Type);
+            Debug.WriteLine($"Logging: {resultId}");
+            return Ok(resultId);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"{ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
+
 
 
 }
