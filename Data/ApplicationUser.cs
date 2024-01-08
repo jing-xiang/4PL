@@ -7,6 +7,7 @@ namespace _4PL.Data
     {
         public string Name { get; set; }
         public string Email { get; set; }
+        public string UpdatedEmail { get; set; }
 
         // Default values upon registration
         public string Password { get; set; } = "123123"; // for testing/development purposes now

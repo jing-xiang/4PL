@@ -5,6 +5,10 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Syncfusion.Blazor;
 using Microsoft.AspNetCore.Authorization;
 using _4PL.Data.Access_Rights;
+using System.Security.Cryptography;
+using System.Text;
+using Org.BouncyCastle.Crypto.Paddings;
+using Org.BouncyCastle.Crypto.Generators;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -52,6 +56,7 @@ builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddSyncfusionBlazor();
 builder.Services.AddSingleton<SnowflakeDbContext>();
 builder.Services.AddSingleton<AccessRightsDbContext>();
+builder.Services.AddSingleton<DataAnalysisDbContext>();
 builder.Services.AddSingleton<IAuthorizationHandler, AccessHandler>();
 builder.Services.AddControllers();
 builder.Services.AddHttpClient();

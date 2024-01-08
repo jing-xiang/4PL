@@ -10,6 +10,13 @@
     text-align: center;
 }
 
+.subheading {
+    background-color: rgb(240, 240, 240);
+    height: 40px;
+    padding: 6px;
+    padding-left: 12px;
+}
+
 .button-view {
     width: 100px;
     flex-wrap: wrap;
@@ -28,8 +35,20 @@
     flex-wrap: wrap;
 }
 
-::deep thead .setting {
-    width: 25rem;
+::deep .report-title {
+    width: 300px;
+}
+
+::deep .report-link {
+    width: 600px;
+}
+
+::deep .report-right {
+    width: 150px;
+}
+
+::deep .button-view {
+    width: 100px;
 }
 
 ::deep tr:nth-child(even) {

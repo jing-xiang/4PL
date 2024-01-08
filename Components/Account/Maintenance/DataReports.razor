@@ -1,0 +1,232 @@
+﻿@page "/Admin/DataReports"
+
+@using System.ComponentModel.DataAnnotations
+@using System.Data
+@using _4PL.Data
+@using Microsoft.AspNetCore.Components.QuickGrid
+
+@inject ILogger<SystemSettings> Logger
+@inject IConfiguration Configuration
+@inject HttpClient HttpClient
+@inject IJSRuntime JSRuntime
+@rendermode InteractiveServer
+
+<PageTitle>Data Reports</PageTitle>
+
+@if (isLoaded)
+{
+    <div class="col-md-12">
+        <h3 class="heading"><strong>DATA REPORTS MANAGEMENT</strong></h3>
+        <hr />
+        <h4 class="subheading">Add Report</h4>
+        <EditForm Model="AddReportInput" method="post" OnValidSubmit="AddNewReport" FormName="addReport">
+            <DataAnnotationsValidator />
+            @if (!string.IsNullOrEmpty(updateMessage))
+            {
+                <div align="center" style="margin-bottom:10px" class="alert alert-@messageType">@updateMessage</div>
+            }
+
+            <div style="display: flex; align-items:center; margin-bottom:10px;">
+                <InputText @bind-Value="AddReportInput.Title" style="margin-right:5px" class="form-control" autocomplete="off" placeholder="Title of Report" />
+                <InputText @bind-Value="AddReportInput.AccessRightRequired" style="margin-right:5px" class="form-control" autocomplete="off" placeholder="Access Right Required" />
+            </div>
+            <div style="display: flex; align-items:center">
+                <InputText @bind-Value="AddReportInput.Link" style="margin-right:5px" class="form-control" autocomplete="off" placeholder="Link to Report" />
+                <button type="submit" class="w-40 btn btn-primary">Add</button>
+            </div>
+            <ValidationSummary class="mt-2 text-danger" role="alert" />
+        </EditForm>
+        <hr />
+        <div class="grid" tabindex="-1">
+            <QuickGrid Items="@reports" Pagination="@pagination">
+                <PropertyColumn Title="Title" Class="report-title" Property="@(r => r.Title)" Sortable="true" />
+                <PropertyColumn Title="Access Right Required" Class="report-right" Property="@(r => r.AccessRightRequired)" Sortable="true" />
+                <PropertyColumn Title="Link" Class="report-link" Property="@(r => r.Link)" Sortable="false" />
+                <TemplateColumn Title="" Class="button-view">
+                    <button type="submit" class="button-view btn btn-sm btn-success" @onclick="() => ManageReport(context)">
+                        Edit
+                    </button>
+                </TemplateColumn>
+            </QuickGrid>
+        </div>
+        @if (!string.IsNullOrEmpty(deleteMessage))
+        {
+            <div align="center" style="margin-bottom:10px" class="alert alert-danger">@deleteMessage</div>
+        }
+
+        @if (currReport != null)
+        {
+            <hr />
+            <h4 class="subheading">Manage Report for <strong>@currReport.Title</strong></h4>
+            <hr />
+            @if (!string.IsNullOrEmpty(reportUpdateMessage))
+            {
+                <div align="center" style="margin-bottom:10px" class="alert alert-@messageType">@reportUpdateMessage</div>
+            }
+            <div style="display: flex; align-items:center; margin-bottom:10px;">
+                <p class="w-50" style="margin-right: 5px;">
+                    <strong>Title</strong>
+                    <input type="text" @bind-value="@UpdateReportInput.UpdatedTitle" style="margin-right:5px" class="form-control" autocomplete="off" placeholder="Title of Report" />
+                </p>
+                <p class="w-50">
+                    <strong>Access Right Required</strong>
+                    <input type="text" @bind-value="@UpdateReportInput.AccessRightRequired" style="margin-right:5px" class="form-control" autocomplete="off" placeholder="Access Right Required" />
+                </p>
+            </div>
+            <div style="display: flex; align-items:center;">
+                <input type="text" @bind-value="@UpdateReportInput.Link" style="margin-right:5px" class="form-control" autocomplete="off" placeholder="Link to Report" />
+                <button @onclick="UpdateReport" type="submit" class="w-40 btn btn-primary">Update</button>
+            </div>
+            <hr />
+            <button @onclick="DeleteReport" class="w-100 btn btn-lg btn-danger">Delete Report</button>
+            <hr />
+        }
+    </div>
+}
+else
+{
+    <p>Loading...</p>
+}
+
+@code {
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    private AddReportModel AddReportInput { get; set; } = new();
+    private UpdateReportModel UpdateReportInput { get; set; } = new();
+
+    private string? apiBaseUrl;
+    private string? updateMessage;
+    private string? reportUpdateMessage;
+    private string? deleteMessage;
+    private string? messageType;
+    private bool isLoaded;
+
+    IQueryable<DataReport>? reports;
+    PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
+    DataReport? currReport;
+
+    protected override async Task OnInitializedAsync()
+    {
+        apiBaseUrl = Configuration["ApiBaseUrl"];
+        await LoadReports();
+        isLoaded = true;
+    }
+
+    private async Task LoadReports()
+    {
+        var result = await HttpClient.GetFromJsonAsync<List<DataReport>>($"{apiBaseUrl}/api/DataAnalysis/FetchReports");
+        reports = result.AsQueryable();
+    }
+
+    private void ResetStrings()
+    {
+        updateMessage = null;
+    }
+
+    private async Task AddNewReport()
+    {
+        ResetStrings();
+        DataReport newReport = new()
+            {
+                Title = AddReportInput.Title.ToUpper(),
+                Link = AddReportInput.Link,
+                AccessRightRequired = AddReportInput.AccessRightRequired.ToUpper()
+            };
+
+        var response = await HttpClient.PostAsJsonAsync($"{apiBaseUrl}/api/DataAnalysis/AddReport", newReport);
+        updateMessage = await response.Content.ReadAsStringAsync();
+        if (!response.IsSuccessStatusCode)
+        {
+            messageType = "danger";
+            return;
+        }
+
+        messageType = "success";
+        Logger.LogInformation("Admin added a new report.");
+        await LoadReports();
+        return;
+    }
+
+    private async Task ManageReport(DataReport report)
+    {
+        currReport = report;
+        UpdateReportInput.Title = report.Title ?? "";
+        UpdateReportInput.UpdatedTitle = report.Title ?? "";
+        UpdateReportInput.Link = report.Link ?? "";
+        UpdateReportInput.AccessRightRequired = report.AccessRightRequired ?? "";
+    }
+
+    private async Task UpdateReport()
+    {
+        ResetStrings();
+        messageType = "danger";
+        if (UpdateReportInput.Title == currReport.Title && UpdateReportInput.Link == currReport.Link && UpdateReportInput.AccessRightRequired == currReport.AccessRightRequired)
+        {
+            reportUpdateMessage = "There must be at least one field that is different.";
+            return;
+        }
+        else
+        {
+            DataReport temp = new()
+                {
+                    Title = currReport.Title,
+                    UpdatedTitle = UpdateReportInput.UpdatedTitle.ToUpper(),
+                    Link = UpdateReportInput.Link,
+                    AccessRightRequired = UpdateReportInput.AccessRightRequired.ToUpper()
+                };
+            var result = await HttpClient.PutAsJsonAsync($"{apiBaseUrl}/api/DataAnalysis/UpdateReport", temp);
+            if (!result.IsSuccessStatusCode)
+            {
+                reportUpdateMessage = await result.Content.ReadAsStringAsync();
+                return;
+            }
+        }
+        reportUpdateMessage = "Report details successfully updated.";
+        messageType = "success";
+        await LoadReports();
+    }
+
+    private async Task DeleteReport()
+    {
+        ResetStrings();
+        string confirmMessage = $"Confirm delete report '{currReport.Title}'?";
+        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", confirmMessage);
+        if (confirmed)
+        {
+            await HttpClient.DeleteAsync($"{apiBaseUrl}/api/DataAnalysis/delete{currReport.Title}");
+            messageType = "danger";
+            deleteMessage = $"{currReport.Title} successfully deleted.";
+            currReport = null;
+            await LoadReports();
+        }
+        return;
+    }
+
+    private sealed class AddReportModel
+    {
+        [Required]
+        public string Title { get; set; } = "";
+
+        [Required]
+        public string Link { get; set; } = "";
+
+        [Required]
+        public string AccessRightRequired { get; set; } = "";
+    }
+
+    private sealed class UpdateReportModel
+    {
+        public string Title { get; set; } = "";
+
+        [Required]
+        public string UpdatedTitle { get; set; } = "";
+
+        [Required]
+        public string Link { get; set; } = "";
+
+        [Required]
+        public string AccessRightRequired { get; set; } = "";
+    }
+}
