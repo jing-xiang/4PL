@@ -1784,6 +1784,132 @@ namespace _4PL.Data
 
             }
         }
+
+        /**
+         * Charge Mappings 
+         * 1. Create mapping
+         * 2. Delete mapping
+         * 3. Show list of mappings (based on arbitrary number and variety of search parameters) 
+         * 4. Update mapping (based on id)
+         **/
+        public async Task<string> CreateChargeMapping(string otherChargeDescriptionName, string source, string chargeDescription)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                var resultMessage = "Error in creating new charge mapping";
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = $@"CALL CREATE_CHARGE_MAPPING (:Other_Charge_Description_Name, :Source, :Charge_Description)";
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Other_Charge_Description_Name", Value = otherChargeDescriptionName, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Source", Value = source, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Charge_Description", Value = chargeDescription, DbType = DbType.String });
+                    resultMessage = command.ExecuteScalar().ToString();
+
+                }
+                return resultMessage;
+
+            }
+        }
+
+        public async Task<int> DeleteChargeMapping(string otherChargeDescriptionName, string source)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = $@"CALL DELETE_CHARGE_MAPPING (:Other_Charge_Description_Name, :Source)";
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Other_Charge_Description_Name", Value = otherChargeDescriptionName, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Source", Value = source, DbType = DbType.String });
+
+                    var result = command.ExecuteScalar();
+                    Debug.WriteLine($"result of DB call: {result}");
+                    if (result != DBNull.Value)
+                    {
+                        return Int32.Parse(result.ToString());
+                    }
+                    else
+                    {
+                        throw new Exception($"Failed to delete charge mapping: name - {otherChargeDescriptionName}, source - {source}"); // TBC
+                    }
+
+                }
+            }
+        }
+
+        public async Task<List<ChargeMappingReference>> FetchChargeMappings(string otherChargeDescriptionName, string source, string chargeDescription)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                List<ChargeMappingReference> chargeMappings = new List<ChargeMappingReference>();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = $@"CALL FETCH_CHARGE_MAPPINGS (:Other_Charge_Description_Name, :Source, :Container_Type)";
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Other_Charge_Description_Name", Value = otherChargeDescriptionName, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Source", Value = source, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Charge_Description", Value = chargeDescription, DbType = DbType.String });
+                    IDataReader reader = command.ExecuteReader();
+
+                    while (reader.Read())
+                    {
+                        ChargeMappingReference ct = new ChargeMappingReference();
+                        ct.Id = Guid.Parse(reader.GetString(reader.GetOrdinal("ID")));
+                        ct.Other_Charge_Description_Name = reader.GetString(reader.GetOrdinal("OTHER_CHARGE_DESCRIPTION_NAME"));
+                        ct.Source = reader.GetString(reader.GetOrdinal("SOURCE"));
+                        ct.Charge_Description = reader.GetString(reader.GetOrdinal("CHARGE_DESCRIPTION"));
+                        chargeMappings.Add(ct);
+                    }
+
+                }
+                return chargeMappings;
+            }
+        }
+
+        public async Task<List<string>> FetchMappingChargeDescriptions() // For use in checking when deleting charge
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                List<string> chargeDescriptions = new List<string>();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = $@"CALL FETCH_MAPPING_CHARGE_DESCRIPTIONS()";
+                    // Changed to stored procedure
+                    IDataReader reader = command.ExecuteReader();
+
+                    while (reader.Read())
+                    {
+                        string ct = reader.GetString(reader.GetOrdinal("CHARGE_DESCRIPTION"));
+                        chargeDescriptions.Add(ct);
+                    }
+
+                }
+                return chargeDescriptions;
+            }
+        }
+
+        public async Task<string> UpdateChargeMapping(string id, string otherChargeDescriptionName, string source, string chargeDescription)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                var resultMessage = $"Error in updating charge mapping with id: {id}";
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = $@"CALL UPDATE_CHARGE_MAPPING (:id, :Other_Charge_Description_Name, :Source, :Charge_Description)";
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "id", Value = id, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Other_Charge_Description_Name", Value = otherChargeDescriptionName, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Source", Value = source, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Charge_Description", Value = chargeDescription, DbType = DbType.String });
+                    resultMessage = command.ExecuteScalar().ToString();
+
+                }
+                return resultMessage; // If successful, it will be the id of the updated mapping 
+
+            }
+        }
         public List<string> InsertShipments(List<Shipment> shipments)
         {
             Console.WriteLine("method called");
