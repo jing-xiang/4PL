@@ -238,6 +238,7 @@
     }
 
     //Share layout views to others
+    string? currEmail;
     bool showModal = false;
     List<string> sharedEmails = new List<string>();
     string newEmail = "";
@@ -269,6 +270,13 @@
     {
         string[] Layout_Fields = GetSelectedProperties();
         List<UserProfileLayout> userProfileLayouts = new();
+        UserProfileLayout self = new();
+        self.User_Email = currEmail;
+        self.Table_Name = tableName;
+        self.Layout_Fields = Layout_Fields;
+        self.Layout_Name = newLayoutName;
+        userProfileLayouts.Add(self);
+
         foreach (var email in sharedEmails)
         {
             UserProfileLayout upl = new();
@@ -320,7 +328,7 @@
         //initializing layoutDictionary and layoutArray
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
-        var currEmail = user.FindFirst(c => c.Type == ClaimTypes.Email)?.Value;
+        currEmail = user.FindFirst(c => c.Type == ClaimTypes.Email)?.Value;
         layoutDictionary = await GetProfileLayout(currEmail);
         layoutArray = layoutDictionary.Keys.ToArray();
 

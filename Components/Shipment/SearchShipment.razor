@@ -341,6 +341,7 @@
     List<string> sharedEmails = new List<string>();
     string newEmail = "";
     string newLayoutName = "";
+    string? currEmail;
 
     public async void HandleModal()
     {
@@ -369,6 +370,14 @@
         string[] Layout_Fields = GetSelectedProperties();
         Console.WriteLine("Lyoutfields: " + string.Join(", ", Layout_Fields));
         List<UserProfileLayout> userProfileLayouts = new();
+
+        UserProfileLayout self = new();
+        self.User_Email = currEmail;
+        self.Table_Name = "Shipment";
+        self.Layout_Fields = Layout_Fields;
+        self.Layout_Name = newLayoutName;
+        userProfileLayouts.Add(self);
+
         foreach (var email in sharedEmails)
         {
             UserProfileLayout upl = new();
@@ -376,7 +385,6 @@
             upl.Table_Name = "Shipment";
             upl.Layout_Fields = Layout_Fields;
             upl.Layout_Name = newLayoutName;
-            Console.WriteLine("newlytname: " + newLayoutName);
             userProfileLayouts.Add(upl);
         }
         var response = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/UserProfileLayout/CreateLayout/", userProfileLayouts);
@@ -429,7 +437,7 @@
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
-        var currEmail = user.FindFirst(c => c.Type == ClaimTypes.Email)?.Value;
+        currEmail = user.FindFirst(c => c.Type == ClaimTypes.Email)?.Value;
         profileLayouts = await GetProfileLayout(currEmail);
 
         layoutArray = profileLayouts.Keys.ToArray();
