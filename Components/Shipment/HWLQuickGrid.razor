@@ -83,14 +83,25 @@
 }
 
 <div class="result-container py-2" style="max-width:80vw">
-    @if (items is not null)
+    @if (Items is not null)
     {
-        <QuickGrid Items="@items" Pagination="@pagination">
+        <QuickGrid Items="@Items" Pagination="@pagination">
             @if (currColumns is not null)
             {
                 @foreach (var col in currColumns)
                 {
-                    <PropertyColumn Title="@col.Replace("_", " ")" Property="@(i => i.GetType().GetProperty(col).GetValue(i, null))" Sortable="true" />
+                    if (hyperlinkColumns.ContainsKey(col))
+                    {
+                        var hyperlink = hyperlinkColumns[col];
+                        <TemplateColumn Title="@col.Replace("_", " ")">
+                            <a href="@hyperlink=@context.GetType().GetProperty(col).GetValue(context, null)" class="text-decoration-none font-weight-bold">
+                                @context.GetType().GetProperty(col).GetValue(context, null)
+                            </a>
+                        </TemplateColumn>
+                    } else
+                    {
+                        <PropertyColumn Title="@col.Replace("_", " ")" Property="@(i => i.GetType().GetProperty(col).GetValue(i, null))" Sortable="true" />
+                    }
                 }
             }
             
@@ -163,7 +174,7 @@
 
 @code {
     [Parameter]
-    public IQueryable<TItem>? items { get; set; }
+    public IQueryable<TItem>? Items { get; set; }
 
     [Parameter]
     public string tableName { get; set; } = "";
@@ -173,6 +184,17 @@
 
     [Parameter]
     public EventCallback<TItem> onDelete { get; set; }
+
+    [Parameter]
+    public bool disableEdit { get; set; } = false;
+
+    [Parameter]
+    public bool disableDelete { get; set; } = false;
+
+    //Key: Column_name (separated by "_") for columns with hyperlink
+    //Val: Hyperlink of the associated column (i.e. for "/shipment/view?Shipment_Job_No=ABCDE", the hyperlink is "/shipment/view?Shipment_Job_No")
+    [Parameter]
+    public Dictionary<string, string> hyperlinkColumns { get; set; } = new();
 
     //Editing and deleting item from quickgrid
     protected async Task Edit(TItem inputTItem)
