@@ -178,6 +178,12 @@
 
     async Task DeleteCharge(string chargeDescription)
     {
+        List<string> mappedChargeDescriptions = await Http.GetFromJsonAsync<List<string>>($"{Configuration["ApiBaseUrl"]}/api/Charge/FetchChargeDescriptionsInMappings");
+        if (mappedChargeDescriptions != null && mappedChargeDescriptions.Contains(chargeDescription))
+        {
+            await JS.InvokeVoidAsync("alert", $"Charge Description: {chargeDescription} has already been used in a mapping");
+            return;
+        }
         editTab = false; 
         string confirmMessage = $"Confirm delete charge with description: {chargeDescription}?";
         bool confirmed = await JS.InvokeAsync<bool>("confirm", confirmMessage);

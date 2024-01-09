@@ -126,5 +126,20 @@ public class ChargeController : Controller
 
     }
 
+    [HttpGet("FetchChargeDescriptionsInMappings")]
+    public async Task<ActionResult<List<string>>> FetchChargeDescriptionsInMappings() // GET request should not have body 
+    {
+        try
+        {
+            List<string> mappingChargeDescriptions = await _dbContext.FetchChargeDescriptionsInMappings();
+            Debug.WriteLine($"Logging: {mappingChargeDescriptions}");
+            return Ok(mappingChargeDescriptions);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"{ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
 
 }

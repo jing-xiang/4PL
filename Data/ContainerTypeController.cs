@@ -79,12 +79,12 @@ public class ContainerTypeController : Controller
         }
     }
 
-    [HttpGet("FetchMappingContainerTypes")]
-    public async Task<ActionResult<List<string>>> FetchMappingContainerTypes() // GET request should not have body 
+    [HttpGet("FetchContainerTypesInMappings")]
+    public async Task<ActionResult<List<string>>> FetchContainerTypesInMappings() // GET request should not have body 
     {
         try
         {
-            List<string> mappingContainerTypes = await _dbContext.FetchMappingContainerTypes();
+            List<string> mappingContainerTypes = await _dbContext.FetchContainerTypesInMappings();
             Debug.WriteLine($"Logging: {mappingContainerTypes}");
             return Ok(mappingContainerTypes);
         }

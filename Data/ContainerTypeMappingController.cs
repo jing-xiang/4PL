@@ -19,7 +19,7 @@ public class ContainerTypeMappingController : Controller
      * Create a container type mapping (after submitting in form) 
      * Delete a container type mapping
      * Get all container type mappings (Search) 
-     * TBC: Update container type mapping
+     * Update container type mapping
     **/
 
     [HttpPost("CreateContainerTypeMapping")]

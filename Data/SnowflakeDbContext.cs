@@ -1567,7 +1567,7 @@ namespace _4PL.Data
             }
         }
 
-        public async Task<List<string>> FetchMappingContainerTypes() // For use in checking when deleting container type
+        public async Task<List<string>> FetchContainerTypesInMappings() // For use in checking when deleting container type
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
@@ -1785,6 +1785,27 @@ namespace _4PL.Data
             }
         }
 
+        public async Task<List<string>> FetchChargeDescriptionsList()
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                List<string> chargeDescriptionsList = new List<string>();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = $@"CALL FETCH_CHARGE_DESCRIPTIONS_LIST ()";
+                    IDataReader reader = command.ExecuteReader();
+
+                    while (reader.Read())
+                    {
+                        chargeDescriptionsList.Add(reader.GetString(reader.GetOrdinal("CHARGE_DESCRIPTION")));
+                    }
+
+                }
+                return chargeDescriptionsList;
+            }
+        }
+
         /**
          * Charge Mappings 
          * 1. Create mapping
@@ -1867,7 +1888,7 @@ namespace _4PL.Data
             }
         }
 
-        public async Task<List<string>> FetchMappingChargeDescriptions() // For use in checking when deleting charge
+        public async Task<List<string>> FetchChargeDescriptionsInMappings() // For use in checking when deleting charge
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
             {
