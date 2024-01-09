@@ -150,16 +150,7 @@
      </EditForm>
 
     <div class="result-container py-4" style="max-width:80vw">
-        <QuickGrid Items="@containers">
-            <PropertyColumn Title="Container No" Property="@(c => c.Container_No)" Sortable="true" />
-            <PropertyColumn Title="Container Type" Property="@(c => c.Container_Type)" Sortable="true" />
-            <PropertyColumn Title="Seal No 1" Property="@(c => c.Seal_No_1)" Sortable="true" />
-            <PropertyColumn Title="Seal No 2" Property="@(c => c.Seal_No_2)" Sortable="true" />
-            <TemplateColumn Title="Actions">
-                <button class="btn btn-sm btn-success" @onclick="() => EditContainer(context)" disabled=@(isView||chargesPresent)>Edit</button>
-                <button class="btn btn-sm btn-danger" @onclick="() => DeleteContainer(context.Shipment_Job_No, context.Container_No)" disabled=@isView>Delete</button>
-            </TemplateColumn>
-        </QuickGrid>
+        <HWLQuickGrid Items="@containers" TItem="Container" tableName="Container" onEdit="EditContainer" onDelete="DeleteContainer" disableEdit=@(isView||chargesPresent) disableDelete=@isView></HWLQuickGrid>
     </div>
 }
 
@@ -465,12 +456,12 @@
         NavManager.NavigateTo("/shipment");
     }
 
-    async Task DeleteContainer(string Shipment_Job_No, string Container_No)
+    async Task DeleteContainer(Container containerInput)
     {
         bool isUpdated = await isMostUpdatedShipment();
         if (isUpdated)
         {
-            var response = await HttpClient.DeleteAsync($"{NavManager.BaseUri}api/shipment/DeleteContainer/{Shipment_Job_No}/{Container_No}");
+            var response = await HttpClient.DeleteAsync($"{NavManager.BaseUri}api/shipment/DeleteContainer/{containerInput.Shipment_Job_No}/{containerInput.Container_No}");
             if (response.IsSuccessStatusCode)
             {
                 shipment.Last_Modified_By = currEmail;
@@ -479,7 +470,7 @@
                 var result = await getContainerData();
                 containers = result.AsQueryable();
                 StateHasChanged();
-                await JS.InvokeVoidAsync("alert", $"Container {Container_No} has been deleted");
+                await JS.InvokeVoidAsync("alert", $"Container {containerInput.Container_No} has been deleted");
                 StateHasChanged();
             }
             else

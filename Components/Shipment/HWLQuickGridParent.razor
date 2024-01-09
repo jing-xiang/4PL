@@ -17,8 +17,8 @@
 @rendermode InteractiveServer
 
 <h3>Component</h3>
-<CustomQG items="shipments"  tableName="Shipment" TItem="Shipment" onEdit="onEditShipment" onDelete="onDeleteShipment"></CustomQG>
-<CustomQG items="containers" tableName="Container" TItem="Container" onEdit="onEditContainer" onDelete="onDeleteContainer"></CustomQG>
+<HWLQuickGrid Items="shipments"  tableName="Shipment" TItem="Shipment" onEdit="onEditShipment" hyperlinkColumns="@shipmentDict"></HWLQuickGrid>
+<HWLQuickGrid Items="containers" tableName="Container" TItem="Container" onEdit="onEditContainer" onDelete="onDeleteContainer"></HWLQuickGrid>
 
 @code {
     IQueryable<Shipment> shipments = Enumerable.Empty<Shipment>().AsQueryable();
@@ -39,10 +39,11 @@
 
         var result2 = await getContainerData();
         containers = result2.AsQueryable();
-
     }
 
     //Shipment
+    Dictionary<string, string> shipmentDict = new Dictionary<string, string>() { { "Job_No", "/shipment/view?Shipment_Job_No" } };
+
     async Task<List<Shipment>> getShipmentData()
     {
         ShipmentSearchModel s = new();

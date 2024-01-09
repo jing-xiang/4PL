@@ -34,8 +34,7 @@ namespace _4PL.Data
             }
             else if (response.ContainsKey("layoutExists"))
             {
-                returnOutput += "Error Updating Layout. \n";
-                returnOutput += $"Layout name exists for user: {string.Join(", ", response["layoutExists"])}";
+                returnOutput += $"Layout name exists for user: {string.Join(", ", response["layoutExists"])}. Do you want to override the changes?";
             }
             else
             {
@@ -45,7 +44,14 @@ namespace _4PL.Data
         }
 
         [HttpPost("UpdateLayout")]
-        public IActionResult UpdateLayout([FromBody] UserProfileLayout upl)
+        public IActionResult UpdateLayout([FromBody] List<UserProfileLayout> userProfileLayouts)
+        {
+            var response = _dbcontext.UpdateUserLayout(userProfileLayouts);
+            return Ok(response);
+        }
+
+        [HttpPost("UpdateDefaultLayout")]
+        public IActionResult UpdateDefaultLayout([FromBody] UserProfileLayout upl)
         {
             _dbcontext.UpdateDefaultLayout(upl);
             return Ok();
