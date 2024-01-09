@@ -17,8 +17,8 @@
 @rendermode InteractiveServer
 
 <h3>Component</h3>
-<CustomQG items="shipments"  tableName="Shipment" TItem="Shipment"></CustomQG>
-<CustomQG items="containers" tableName="Container" TItem="Container"></CustomQG>
+<CustomQG items="shipments"  tableName="Shipment" TItem="Shipment" onEdit="onEditShipment" onDelete="onDeleteShipment"></CustomQG>
+<CustomQG items="containers" tableName="Container" TItem="Container" onEdit="onEditContainer" onDelete="onDeleteContainer"></CustomQG>
 
 @code {
     IQueryable<Shipment> shipments = Enumerable.Empty<Shipment>().AsQueryable();
@@ -42,6 +42,7 @@
 
     }
 
+    //Shipment
     async Task<List<Shipment>> getShipmentData()
     {
         ShipmentSearchModel s = new();
@@ -64,8 +65,29 @@
         return result;
     }
 
+    public async void onEditShipment(Shipment shipment)
+    {
+        NavManager.NavigateTo($"/shipment/edit?Shipment_Job_No={shipment.Job_No}");
+    }
+
+    public async void onDeleteShipment(Shipment shipment)
+    {
+        //Delete shipment logic here
+    }
+
+    //Container
     async Task<List<Container>> getContainerData()
     {
         return await HttpClient.GetFromJsonAsync<List<Container>>($"{NavManager.BaseUri}api/shipment/ContainerData/EGLV235301061137");
+    }
+
+    public async void onEditContainer(Container container)
+    {
+        //Edit container logic here
+    }
+
+    public async void onDeleteContainer(Container container)
+    {
+        //Delete container logic here
     }
 }

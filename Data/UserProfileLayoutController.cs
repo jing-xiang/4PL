@@ -27,10 +27,15 @@ namespace _4PL.Data
             var response = _dbcontext.InsertUserLayout(userProfileLayouts);
 
             var returnOutput = "";
-            if (response.Any())
+            if (response.ContainsKey("noUser"))
             {
                 returnOutput += "Error Updating Layout. \n";
-                returnOutput += $"User not found: {string.Join(", ", response)}";
+                returnOutput += $"User not found: {string.Join(", ", response["noUser"])}";
+            }
+            else if (response.ContainsKey("layoutExists"))
+            {
+                returnOutput += "Error Updating Layout. \n";
+                returnOutput += $"Layout name exists for user: {string.Join(", ", response["layoutExists"])}";
             }
             else
             {

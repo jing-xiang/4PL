@@ -144,7 +144,7 @@
                 </div>
                 <div class="d-flex justify-content-end mt-2">
                     <button class="btn btn-sm btn-success" style="margin-right: 5px" @onclick="InsertLayout">Update</button>
-                    <button class="btn btn-sm btn-outline-dark">Cancel</button>
+                    <button class="btn btn-sm btn-outline-dark" @onclick="CancelInsertLayout">Cancel</button>
                 </div>
             </div>
         </div>
@@ -344,8 +344,6 @@
 
     public async void HandleModal()
     {
-        Console.WriteLine("modal test");
-        Console.WriteLine(showModal);
         showModal = !showModal;
     }
 
@@ -392,6 +390,13 @@
         {
             await JS.InvokeVoidAsync("alert", insertResult);
         }
+    }
+
+    void CancelInsertLayout()
+    {
+        newLayoutName = "";
+        sharedEmails = new List<string>();
+        newEmail = "";
     }
 
     string[] GetSelectedProperties()
@@ -456,14 +461,7 @@
         {
             PropertyInfoWrapper p = new();
             p.PropertyInfo = prop;
-            if (prop.Name == "Job_No")
-            {
-                p.IsSelected = true;
-            }
-            else
-            {
-                p.IsSelected = false;
-            }
+            p.IsSelected = false;
             shipmentPropertiesTemp.Add(p);
         }
         shipmentProperties = shipmentPropertiesTemp.AsQueryable();
