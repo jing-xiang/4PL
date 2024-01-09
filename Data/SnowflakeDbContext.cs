@@ -2412,10 +2412,10 @@ namespace _4PL.Data
             }
         }
 
-        public List<string> InsertUserLayout(List<UserProfileLayout> userProfileLayouts)
+        public Dictionary<string, List<string>> InsertUserLayout(List<UserProfileLayout> userProfileLayouts)
         {
             Console.WriteLine("method called");
-            List<string> noUser = new();
+            Dictionary<string, List<string>> output = new();
             string jsonProfileLayout = JsonConvert.SerializeObject(userProfileLayouts);
             Console.WriteLine("json" + jsonProfileLayout);
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
@@ -2436,7 +2436,13 @@ namespace _4PL.Data
                     if (response.ContainsKey("noUser"))
                     {
                         Console.WriteLine("test2");
-                        noUser = JsonConvert.DeserializeObject<List<string>>(response["noUser"].ToString());
+                        List<string> noUser = JsonConvert.DeserializeObject<List<string>>(response["noUser"].ToString());
+                        output["noUser"] = noUser;
+                    } else if (response.ContainsKey("layoutExists"))
+                    {
+                        Console.WriteLine("test3");
+                        List<string> layoutExists = JsonConvert.DeserializeObject<List<string>>(response["layoutExists"].ToString());
+                        output["layoutExists"] = layoutExists;
                     }
                 }
                 catch (Exception ex)
@@ -2447,8 +2453,7 @@ namespace _4PL.Data
                 {
                     conn.Close();
                 }
-                Console.WriteLine("noUser: " + noUser);
-                return noUser;
+                return output;
             }
         }
 

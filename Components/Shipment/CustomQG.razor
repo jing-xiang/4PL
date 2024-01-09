@@ -95,8 +95,8 @@
             }
             
             <TemplateColumn Title="Actions">
-                <button class="btn btn-sm btn-success">Edit</button>
-                <button class="btn btn-sm btn-danger">Delete</button>
+                <button class="btn btn-sm btn-success" @onclick="() => Edit(context)">Edit</button>
+                <button class="btn btn-sm btn-danger" @onclick="() => Delete(context)">Delete</button>
             </TemplateColumn>
         </QuickGrid>
         <Paginator State="@pagination" />
@@ -167,6 +167,23 @@
 
     [Parameter]
     public string tableName { get; set; } = "";
+
+    [Parameter]
+    public EventCallback<TItem> onEdit { get; set; }
+
+    [Parameter]
+    public EventCallback<TItem> onDelete { get; set; }
+
+    //Editing and deleting item from quickgrid
+    protected async Task Edit(TItem inputTItem)
+    {
+        await onEdit.InvokeAsync(inputTItem);
+    }
+
+    protected async Task Delete(TItem inputTItem)
+    {
+        await onDelete.InvokeAsync(inputTItem);
+    }
 
     //Handle multiple layout views and change default layout
     PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
@@ -257,6 +274,7 @@
     {
         newLayoutName = "";
         sharedEmails = new List<string>();
+        newEmail = "";
     }
 
     string[] GetSelectedProperties()
@@ -274,7 +292,7 @@
         layoutDictionary = await GetProfileLayout(currEmail);
         layoutArray = layoutDictionary.Keys.ToArray();
 
-        //fetching the properties of TItem
+        //fetching the properties of TItem (only for properties to be displayed on frontend)
         var props = typeof(TItem).GetProperties(BindingFlags.Instance | BindingFlags.Public)
             .Where(p => p.CanRead)
             .ToList();
@@ -300,12 +318,14 @@
         }
         else if (findDefault == null && layoutDictionary.Any())
         {
+            //default layout if data exists in backend: first layout fetched
             defaultLayout = layoutArray[0];
             selectedLayout = layoutArray[0];
             currColumns = layoutDictionary[defaultLayout].Layout_Fields;
         }
         else
         {
+            //default layout if no data in the backend: all columns in props
             currColumns = props.Select(p => p.Name).ToArray();
         }
         currViewInitialised = true;
