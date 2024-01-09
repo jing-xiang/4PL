@@ -116,6 +116,9 @@
     {
         <div class="d-flex justify-content-end">
             <div class="custom-modal">
+                <div class="select-all-checkbox d-flex justify-content-end">
+                    <input type="checkbox" @bind="selectAllSelected" @onclick="SelectAll" />
+                </div>
                 <QuickGrid Items="shipmentProperties">
                     <PropertyColumn Title="Shipment Fields" Property="@(p => p.PropertyInfo.Name)" />
                     <PropertyColumn Title="Data Type" Property="@(p => p.PropertyInfo.PropertyType)" />
@@ -207,6 +210,13 @@
         box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1); 
         max-height:40vh;
         overflow-y:scroll;
+    }
+
+    .select-all-checkbox {
+        position: absolute;
+        top: 32px;
+        right: 46px;
+        z-index: 99999;
     }
 
     .shared-emails {
@@ -342,10 +352,21 @@
     string newEmail = "";
     string newLayoutName = "";
     string? currEmail;
+    bool selectAllSelected = false;
 
     public async void HandleModal()
     {
         showModal = !showModal;
+        List<PropertyInfoWrapper> propertiesTemp = shipmentProperties.ToList();
+        propertiesTemp.ForEach(prop =>
+        {
+            if (currView.Contains(prop.PropertyInfo.Name))
+            {
+                prop.IsSelected = true;
+            }
+        });
+        shipmentProperties = propertiesTemp.AsQueryable();
+        StateHasChanged();
     }
 
     void AddEmail()
@@ -415,6 +436,23 @@
         newLayoutName = "";
         sharedEmails = new List<string>();
         newEmail = "";
+    }
+
+    void SelectAll()
+    {
+        List<PropertyInfoWrapper> propertiesTemp = shipmentProperties.ToList();
+        if (!selectAllSelected)
+        {
+            propertiesTemp.ForEach(prop => prop.IsSelected = true);
+
+        }
+        else
+        {
+            propertiesTemp.ForEach(prop => prop.IsSelected = false);
+        }
+        shipmentProperties = propertiesTemp.AsQueryable();
+        StateHasChanged();
+        selectAllSelected = !selectAllSelected;
     }
 
     string[] GetSelectedProperties()
