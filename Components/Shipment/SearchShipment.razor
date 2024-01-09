@@ -116,6 +116,9 @@
     {
         <div class="d-flex justify-content-end">
             <div class="custom-modal">
+                <div class="select-all-checkbox d-flex justify-content-end">
+                    <input type="checkbox" @bind="selectAllSelected" @onclick="SelectAll" />
+                </div>
                 <QuickGrid Items="shipmentProperties">
                     <PropertyColumn Title="Shipment Fields" Property="@(p => p.PropertyInfo.Name)" />
                     <PropertyColumn Title="Data Type" Property="@(p => p.PropertyInfo.PropertyType)" />
@@ -207,6 +210,13 @@
         box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1); 
         max-height:40vh;
         overflow-y:scroll;
+    }
+
+    .select-all-checkbox {
+        position: absolute;
+        top: 32px;
+        right: 46px;
+        z-index: 99999;
     }
 
     .shared-emails {
@@ -308,6 +318,7 @@
     Dictionary<string, UserProfileLayout> profileLayouts = new();
     string[]? currView;
     string[]? layoutArray;
+    string? currLayout;
     string? selectedLayout;
     string? defaultLayoutName;
 
@@ -317,6 +328,7 @@
     async void ChangeDisplay(string layoutName)
     {
         Console.WriteLine(layoutName);
+        currLayout = layoutName;
         currView = profileLayouts[layoutName].Layout_Fields;
     }
 
@@ -335,16 +347,42 @@
         StateHasChanged();
     }
 
+    async void DeleteLayout()
+    {
+        var response = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/UserProfileLayout/DeleteLayout/", profileLayouts[selectedLayout]);
+        await JS.InvokeVoidAsync("alert", "Successfully Deleted");
+        showMenu = !showMenu;
+        layoutArray = layoutArray.Where(layout => layout != selectedLayout).ToArray();
+        if (selectedLayout.Equals(currLayout))
+        {
+            currView = profileLayouts[defaultLayoutName].Layout_Fields;
+        }
+        selectedLayout = defaultLayoutName;
+        StateHasChanged();
+    }
+
     //Layout adjustment modal, share view 
     bool showModal = false;
     bool showMenu = false;
     List<string> sharedEmails = new List<string>();
     string newEmail = "";
     string newLayoutName = "";
+    string? currEmail;
+    bool selectAllSelected = false;
 
     public async void HandleModal()
     {
         showModal = !showModal;
+        List<PropertyInfoWrapper> propertiesTemp = shipmentProperties.ToList();
+        propertiesTemp.ForEach(prop =>
+        {
+            if (currView.Contains(prop.PropertyInfo.Name))
+            {
+                prop.IsSelected = true;
+            }
+        });
+        shipmentProperties = propertiesTemp.AsQueryable();
+        StateHasChanged();
     }
 
     void AddEmail()
@@ -369,6 +407,14 @@
         string[] Layout_Fields = GetSelectedProperties();
         Console.WriteLine("Lyoutfields: " + string.Join(", ", Layout_Fields));
         List<UserProfileLayout> userProfileLayouts = new();
+
+        UserProfileLayout self = new();
+        self.User_Email = currEmail;
+        self.Table_Name = "Shipment";
+        self.Layout_Fields = Layout_Fields;
+        self.Layout_Name = newLayoutName;
+        userProfileLayouts.Add(self);
+
         foreach (var email in sharedEmails)
         {
             UserProfileLayout upl = new();
@@ -376,7 +422,6 @@
             upl.Table_Name = "Shipment";
             upl.Layout_Fields = Layout_Fields;
             upl.Layout_Name = newLayoutName;
-            Console.WriteLine("newlytname: " + newLayoutName);
             userProfileLayouts.Add(upl);
         }
         var response = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/UserProfileLayout/CreateLayout/", userProfileLayouts);
@@ -409,6 +454,23 @@
         newEmail = "";
     }
 
+    void SelectAll()
+    {
+        List<PropertyInfoWrapper> propertiesTemp = shipmentProperties.ToList();
+        if (!selectAllSelected)
+        {
+            propertiesTemp.ForEach(prop => prop.IsSelected = true);
+
+        }
+        else
+        {
+            propertiesTemp.ForEach(prop => prop.IsSelected = false);
+        }
+        shipmentProperties = propertiesTemp.AsQueryable();
+        StateHasChanged();
+        selectAllSelected = !selectAllSelected;
+    }
+
     string[] GetSelectedProperties()
     {
         string[] output = shipmentProperties.Where(p => p.IsSelected).Select(p => p.PropertyInfo.Name).ToArray();
@@ -429,7 +491,7 @@
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
-        var currEmail = user.FindFirst(c => c.Type == ClaimTypes.Email)?.Value;
+        currEmail = user.FindFirst(c => c.Type == ClaimTypes.Email)?.Value;
         profileLayouts = await GetProfileLayout(currEmail);
 
         layoutArray = profileLayouts.Keys.ToArray();
@@ -441,10 +503,12 @@
         {
             currView = findDefault.Layout_Fields;
             var temp = profileLayouts.FirstOrDefault(x => x.Value.Is_Default).Key;
+            currLayout = temp;
             selectedLayout = temp;
             defaultLayoutName = temp;
         } 
         else if (findDefault == null && profileLayouts.Any()) {
+            currLayout = layoutArray[0];
             defaultLayoutName = layoutArray[0];
             selectedLayout = layoutArray[0];
             currView = profileLayouts[defaultLayoutName].Layout_Fields;

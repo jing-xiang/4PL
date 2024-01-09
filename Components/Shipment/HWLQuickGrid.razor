@@ -33,7 +33,10 @@
                             <option value=@l selected="@((l == defaultLayout) ? "selected" : null)">@l</option>
                         }
                     </select>
-                    <button class="btn btn-sm btn-primary" @onclick="ChangeDefault">Make this a default</button>
+                    <div class="mt-2">
+                        <button class="btn btn-sm btn-primary" @onclick="ChangeDefault">Make this a default</button>
+                        <button class="btn btn-sm btn-danger" @onclick="DeleteLayout">Delete</button>
+                    </div>
                 </div>
             }
         </div>
@@ -48,6 +51,9 @@
 {
     <div class="d-flex justify-content-end">
         <div class="custom-modal">
+            <div class="select-all-checkbox d-flex justify-content-end">
+                <input type="checkbox" @bind="selectAllSelected" @onclick="SelectAll"/>
+            </div>
             <QuickGrid Items="modelProperties">
                 <PropertyColumn Title="Fields" Property="@(p => p.PropertyInfo.Name)" />
                 <PropertyColumn Title="Data Type" Property="@(p => p.PropertyInfo.PropertyType)" />
@@ -148,6 +154,13 @@
         overflow-y: scroll;
     }
 
+    .select-all-checkbox {
+        position: absolute;
+        top: 32px;
+        right: 46px;
+        z-index: 99999;
+    }
+
     .shared-emails {
         max-width: 30vw;
     }
@@ -196,6 +209,9 @@
     [Parameter]
     public Dictionary<string, string> hyperlinkColumns { get; set; } = new();
 
+    [Parameter]
+    public List<string> omittedColumns { get; set; } = new();
+
     //Editing and deleting item from quickgrid
     protected async Task Edit(TItem inputTItem)
     {
@@ -213,12 +229,14 @@
     bool showMenu = false;
     string[]? currColumns;
     string[]? layoutArray;
+    string? currLayout;
     string? selectedLayout;
     string? defaultLayout;
     public Dictionary<string, UserProfileLayout> layoutDictionary = new();
 
     void ChangeDisplay(string layoutName)
     {
+        currLayout = layoutName;
         currColumns = layoutDictionary[layoutName].Layout_Fields;
     }
 
@@ -237,16 +255,42 @@
         StateHasChanged();
     }
 
+    async void DeleteLayout()
+    {
+        var response = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/UserProfileLayout/DeleteLayout/", layoutDictionary[selectedLayout]);
+        await JS.InvokeVoidAsync("alert", "Successfully Deleted");
+        showMenu = !showMenu;
+        layoutArray = layoutArray.Where(layout => layout != selectedLayout).ToArray();
+        if (selectedLayout.Equals(currLayout))
+        {
+            currColumns = layoutDictionary[defaultLayout].Layout_Fields;
+        }
+        selectedLayout = defaultLayout;
+        StateHasChanged();
+    }
+
     //Share layout views to others
+    string? currEmail;
     bool showModal = false;
     List<string> sharedEmails = new List<string>();
     string newEmail = "";
     string newLayoutName = "";
+    bool selectAllSelected = false;
     IQueryable<PropertyInfoWrapper> modelProperties = Enumerable.Empty<PropertyInfoWrapper>().AsQueryable();
 
     public void HandleModal()
     {
         showModal = !showModal;
+        List<PropertyInfoWrapper> propertiesTemp = modelProperties.ToList();
+        propertiesTemp.ForEach(prop =>
+        {
+            if (currColumns.Contains(prop.PropertyInfo.Name))
+            {
+                prop.IsSelected = true;
+            }
+        });
+        modelProperties = propertiesTemp.AsQueryable();
+        StateHasChanged();
     }
 
     void AddEmail()
@@ -269,6 +313,13 @@
     {
         string[] Layout_Fields = GetSelectedProperties();
         List<UserProfileLayout> userProfileLayouts = new();
+        UserProfileLayout self = new();
+        self.User_Email = currEmail;
+        self.Table_Name = tableName;
+        self.Layout_Fields = Layout_Fields;
+        self.Layout_Name = newLayoutName;
+        userProfileLayouts.Add(self);
+
         foreach (var email in sharedEmails)
         {
             UserProfileLayout upl = new();
@@ -309,6 +360,22 @@
         newEmail = "";
     }
 
+    void SelectAll()
+    {
+        List<PropertyInfoWrapper> propertiesTemp = modelProperties.ToList();
+        if (!selectAllSelected)
+        {
+            propertiesTemp.ForEach(prop => prop.IsSelected = true);
+
+        } else
+        {
+            propertiesTemp.ForEach(prop => prop.IsSelected = false);
+        }
+        modelProperties = propertiesTemp.AsQueryable();
+        StateHasChanged();
+        selectAllSelected = !selectAllSelected;
+    }
+
     string[] GetSelectedProperties()
     {
         string[] output = modelProperties.Where(p => p.IsSelected).Select(p => p.PropertyInfo.Name).ToArray();
@@ -320,7 +387,7 @@
         //initializing layoutDictionary and layoutArray
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
-        var currEmail = user.FindFirst(c => c.Type == ClaimTypes.Email)?.Value;
+        currEmail = user.FindFirst(c => c.Type == ClaimTypes.Email)?.Value;
         layoutDictionary = await GetProfileLayout(currEmail);
         layoutArray = layoutDictionary.Keys.ToArray();
 
@@ -328,6 +395,8 @@
         var props = typeof(TItem).GetProperties(BindingFlags.Instance | BindingFlags.Public)
             .Where(p => p.CanRead)
             .ToList();
+
+        props = props.Where(p => !omittedColumns.Contains(p.Name)).ToList();
 
         List<PropertyInfoWrapper> propertiesTemp = new();
         foreach (var prop in props)
@@ -345,12 +414,14 @@
         {
             currColumns = findDefault.Layout_Fields;
             var temp = layoutDictionary.FirstOrDefault(x => x.Value.Is_Default).Key;
+            currLayout = temp;
             selectedLayout = temp;
             defaultLayout = temp;
         }
         else if (findDefault == null && layoutDictionary.Any())
         {
             //default layout if data exists in backend: first layout fetched
+            currLayout = layoutArray[0];
             defaultLayout = layoutArray[0];
             selectedLayout = layoutArray[0];
             currColumns = layoutDictionary[defaultLayout].Layout_Fields;
