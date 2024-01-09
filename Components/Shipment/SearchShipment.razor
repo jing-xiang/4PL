@@ -120,7 +120,7 @@
                     <PropertyColumn Title="Shipment Fields" Property="@(p => p.PropertyInfo.Name)" />
                     <PropertyColumn Title="Data Type" Property="@(p => p.PropertyInfo.PropertyType)" />
                     <TemplateColumn>
-                        <input type="checkbox" @bind="context.IsSelected" disabled="@isJobNo(context)"/>
+                        <input type="checkbox" @bind="context.IsSelected"/>
                     </TemplateColumn>
                 </QuickGrid>
 
@@ -413,11 +413,6 @@
         Dictionary<string, UserProfileLayout> result = JsonConvert.DeserializeObject<Dictionary<string, UserProfileLayout>>(responseContent);
         Console.WriteLine(string.Join(", ", result.Keys.ToList()));
         return result;
-    }
-
-    private bool isJobNo(PropertyInfoWrapper p)
-    {
-        return p.PropertyInfo.Name.Equals("Job_No");
     }
 
     protected override async Task OnInitializedAsync()
