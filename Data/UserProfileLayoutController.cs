@@ -56,6 +56,14 @@ namespace _4PL.Data
             _dbcontext.UpdateDefaultLayout(upl);
             return Ok();
         }
+
+        [HttpPost("DeleteLayout")]
+        public ActionResult DeleteUserLayout([FromBody] UserProfileLayout upl)
+        {
+            int numDeleted = _dbcontext.DeleteUserLayout(upl);
+
+            return Ok(numDeleted > 0 ? true : false);
+        }
     }
 }
 

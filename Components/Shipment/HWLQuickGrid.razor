@@ -33,7 +33,10 @@
                             <option value=@l selected="@((l == defaultLayout) ? "selected" : null)">@l</option>
                         }
                     </select>
-                    <button class="btn btn-sm btn-primary" @onclick="ChangeDefault">Make this a default</button>
+                    <div class="mt-2">
+                        <button class="btn btn-sm btn-primary" @onclick="ChangeDefault">Make this a default</button>
+                        <button class="btn btn-sm btn-danger" @onclick="DeleteLayout">Delete</button>
+                    </div>
                 </div>
             }
         </div>
@@ -206,6 +209,9 @@
     [Parameter]
     public Dictionary<string, string> hyperlinkColumns { get; set; } = new();
 
+    [Parameter]
+    public List<string> omittedColumns { get; set; } = new();
+
     //Editing and deleting item from quickgrid
     protected async Task Edit(TItem inputTItem)
     {
@@ -223,12 +229,14 @@
     bool showMenu = false;
     string[]? currColumns;
     string[]? layoutArray;
+    string? currLayout;
     string? selectedLayout;
     string? defaultLayout;
     public Dictionary<string, UserProfileLayout> layoutDictionary = new();
 
     void ChangeDisplay(string layoutName)
     {
+        currLayout = layoutName;
         currColumns = layoutDictionary[layoutName].Layout_Fields;
     }
 
@@ -244,6 +252,20 @@
         showMenu = !showMenu;
         defaultLayout = selectedLayout;
         currColumns = layoutDictionary[selectedLayout].Layout_Fields;
+        StateHasChanged();
+    }
+
+    async void DeleteLayout()
+    {
+        var response = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/UserProfileLayout/DeleteLayout/", layoutDictionary[selectedLayout]);
+        await JS.InvokeVoidAsync("alert", "Successfully Deleted");
+        showMenu = !showMenu;
+        layoutArray = layoutArray.Where(layout => layout != selectedLayout).ToArray();
+        if (selectedLayout.Equals(currLayout))
+        {
+            currColumns = layoutDictionary[defaultLayout].Layout_Fields;
+        }
+        selectedLayout = defaultLayout;
         StateHasChanged();
     }
 
@@ -374,6 +396,8 @@
             .Where(p => p.CanRead)
             .ToList();
 
+        props = props.Where(p => !omittedColumns.Contains(p.Name)).ToList();
+
         List<PropertyInfoWrapper> propertiesTemp = new();
         foreach (var prop in props)
         {
@@ -390,12 +414,14 @@
         {
             currColumns = findDefault.Layout_Fields;
             var temp = layoutDictionary.FirstOrDefault(x => x.Value.Is_Default).Key;
+            currLayout = temp;
             selectedLayout = temp;
             defaultLayout = temp;
         }
         else if (findDefault == null && layoutDictionary.Any())
         {
             //default layout if data exists in backend: first layout fetched
+            currLayout = layoutArray[0];
             defaultLayout = layoutArray[0];
             selectedLayout = layoutArray[0];
             currColumns = layoutDictionary[defaultLayout].Layout_Fields;

@@ -2499,6 +2499,32 @@ namespace _4PL.Data
             }
         }
 
+        public int DeleteUserLayout(UserProfileLayout upl)
+        {
+            using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))
+            {
+                conn.Open();
+                using (IDbCommand command = conn.CreateCommand())
+                {
+                    command.CommandText = $@"CALL DEV_RL_DB.HWL_4PL.DELETE_USER_PROFILE_LAYOUT(:User_Email, :Table_Name, :Layout_Name)";
+
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "User_Email", Value = upl.User_Email, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Table_Name", Value = upl.Table_Name, DbType = DbType.String });
+                    command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Layout_Name", Value = upl.Layout_Name, DbType = DbType.String });
+
+                    var result = command.ExecuteScalar();
+                    if (result != DBNull.Value)
+                    {
+                        return Int32.Parse(result.ToString());
+                    }
+                    else
+                    {
+                        throw new Exception($"Failed to delete user layout (User_Email: {upl.User_Email}, Layout_Name: {upl.Layout_Name})");
+                    }
+                }
+            }
+        }
+
         public void UpdateDefaultLayout(UserProfileLayout upl)
         {
             using (SnowflakeDbConnection conn = new SnowflakeDbConnection(_connectionString))

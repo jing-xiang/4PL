@@ -318,6 +318,7 @@
     Dictionary<string, UserProfileLayout> profileLayouts = new();
     string[]? currView;
     string[]? layoutArray;
+    string? currLayout;
     string? selectedLayout;
     string? defaultLayoutName;
 
@@ -327,6 +328,7 @@
     async void ChangeDisplay(string layoutName)
     {
         Console.WriteLine(layoutName);
+        currLayout = layoutName;
         currView = profileLayouts[layoutName].Layout_Fields;
     }
 
@@ -342,6 +344,20 @@
         showMenu = !showMenu;
         defaultLayoutName = selectedLayout;
         currView = profileLayouts[defaultLayoutName].Layout_Fields;
+        StateHasChanged();
+    }
+
+    async void DeleteLayout()
+    {
+        var response = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/UserProfileLayout/DeleteLayout/", profileLayouts[selectedLayout]);
+        await JS.InvokeVoidAsync("alert", "Successfully Deleted");
+        showMenu = !showMenu;
+        layoutArray = layoutArray.Where(layout => layout != selectedLayout).ToArray();
+        if (selectedLayout.Equals(currLayout))
+        {
+            currView = profileLayouts[defaultLayoutName].Layout_Fields;
+        }
+        selectedLayout = defaultLayoutName;
         StateHasChanged();
     }
 
@@ -487,10 +503,12 @@
         {
             currView = findDefault.Layout_Fields;
             var temp = profileLayouts.FirstOrDefault(x => x.Value.Is_Default).Key;
+            currLayout = temp;
             selectedLayout = temp;
             defaultLayoutName = temp;
         } 
         else if (findDefault == null && profileLayouts.Any()) {
+            currLayout = layoutArray[0];
             defaultLayoutName = layoutArray[0];
             selectedLayout = layoutArray[0];
             currView = profileLayouts[defaultLayoutName].Layout_Fields;

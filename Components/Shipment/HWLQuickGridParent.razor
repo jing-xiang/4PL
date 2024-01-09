@@ -17,8 +17,8 @@
 @rendermode InteractiveServer
 
 <h3>Component</h3>
-<HWLQuickGrid Items="shipments"  tableName="Shipment" TItem="Shipment" onEdit="onEditShipment" hyperlinkColumns="@shipmentDict"></HWLQuickGrid>
-<HWLQuickGrid Items="containers" tableName="Container" TItem="Container" onEdit="onEditContainer" onDelete="onDeleteContainer"></HWLQuickGrid>
+<HWLQuickGrid Items="shipments" tableName="Shipment" TItem="Shipment" onEdit="onEditShipment" hyperlinkColumns="@shipmentDict" omittedColumns="@shipmentOmitted"></HWLQuickGrid>
+<HWLQuickGrid Items="containers" tableName="Container" TItem="Container" onEdit="onEditContainer" onDelete="onDeleteContainer" omittedColumns="@containerOmitted"></HWLQuickGrid>
 
 @code {
     IQueryable<Shipment> shipments = Enumerable.Empty<Shipment>().AsQueryable();
@@ -43,6 +43,7 @@
 
     //Shipment
     Dictionary<string, string> shipmentDict = new Dictionary<string, string>() { { "Job_No", "/shipment/view?Shipment_Job_No" } };
+    List<string> shipmentOmitted = new List<string>() { "Container_List", "Last_Modified_At", "Last_Modified_By" };
 
     async Task<List<Shipment>> getShipmentData()
     {
@@ -77,6 +78,8 @@
     }
 
     //Container
+    List<string> containerOmitted = new List<string>() { "Id", "Shipment_Job_No" };
+
     async Task<List<Container>> getContainerData()
     {
         return await HttpClient.GetFromJsonAsync<List<Container>>($"{NavManager.BaseUri}api/shipment/ContainerData/EGLV235301061137");
