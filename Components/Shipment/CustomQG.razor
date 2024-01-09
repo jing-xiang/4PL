@@ -207,7 +207,7 @@
 
     async void ChangeDefault()
     {
-        var response = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/UserProfileLayout/UpdateLayout/", layoutDictionary[selectedLayout]);
+        var response = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/UserProfileLayout/UpdateDefaultLayout/", layoutDictionary[selectedLayout]);
         await JS.InvokeVoidAsync("alert", "Successfully Updated");
         showMenu = !showMenu;
         defaultLayout = selectedLayout;
@@ -263,6 +263,16 @@
         if (insertResult.Equals("Success"))
         {
             await JS.InvokeVoidAsync("alert", "Successfully Added");
+        }
+        else if (insertResult.Contains("Layout name exists"))
+        {
+            var isConfirmed = await JS.InvokeAsync<bool>("confirm", insertResult);
+            if (isConfirmed)
+            {
+                var response2 = await HttpClient.PostAsJsonAsync($"{NavManager.BaseUri}api/UserProfileLayout/UpdateLayout/", userProfileLayouts);
+                var updateResult = response2.Content.ReadAsStringAsync().Result;
+                await JS.InvokeVoidAsync("alert", updateResult);
+            }
         }
         else
         {
