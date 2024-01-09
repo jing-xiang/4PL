@@ -1867,7 +1867,7 @@ namespace _4PL.Data
                 List<ChargeMappingReference> chargeMappings = new List<ChargeMappingReference>();
                 using (IDbCommand command = conn.CreateCommand())
                 {
-                    command.CommandText = $@"CALL FETCH_CHARGE_MAPPINGS (:Other_Charge_Description_Name, :Source, :Container_Type)";
+                    command.CommandText = $@"CALL FETCH_CHARGE_MAPPINGS (:Other_Charge_Description_Name, :Source, :Charge_Description)";
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Other_Charge_Description_Name", Value = otherChargeDescriptionName, DbType = DbType.String });
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Source", Value = source, DbType = DbType.String });
                     command.Parameters.Add(new SnowflakeDbParameter { ParameterName = "Charge_Description", Value = chargeDescription, DbType = DbType.String });

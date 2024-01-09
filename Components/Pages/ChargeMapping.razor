@@ -1,8 +1,279 @@
 ﻿@page "/charge-mapping"
+@using System.Diagnostics
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using _4PL.Data
+@using Newtonsoft.Json
+@inject IConfiguration Configuration
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject NavigationManager NavManager
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
 
+@rendermode InteractiveServer
 
-<h3>ChargeMapping</h3>
+<PageTitle>Charge Mapping</PageTitle>
+
+<h3 class="container">Charge Mapping</h3>
+<div class="container">
+
+    @if (!editTab)
+    {
+        <EditForm Model="addChargeMapping" OnSubmit="CreateMapping"
+                    Enhance>
+         <label class="label-control">Add Mapping</label>
+         <div class="row">
+             <div class="col-md-4">
+                 <InputText @bind-Value="addChargeMapping.Other_Charge_Description_Name" placeholder="Other Charge Description Name" class="form-control" autocomplete="off"></InputText>
+             </div>
+             <div class="col-md-4">
+                 <InputText @bind-Value="addChargeMapping.Source" placeholder="Source" class="form-control" autocomplete="off"></InputText>
+             </div>
+             <div class="col-md-4">
+                 <InputSelect id="selectChargeDescription" class="form-control custom-select-dropdown" @bind-Value="addChargeMapping.Charge_Description" autocomplete="off">
+                     <option value=""></option>
+                     @foreach (var cd in chargeDescriptionsList)
+                        {
+                            <option value="@cd">@cd</option>
+                        }
+                    </InputSelect>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary my-2">Add</button>
+        </EditForm>
+    }
+    else
+    {
+        <EditForm Model="mappingToEdit" OnSubmit="UpdateMapping"
+                    Enhance>
+         <label class="label-control">Update Mapping</label>
+         <div class="row">
+             <div class="col-md-4">
+                 <InputText @bind-Value="mappingToEdit.Other_Charge_Description_Name" placeholder="Other Charge Description Name" class="form-control" autocomplete="off"></InputText>
+             </div>
+             <div class="col-md-4">
+                 <InputText @bind-Value="mappingToEdit.Source" placeholder="Source" class="form-control" autocomplete="off"></InputText>
+             </div>
+             <div class="col-md-4">
+                 <InputSelect id="selectChargeDescription" class="form-control custom-select-dropdown" @bind-Value="mappingToEdit.Charge_Description" class="=">
+                     <option value=""></option>
+                     @foreach (var cd in chargeDescriptionsList)
+                        {
+                            <option value="@cd">@cd</option>
+                        }
+                    </InputSelect>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary my-2">Update</button>
+        </EditForm>
+    }
+    <EditForm Model="searchChargeMapping" OnSubmit="FetchMappings"
+                Enhance>
+        <label class="label-control">Search Mapping</label>
+        <div class="row">
+            <div class="col-md-4">
+                <InputText @bind-Value="searchChargeMapping.Other_Charge_Description_Name" placeholder="Other Charge Description Name" class="form-control" autocomplete="off"></InputText>
+            </div>
+            <div class="col-md-4">
+                <InputText @bind-Value="searchChargeMapping.Source" placeholder="Source" class="form-control" autocomplete="off"></InputText>
+            </div>
+            <div class="col-md-4">
+                <InputSelect id="selectChargeDescription" class="form-control custom-select-dropdown" @bind-Value="searchChargeMapping.Charge_Description">
+                    <option value=""></option>
+                    @foreach (var cd in chargeDescriptionsList)
+                    {
+                        <option value="@cd">@cd</option>
+                    }
+                </InputSelect>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary my-2">Search</button>
+    </EditForm>
+    <br />
+    <QuickGrid Items="@ChargeMappingsQueryable" @ref="grid" Pagination="pagination">
+        <PropertyColumn Title="Other Charge Description Name" Property="@(c => c.Other_Charge_Description_Name)" Sortable="true" InitialSortDirection="SortDirection.Ascending"></PropertyColumn>
+        <PropertyColumn Title="Source" Property="@(c => c.Source)" Sortable="true" InitialSortDirection="SortDirection.Ascending"></PropertyColumn>
+        <PropertyColumn Title="Charge Description" Property="@(c => c.Charge_Description)" Sortable="true" InitialSortDirection="SortDirection.Ascending"></PropertyColumn>
+        <TemplateColumn Title="Actions">
+            <button @onclick="@(() => toggleEdit(context))" class="btn btn-success">Edit</button>
+            <button @onclick="@(() => DeleteMapping(context))" class="btn btn-danger">Delete</button>
+        </TemplateColumn>
+    </QuickGrid>
+    <Paginator State="@pagination" />
+
+</div>
+
+<style>
+    table {
+        font-family: arial, sans-serif;
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 14px;
+    }
+
+    td, th {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+    }
+
+    tr:nth-child(even) {
+        background-color: #dddddd;
+    }
+
+    .result-container {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .remarks-col {
+        min-width: 300px;
+    }
+
+    .custom-select-dropdown {
+        appearance: menulist;
+    }
+</style>
+
 
 @code {
+    IQueryable<ChargeMappingReference> ChargeMappingsQueryable = Enumerable.Empty<ChargeMappingReference>().AsQueryable();
+    private bool editTab = false;
+    private ChargeMappingReference prevMapping = new();
+    private ChargeMappingReference mappingToEdit = new();
+    private List<string> chargeDescriptionsList = new();
+
+    [SupplyParameterFromForm]
+    ChargeMappingReference addChargeMapping { get; set; } = new();
+    [SupplyParameterFromForm]
+    ChargeMappingReference searchChargeMapping { get; set; } = new();
+
+    QuickGrid<ChargeMappingReference>? grid;
+    PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
+
+    protected override async Task OnInitializedAsync()
+    {
+        chargeDescriptionsList = await Http.GetFromJsonAsync<List<string>>($"{Configuration["ApiBaseUrl"]}/api/ChargeMapping/FetchChargeDescriptionsList");
+    }
+
+    // async void toggleEdit(ChargeReference charge) {
+    //     if (chargeToEdit != charge && chargeToEdit.editTab == true) {
+    //         chargeToEdit.editTab = false; set the previous charge's edit tab to false
+    //     }
+    //     oldChargeCode = charge.Charge_Code;
+    //     chargeToEdit = charge;
+    //     chargeToEdit.editTab = !chargeToEdit.editTab; toggle current charge's edit tab
+    // }
+
+    async void toggleEdit(ChargeMappingReference mapping)
+    {
+        if ((mapping.Other_Charge_Description_Name != mappingToEdit.Other_Charge_Description_Name || mapping.Source != mappingToEdit.Source)
+        && editTab == true)
+        { //if the new mapping to edit is different from the previous mapping to edit
+            editTab = true;
+        }
+        else
+        {
+            editTab = !editTab;
+        }
+        prevMapping = mapping;
+        mappingToEdit = new ChargeMappingReference(mapping);
+    }
+
+    async Task CreateMapping()
+    {
+        searchChargeMapping = new(); // clear if there were previous searches
+        addChargeMapping.Other_Charge_Description_Name = addChargeMapping.Other_Charge_Description_Name.Trim();// trim leading and trailing spaces
+        addChargeMapping.Source = addChargeMapping.Source.Trim();// trim leading and trailing spaces
+        addChargeMapping.Charge_Description = addChargeMapping.Charge_Description.Trim();// trim leading and trailing spaces
+        if (addChargeMapping.Other_Charge_Description_Name == "" || addChargeMapping.Source == "" || addChargeMapping.Charge_Description == "")
+        {
+            await JS.InvokeVoidAsync("alert", "Please fill in the missing field(s)");
+            return;
+        }
+        HttpResponseMessage response = await Http.PostAsJsonAsync($"{Configuration["ApiBaseUrl"]}/api/ChargeMapping/CreateChargeMapping", addChargeMapping);
+        string result = response.Content.ReadAsStringAsync().Result;
+        if (result == "Error - duplicate primary keys")
+        {
+            await JS.InvokeVoidAsync("alert", "The inputted combination of other charge description name and source already exists");
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", $"Successfully added charge mapping");
+            StateHasChanged();
+        }
+        addChargeMapping = new();
+    }
+
+    async Task DeleteMapping(ChargeMappingReference mapping)
+    {
+        editTab = false;
+        string confirmMessage = $"Confirm delete charge mapping with other name: {mapping.Other_Charge_Description_Name} and source: {mapping.Source}?";
+        bool confirmed = await JS.InvokeAsync<bool>("confirm", confirmMessage);
+        if (confirmed)
+        {
+            HttpResponseMessage result = await Http.DeleteAsync($"{Configuration["ApiBaseUrl"]}/api/ChargeMapping/DeleteChargeMapping/{mapping.Other_Charge_Description_Name}/{mapping.Source}");
+            if (result.Content.ReadAsStringAsync().Result == "true")
+            {
+                await JS.InvokeVoidAsync("alert", $"Successfully deleted mapping with other name: {mapping.Other_Charge_Description_Name} and source: {mapping.Source}");
+                // Refresh and display
+                await FetchMappings();
+
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", $"Failed to delete mapping with other name: {mapping.Other_Charge_Description_Name} and source: {mapping.Source} -- Does not exist");
+            }
+            //addContainerTypeReference = new();
+        }
+
+    }
+
+    async Task FetchMappings()
+    {
+        editTab = false;
+        searchChargeMapping.Other_Charge_Description_Name = searchChargeMapping.Other_Charge_Description_Name.Trim();
+        searchChargeMapping.Source = searchChargeMapping.Source.Trim(); // remove leading and trailing white spaces
+        searchChargeMapping.Charge_Description = searchChargeMapping.Charge_Description.Trim();
+
+        List<ChargeMappingReference> items = new List<ChargeMappingReference>();
+        HttpResponseMessage result = await Http.PostAsJsonAsync<ChargeMappingReference>($"{Configuration["ApiBaseUrl"]}/api/ChargeMapping/FetchChargeMappings", searchChargeMapping);
+        var resultContent = await result.Content.ReadAsStringAsync();
+        Debug.WriteLine(resultContent); 
+        items = JsonConvert.DeserializeObject<List<ChargeMappingReference>>(resultContent);
+        if (!items.Any()) await JS.InvokeVoidAsync("alert", $"No search results found"); // TODO: possibly more descriptive error message?
+
+        ChargeMappingsQueryable = items.AsQueryable();
+        // Refresh and display
+        StateHasChanged();
+    }
+
+    // TODO: Edit the Update/Edit mapping function that calls the API
+    async Task UpdateMapping()
+    {
+        mappingToEdit.Other_Charge_Description_Name = mappingToEdit.Other_Charge_Description_Name.Trim();
+        if (mappingToEdit.Other_Charge_Description_Name == "" || mappingToEdit.Source == "" || mappingToEdit.Charge_Description == "")
+        {
+            await JS.InvokeVoidAsync("alert", $"Updated field values cannot be empty");
+            return;
+        }
+        else if (mappingToEdit.Other_Charge_Description_Name == prevMapping.Other_Charge_Description_Name
+    && mappingToEdit.Source == prevMapping.Source && mappingToEdit.Charge_Description == prevMapping.Charge_Description)
+        {
+            await JS.InvokeVoidAsync("alert", $"Updated container type mapping is identical to the original mapping");
+            return;
+        }
+        HttpResponseMessage result = await Http.PostAsJsonAsync<ChargeMappingReference>($"{Configuration["ApiBaseUrl"]}/api/ChargeMapping/UpdateChargeMapping", mappingToEdit);
+        editTab = false;
+        mappingToEdit = new();
+        await FetchMappings();
+        // TODO: if you have 2 pages, when you change a record on page 2, will the page refresh to page 1?
+        //                       Keep this way first (can enhance speed and user experience later)
+        //                       Manually update ChargesQueryable
+
+        StateHasChanged(); // the field does not change immediately unless I fetch the search again
+
+    }
 
 }
+
+
